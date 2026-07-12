@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "paybot",
+  "version": "${version}",
+  "name": "PayBot",
+  "description": "Hệ thống nạp thẻ/ngân hàng tích hợp Discord Bot và SePay cho Minecraft Fabric server.",
+  "authors": [
+    {
+      "name": "TheRealShiroz",
+      "contact": {
+        "homepage": "https://guns.lol/therealshiroz",
+        "discord": "https://discord.gg/ETXaFxhH3d"
+      }
+    }
+  ],
+  "contact": {
+    "homepage": "https://modrinth.com/plugin/paybot",
+    "sources": "https://discord.gg/ETXaFxhH3d",
+    "issues": "https://discord.gg/ETXaFxhH3d"
+  },
+  "license": "MIT",
+  "accessWidener": "paybot.accesswidener",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "com.naptien.PayBotMod"
+    ]
+  },
+  "mixins": [],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": ">=1.20.1",
+    "java": ">=17",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "sgui": "*"
+  }
+}

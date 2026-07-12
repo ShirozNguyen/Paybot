@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.naptien</groupId>
+    <artifactId>PayBot</artifactId>
+    <!--
+        Changelog version bumps:
+          4.0.1 — base
+          4.0.2 — fix ConnectCommand (server-id → guild-id check)
+          4.0.3 — fix DisconnectCommand + ConfirmCommand (cùng lỗi)
+          4.0.4 — thêm LogManager (log hàng ngày Card/ Bank/)
+          4.0.5 — tích hợp LogManager vào LocalOrderManager
+          4.0.6 — gọi UpdateCheckManager khi khởi động; tái tạo các file thiếu
+          4.1.0 — (release) gộp tất cả thay đổi trên
+          4.2.0 — fix crash STAINED_GLASS_PANE trên Purpur 26.x (version detection)
+                   dual-write bank/card orders vào Bank/ + Card/ folders
+                   thêm link Profile & Discord vào /muapaybot
+          4.3.0 — enforce-secure-profile guard (shutdown nếu bật)
+                   ngrok auto-detect → tự fill plugin-callback-url khi start
+                   VietQR fallback khi qr.sepay.vn không tải được
+                   card code hỏi TRƯỚC serial (đổi thứ tự nhập)
+                   fix GuiSession.clear() không reset editCmd + thêm cardCode field
+                   thêm plugin-callback-url vào config.yml
+          5.0.0 (Phase B) — SePayApiClient (api-token, không cần webhook/bot/ngrok)
+                   setup wizard rút gọn + PlaceholderAPI expansion (top nạp/tổng nạp)
+    -->
+    <version>5.1.0</version>
+    <packaging>jar</packaging>
+
+    <name>PayBot</name>
+    <description>Plugin nạp thẻ cào + ngân hàng tích hợp Discord Bot và SePay</description>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <repositories>
+        <!-- PaperMC -->
+        <repository>
+            <id>papermc</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+        <!-- Sonatype (NanoHTTPD) -->
+        <repository>
+            <id>sonatype-oss</id>
+            <url>https://oss.sonatype.org/content/groups/public/</url>
+        </repository>
+        <!-- PlaceholderAPI (soft-depend — chỉ cần lúc compile, server cần tự cài plugin PlaceholderAPI) -->
+        <repository>
+            <id>placeholderapi</id>
+            <url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <!-- Paper API — provided (không đóng gói vào JAR) -->
+        <dependency>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>1.21.1-R0.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- NanoHTTPD — embedded HTTP server cho SePay webhook -->
+        <dependency>
+            <groupId>org.nanohttpd</groupId>
+            <artifactId>nanohttpd</artifactId>
+            <version>2.3.1</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Gson — đã có sẵn trong Paper, nhưng khai báo tường minh để IDE không báo lỗi -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- PlaceholderAPI — provided (soft-depend, chỉ dùng nếu server có cài PlaceholderAPI) -->
+        <dependency>
+            <groupId>me.clip</groupId>
+            <artifactId>placeholderapi</artifactId>
+            <version>2.11.6</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- MySQL Connector/J — Database lưu trữ cho PayBot (v5.1.0) -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>9.0.0</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Shade NanoHTTPD và MySQL Driver vào JAR cuối -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <!-- Relocate để tránh conflict với server khác shade NanoHTTPD/MySQL -->
+                            <relocations>
+                                <relocation>
+                                    <pattern>fi.iki.elonen</pattern>
+                                    <shadedPattern>com.naptien.shaded.nanohttpd</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.mysql</pattern>
+                                    <shadedPattern>com.naptien.shaded.mysql</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.12.1</version>
+                <configuration>
+                    <release>17</release>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+        </plugins>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+    </build>
+</project>

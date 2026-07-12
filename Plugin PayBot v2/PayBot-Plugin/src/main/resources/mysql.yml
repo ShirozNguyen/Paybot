@@ -1,0 +1,10 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# PayBot MySQL Database Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+host: "localhost"
+port: 3306
+database: "paybot"
+username: "root"
+password: ""
+use-ssl: false

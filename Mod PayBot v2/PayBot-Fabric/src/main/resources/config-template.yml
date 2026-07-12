@@ -1,0 +1,263 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# PayBot Mod Configuration  v5.0.2
+# ─────────────────────────────────────────────────────────────────────────────
+# Tác giả  : TheRealShiroz
+# Profile  : https://guns.lol/therealshiroz
+# Discord  : https://discord.gg/ETXaFxhH3d
+# Modrinth : https://modrinth.com/plugin/paybot
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Connection ────────────────────────────────────────────────────────────────
+# server-id và guild-id được tự động điền khi kết nối bot (/connect discord <guild_id>)
+# KHÔNG tự tay điền — dùng lệnh trong game để set
+server-id: ""
+guild-id:  ""
+
+# v5.0.5: bỏ ngrok — URL HTTPS thật của bot (VPS). Tự điền khi /connect, để trống
+# nếu chưa connect. Bot tự động cập nhật giá trị này mỗi khi đổi IP/port (restart).
+bot-url: ""
+
+# v5.0.5: tự đồng bộ config.yml mỗi 10s — tự thêm key/comment thiếu, tự xoá key thừa
+# không còn tác dụng (từ bản cũ để lại), tự reload khi có gì thay đổi (do bot push
+# bot-url mới, do admin tự sửa tay, hay do upgrade version). Tắt nếu đang tự debug
+# config thủ công và không muốn bị tự động ghi đè.
+auto-config-sync: true
+
+# Fingerprint cert HTTPS của bot (TOFU — tự lưu lần đầu kết nối, đừng tự sửa tay trừ
+# khi biết chắc đang làm gì). Xem BotHttpClient.java để hiểu cơ chế.
+bot-cert-fingerprint: ""
+# true = từ chối thẳng nếu cert bot đổi mà không khớp fingerprint đã lưu (an toàn hơn,
+# phòng MITM, nhưng phải tự xoá bot-cert-fingerprint ở trên nếu đổi VPS thật).
+# false (mặc định) = chỉ cảnh báo, vẫn cho qua và tự cập nhật fingerprint mới.
+bot-cert-strict-pin: false
+
+# Port HTTP server của mod nhận SePay webhook và lệnh từ bot.
+# Không dùng 25565 (port Minecraft mặc định) — mặc định 25580.
+# Đổi nếu có xung đột hoặc host yêu cầu port khác.
+plugin-port: 25580
+
+# ── Nội dung chuyển khoản (mã đơn hàng) ─────────────────────────────────────
+# v5.0.0: tuỳ biến format mã nội dung chuyển khoản (vd "NT123456789012")
+# Khuyến nghị giữ ≥ 6 ký tự phần random để tránh trùng với nội dung CK khác.
+transfer-content:
+  # Tiền tố đứng đầu mã (2-5 ký tự chữ cái). Tự viết HOA khi dùng.
+  prefix: "NT"
+  # true = chèn thêm "_" ngay sau tiền tố (vd "NT_123456789012").
+  require-underscore: false
+  # Độ dài phần mã RANDOM (không tính tiền tố/underscore). Tối đa 30.
+  code-length: 12
+  # Kiểu ký tự phần random: 0 = chỉ số (KHUYẾN NGHỊ) | 1 = chỉ chữ | -1 = cả số và chữ.
+  # ⚠ CẢNH BÁO: -1 hoặc 1 có thể khiến SePay ÂM THẦM không gửi webhook (skip_if_no_code).
+  # Chỉ đổi nếu đang dùng sepay-api self-poll (không qua webhook) hoặc đã tắt skip_if_no_code.
+  code-mode: 0
+
+# ── Lưu trữ đơn nạp cũ (bank/card orders) ───────────────────────────────────────
+# v5.0.0: số ngày giữ lại đơn ĐÃ XỬ LÝ XONG (hết hạn/đã duyệt) trước khi tự xoá khỏi bộ
+# nhớ + file lưu trữ. Đơn ĐANG CHỜ xử lý KHÔNG BAO GIỜ bị xoá dù giá trị là gì.
+#   -1 = giữ VĨNH VIỄN, không bao giờ tự xoá (MẶC ĐỊNH — an toàn nhất cho việc tra soát).
+#    0 = xoá NGAY (trong vòng tối đa 1 giờ — chu kỳ dọn dẹp định kỳ), không lưu lâu dài.
+#   >0 = xoá sau đúng số ngày đó (vd 7 = giữ 7 ngày rồi xoá).
+order-retention:
+  bank-days: -1
+  card-days: -1
+
+# Callback URL bot sẽ gọi để gửi kết quả thẻ về plugin.
+# Để trống → plugin tự dùng bot-url + /api/card-callback
+plugin-callback-url: ""
+
+# ── Reward Effects ────────────────────────────────────────────────────────────
+# Hiệu ứng khi player nạp thành công
+Reward_Firework:     true   # Bắn 2 quả pháo hoa (cách nhau 2s)
+Reward_Sound:        true   # Sound level-up (<100k) hoặc Epic Achievement (>=100k)
+Reward_Notification: true   # Hiện dòng chữ xanh in đậm italic trên màn hình
+
+# ── Reward Multiplier ─────────────────────────────────────────────────────────
+# Chế độ thưởng:
+#   1 = bình thường (default)
+#   2 = nhân đôi — tự động tính x2 số lượng thưởng đã cấu hình
+Rewards_Card_Mode: 1
+Rewards_Bank_Mode: 1
+
+# ── SePay ─────────────────────────────────────────────────────────────────────
+# Cấu hình tự động qua /sepaysetup trong game
+# Không tự sửa trừ khi biết mình đang làm gì
+# ── SePay (webhook qua bot.py — legacy) ─────────────────────────────────────
+# Dùng khi kết nối bot. Các trường này được bot.py điền tự động khi admin cấu hình
+# Merchant ID + Secret Key trên dashboard SePay và gửi qua /sepaysetup trong game.
+sepay:
+  secret-key:   ""
+  merchant-id:  ""
+  bank-account: ""
+  bank-name:    ""
+  account-name: ""
+  configured:   false
+
+# ── Card API ──────────────────────────────────────────────────────────────────
+# Site đang được chọn để nạp thẻ — cấu hình qua /cardsetup trong game
+card-api:
+  site:        ""
+  partner-id:  ""
+  partner-key: ""
+  configured:  false
+
+# ── Card API Sites ────────────────────────────────────────────────────────────
+# Cấu hình tự động qua /cardsetup trong game
+# Cấu trúc: card-api-sites.<domain>.partner-id / partner-key / channel-id
+card-api-sites:
+  thesieure.com:
+    partner-id:  ""
+    partner-key: ""
+    channel-id:  ""
+  gachthepro.com:
+    partner-id:  ""
+    partner-key: ""
+    channel-id:  ""
+  gachthefast.com:
+    partner-id:  ""
+    partner-key: ""
+    channel-id:  ""
+  gachthe1s.com:
+    partner-id:  ""
+    partner-key: ""
+    channel-id:  ""
+
+# ── Denom Rewards (Card) ──────────────────────────────────────────────────────
+# Cấu hình qua /chinhsuamenhgianap trong game
+# amt: số lượng thưởng (sẽ nhân với Rewards_Card_Mode)
+# cmd: lệnh thực thi — biến dùng được:
+#   [playername] → tên người chơi
+#   [amount]     → số lượng thưởng (đã nhân mode)
+# Ví dụ cmd: "eco give [playername] [amount]"
+#            "give [playername] diamond [amount]"
+denom-rewards-card:
+  10000:
+    amt: ""
+    cmd: ""
+  20000:
+    amt: ""
+    cmd: ""
+  30000:
+    amt: ""
+    cmd: ""
+  50000:
+    amt: ""
+    cmd: ""
+  100000:
+    amt: ""
+    cmd: ""
+  200000:
+    amt: ""
+    cmd: ""
+  300000:
+    amt: ""
+    cmd: ""
+  500000:
+    amt: ""
+    cmd: ""
+  1000000:
+    amt: ""
+    cmd: ""
+
+# ── Denom Rewards (Bank) ──────────────────────────────────────────────────────
+# Tương tự denom-rewards-card nhưng áp dụng cho nạp ngân hàng
+# amt: số lượng thưởng (sẽ nhân với Rewards_Bank_Mode)
+# cmd: lệnh thực thi — biến: [playername], [amount]
+denom-rewards-bank:
+  10000:
+    amt: ""
+    cmd: ""
+  20000:
+    amt: ""
+    cmd: ""
+  50000:
+    amt: ""
+    cmd: ""
+  100000:
+    amt: ""
+    cmd: ""
+  200000:
+    amt: ""
+    cmd: ""
+  500000:
+    amt: ""
+    cmd: ""
+  1000000:
+    amt: ""
+    cmd: ""
+
+# ── Quick bank amounts ────────────────────────────────────────────────────────
+# Các mệnh giá nhanh hiển thị trong UI nạp ngân hàng (/napbank)
+# Có thể thêm / bớt tuỳ ý — chỉ cần có mục tương ứng trong denom-rewards-bank
+quick-amounts:
+  - 10000
+  - 20000
+  - 50000
+  - 100000
+  - 200000
+  - 500000
+  - 1000000
+
+# ── Fallback reward commands ──────────────────────────────────────────────────
+# Dùng khi mệnh giá cụ thể chưa được cấu hình (amt/cmd để trống ở trên)
+# Thứ tự ưu tiên: denom-specific → loại cụ thể → toàn cục
+# Biến dùng được: [playername], [amount]
+
+# Fallback toàn cục — dùng cho cả thẻ lẫn ngân hàng nếu không có fallback cụ thể
+reward-command: ""
+
+# Fallback chỉ cho thẻ cào — ưu tiên hơn reward-command
+reward-command-card: ""
+
+# Fallback chỉ cho ngân hàng — ưu tiên hơn reward-command
+reward-command-bank: ""
+
+# ── SePay API (self-poll — KHÔNG cần webhook, KHUYẾN NGHỊ) ──────────────────
+# v5.0.2 FIX: Trước đây mod chỉ hỗ trợ Merchant ID + Secret Key (qua bot.py webhook)
+# — cơ chế đó phụ thuộc ngrok luôn online + bot.py đang chạy. Giờ mod đã hỗ trợ
+# tự poll trực tiếp SePay API (giống plugin) mà KHÔNG cần webhook, không cần bot.
+#
+# Cách lấy api-token: My.SePay.vn → Cấu hình Công ty → API Access → API Token
+# (KHÔNG phải Merchant ID, KHÔNG phải Secret Key — đó là token khác dùng cho webhook).
+#
+# Sau khi điền api-token và dùng lệnh /sepaysetup trong game, mod sẽ TỰ lấy thông tin
+# ngân hàng (STK, tên ngân hàng, tên chủ TK) từ API — không cần điền thủ công.
+#
+# Các trường bank-* được tự điền khi /sepaysetup hoàn tất — KHÔNG tự sửa thủ công.
+sepay-api:
+  # Token SePay API (lấy tại My.SePay.vn → Cấu hình Công ty → API Access)
+  api-token: ""
+  # Các trường dưới đây được điền TỰ ĐỘNG khi /sepaysetup — không sửa thủ công
+  bank-account-number: ""
+  bank-short-name:     ""
+  bank-full-name:      ""
+  bank-bin:            ""
+  account-holder-name: ""
+  # ID giao dịch cuối cùng đã xử lý (để poll không bị lặp) — do mod tự quản lý
+  last-transaction-id: 0
+  # Khoảng cách poll (giây). Mặc định 10s. Không đặt dưới 5s để tránh bị SePay rate-limit.
+  poll-interval-seconds: 10
+
+# ── Giới hạn thông báo (chống spam log/chat) ─────────────────────────────────
+# Số thông báo cùng loại tối đa / phút (rate limit để tránh spam admin).
+# false = tắt giới hạn hoàn toàn (ghi mọi sự kiện vào log/chat).
+Max_Notifications: 20
+
+# ── Loại thông báo bật/tắt ────────────────────────────────────────────────────
+# true = hiện thông báo này lên chat admin / console.
+# false = im lặng với loại thông báo này (vẫn hoạt động bình thường, chỉ không báo).
+notifications:
+  qr-created:           true   # Map QR tạo thành công
+  qr-create-fail:       true   # Tạo/tải ảnh QR thất bại
+  card-submitted:       true   # Player vừa gửi thẻ cào
+  card-submit-fail:     true   # Gửi thẻ lên bot thất bại
+  card-api-error:       true   # Lỗi giao tiếp web gạch thẻ
+  sepay-error:          true   # Lỗi giao tiếp SePay API
+  bank-payment-received: true  # Thanh toán bank nhận được (tự giao thưởng hoặc chờ /approve)
+  approve-fail:         true   # Duyệt đơn thất bại
+  reward-invalid:       true   # Lệnh thưởng sai/chưa cấu hình
+  reward-dispatch:      true   # Lệnh thưởng được dispatch (tắt nếu spam quá nhiều)
+  reward-queued-offline: true  # Player offline khi nạp — xếp hàng chờ
+  firework-fail:        true   # Bắn pháo/âm thanh thất bại (thường do thiếu permission)
+  order-expired:        true   # Đơn QR hết hạn 30 phút
+  bot-disconnect:       true   # Bot Discord ngắt kết nối
+  http-error:           true   # Lỗi webhook/HTTP server

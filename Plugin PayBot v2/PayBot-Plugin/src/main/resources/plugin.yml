@@ -1,0 +1,140 @@
+name: PayBot
+version: "5.1.0"
+main: com.naptien.NapTienPlugin
+api-version: "1.13"
+description: "PayBot - Hệ thống nạp thẻ cào + ngân hàng tích hợp Discord Bot và SePay"
+authors:
+  - TheRealShiroz
+website: "https://modrinth.com/plugin/paybot"
+
+depend: []
+softdepend: ["PlaceholderAPI"]
+
+commands:
+  napthe:
+    description: "Nạp thẻ cào vào game (mở UI)"
+    usage: "/napthe"
+    permission: naptien.use
+
+  napbank:
+    description: "Nạp tiền qua ngân hàng (mở UI)"
+    usage: "/napbank"
+    permission: naptien.use
+
+  ok:
+    description: "Xác nhận nạp thẻ sau khi đã nhập thông tin"
+    usage: "/ok"
+    permission: naptien.use
+
+  chinhsuamenhgianap:
+    description: "Cấu hình mệnh giá và lệnh thưởng (mở UI)"
+    usage: "/chinhsuamenhgianap"
+    permission: naptien.admin
+
+  topuplist:
+    description: "Xem và duyệt danh sách đơn chờ"
+    usage: "/topuplist all"
+    permission: naptien.admin
+
+  PayBotSetup:
+    description: "Xem trạng thái cấu hình standalone (SePay, Card API, port)"
+    usage: "/PayBotSetup"
+    permission: naptien.admin
+
+  connect:
+    description: "Kết nối plugin với bot Discord"
+    usage: "/connect discord <guild_id>"
+    permission: naptien.admin
+
+  bankcheck:
+    description: "Xem danh sách đơn ngân hàng"
+    usage: "/bankcheck [player]"
+    permission: naptien.admin
+
+  cardcheck:
+    description: "Xem danh sách đơn thẻ (mở UI)"
+    usage: "/cardcheck [player]"
+    permission: naptien.admin
+
+  disconnect:
+    description: "Gửi yêu cầu ngắt kết nối hệ thống auto"
+    usage: "/disconnect [--force]"
+    permission: naptien.admin
+
+  confirm:
+    description: "Xác nhận ngắt kết nối hệ thống auto"
+    usage: "/confirm"
+    permission: naptien.admin
+
+  naptienid:
+    description: "Xem server-id, guild-id và trạng thái kết nối"
+    usage: "/naptienid"
+    permission: naptien.admin
+
+  sepaysetup:
+    description: "Cấu hình SePay (ngân hàng nhận tiền)"
+    usage: "/sepaysetup"
+    permission: naptien.admin
+
+  cardsetup:
+    description: "Cấu hình API gạch thẻ (site, partner ID/key, channel Discord) và mệnh giá"
+    usage: "/cardsetup"
+    permission: naptien.admin
+
+  approve:
+    description: "Duyệt và cấp thưởng đơn nạp thủ công"
+    usage: "/approve <invoice_id>"
+    permission: naptien.admin
+
+  muapaybot:
+    description: "Thông tin mua PayBot"
+    usage: "/muapaybot"
+    permission: naptien.op
+
+  paybotowner:
+    description: "Đăng nhập quyền owner bằng mã một lần từ Discord"
+    usage: "/paybotowner <mã> | logout | status"
+    permission: naptien.use
+
+  testnapbank:
+    description: "[DEV] Giả lập nạp bank thành công để test reward + hiệu ứng"
+    usage: "/testnapbank [mệnh giá]"
+    permission: naptien.admin
+
+  testnapthe:
+    description: "[DEV] Giả lập nạp thẻ thành công để test reward + hiệu ứng"
+    usage: "/testnapthe [nhà mạng] [mệnh giá]"
+    permission: naptien.admin
+
+  rewardclaim:
+    description: "Nhận phần thưởng đang chờ (đơn được duyệt lúc bạn offline)"
+    usage: "/RewardClaim [confirm]"
+    permission: naptien.use
+
+  paybotleaderboard: # v5.0.3: đổi tên từ paybotplaceholder — dễ phân biệt hơn (không liên quan PlaceholderAPI)
+    description: "Xem thống kê nạp (tổng nạp, top nạp) - không cần PlaceholderAPI"
+    usage: "/paybotleaderboard"
+    permission: naptien.use
+
+  disablepaybot:
+    description: "[OWNER ONLY] Chặn vĩnh viễn PayBot trên server này (theo IP máy)"
+    usage: "/disablepaybot"
+    permission: naptien.op
+
+  enablepaybot:
+    description: "[OWNER ONLY] Mở chặn PayBot trên server này"
+    usage: "/enablepaybot"
+    permission: naptien.op
+
+permissions:
+  naptien.use:
+    description: "Cho phép dùng /napthe, /napbank, /paybotowner, /RewardClaim, /paybotleaderboard"
+    default: true
+
+  naptien.admin:
+    description: "Quyền admin đầy đủ (cấu hình, duyệt đơn, kết nối bot)"
+    default: op
+
+  naptien.op:
+    description: "Quyền xem thông tin mua plugin"
+    default: op

@@ -1,0 +1,60 @@
+# Gradle / Build
+**/build/
+**/.gradle/
+**/bin/
+**/out/
+
+# Maven / Target
+**/target/
+
+# IDE files
+**/.idea/
+**/.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Archives
+*.zip
+*.rar
+*.tar.gz
+
+# Logs
+*.log
+log.txt
+**/logs/
+
+# Database files
+*.db
+*.sqlite
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Discord Bot files (DO NOT UPLOAD)
+DiscordBot/
+bot.py
+config.py
+database.py
+requirements.txt
+Procfile
+run.bat
+note.txt
+
+# Non-essential files and folders (DO NOT UPLOAD)
+598478746_1213915917326229_4083843472472910512_n.jpg
+MinecraftPlugin/
+ModInstaller.ps1
+Modloader/
+NapBank/
+Plugin Maintenance/
+RUN_ME.bat
+Test/
+Zalo/
+scripts/
+website/
+**/Learn/
+**/learn/
+CHANGELOG.md

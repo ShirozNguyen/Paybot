@@ -1,0 +1,259 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# PayBot Plugin Configuration  v5.0.0
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Connection ────────────────────────────────────────────────────────────────
+# server-id và guild-id được tự động điền khi kết nối bot
+# không được tự set nếu k bt gì, cần thì ib admin
+# https://guns.lol/therealshiroz
+
+server-id: ""
+guild-id:  ""
+bot-url:   "https://YOUR_VPS_IP:24733"
+
+
+# v5.0.3: bỏ ngrok — plugin tự dò IP thật của server này (PublicIpResolver) nếu để trống.
+# Chỉ set thủ công nếu server này ở sau NAT/router cần port-forward riêng.
+plugin-callback-url: ""
+
+# v5.0.3: tự đồng bộ config.yml mỗi 10s — tự thêm key/comment thiếu, tự xoá key thừa
+# không còn tác dụng (từ bản cũ để lại), tự reload khi có gì thay đổi (do bot push
+# bot-url mới, do admin tự sửa tay, hay do upgrade version). Tắt nếu đang tự debug
+# config thủ công và không muốn bị tự động ghi đè.
+auto-config-sync: true
+
+# Fingerprint cert HTTPS của bot (TOFU — tự lưu lần đầu kết nối, đừng tự sửa tay trừ
+# khi biết chắc đang làm gì). Xem BotHttpClient.java để hiểu cơ chế.
+bot-cert-fingerprint: ""
+# true = từ chối thẳng nếu cert bot đổi mà không khớp fingerprint đã lưu (an toàn hơn,
+# phòng MITM, nhưng phải tự xoá bot-cert-fingerprint ở trên nếu đổi VPS thật).
+# false (mặc định) = chỉ cảnh báo, vẫn cho qua và tự cập nhật fingerprint mới.
+bot-cert-strict-pin: false
+
+# Port HTTP server của plugin nhận SePay webhook và lệnh từ bot.
+# v5.0.0 FIX: đổi default 25565 → 25580 (25565 TRÙNG port chơi Minecraft mặc định,
+# khiến HTTP server của plugin bind thất bại ngay từ đầu trên mọi server chưa từng
+# tự đổi port này — SePay IPN/push reward/push config từ bot ĐỀU không hoạt động được
+# mà không có cảnh báo rõ ràng). Đổi nếu có xung đột hoặc host yêu cầu port khác.
+plugin-port: 25580
+
+# ── Nội dung chuyển khoản (mã đơn hàng) ─────────────────────────────────────────
+# v5.0.0: tuỳ biến format mã nội dung chuyển khoản (vd "PB123456789012") — KHÔNG ảnh
+# hưởng việc khớp giao dịch (hệ thống luôn so khớp không phân biệt hoa/thường), an toàn
+# đổi tuỳ ý. Khuyến nghị giữ độ dài đủ lớn (≥ 6 ký tự phần random) để tránh trùng ngẫu
+# nhiên với nội dung chuyển khoản khác của người dùng.
+transfer-content:
+  # Tiền tố đứng đầu mã (2-5 ký tự chữ cái, vd "NT"). Tự viết HOA khi dùng.
+  prefix: "NT"
+  # true = chèn thêm "_" ngay sau tiền tố (vd "NT_123456789012").
+  # false = nối liền không có gì (vd "NT123456789012").
+  require-underscore: false
+  # Độ dài phần mã RANDOM phía sau tiền tố (KHÔNG tính tiền tố/underscore).
+  # Tối đa 30 — set quá 30 sẽ làm SERVER/PLUGIN KHÔNG KHỞI ĐỘNG ĐƯỢC (cố ý — sai cấu
+  # hình nghiêm trọng, log console sẽ ghi rõ lý do để admin sửa lại).
+  code-length: 12
+  # Kiểu ký tự phần random: 0 = chỉ số (MẶC ĐỊNH, khuyến nghị) | 1 = chỉ chữ | -1 = cả số và chữ.
+  # ⚠ CẢNH BÁO: nếu dùng webhook SePay (không phải sepay-api self-poll), SePay tự detect
+  # "mã giao dịch" theo pattern PREFIX+SỐ (vd NT[0-9]+). Đặt khác 0 (lẫn chữ) có thể khiến
+  # SePay ÂM THẦM không gửi webhook cho giao dịch đó nếu dashboard SePay đang bật
+  # "skip_if_no_code" (mặc định) — tiền vào nhưng plugin không hề biết. Chỉ đổi sang -1/1
+  # nếu chắc chắn đã tắt skip_if_no_code, hoặc đang dùng sepay-api.enabled: true.
+  code-mode: 0
+
+# ── Lưu trữ đơn nạp cũ (bank-orders.yml / card-orders.yml) ─────────────────────
+# v5.0.0: số ngày giữ lại đơn ĐÃ XỬ LÝ XONG (hết hạn/đã duyệt) trước khi tự xoá khỏi
+# bộ nhớ + file lưu trữ. Đơn ĐANG CHỜ xử lý KHÔNG BAO GIỜ bị xoá dù giá trị là gì.
+#   -1 = giữ VĨNH VIỄN, không bao giờ tự xoá (MẶC ĐỊNH — an toàn nhất cho việc tra soát).
+#    0 = xoá NGAY (trong vòng tối đa 1 giờ — chu kỳ dọn dẹp định kỳ), không lưu lâu dài.
+#   >0 = xoá sau đúng số ngày đó (vd 7 = giữ 7 ngày rồi xoá).
+# Có 2 mục riêng — bank và card đặt số ngày khác nhau cũng được, không bắt buộc giống nhau.
+order-retention:
+  bank-days: -1
+  card-days: -1
+
+# Hiện 6 dòng thông tin (ngân hàng/STK/tên/tiền/nội dung CK/hết hạn) dưới ảnh QR hay
+# chỉ hiện QR thuần (không chữ). Mặc định false = chỉ QR (full 128x128, nét hơn).
+qr-show-info-overlay: false
+
+# ── SePay API (v5.0.0 Phase B) ─────────────────────────────────────────────────
+# Cách nạp bank MỚI, đơn giản hơn nhiều so với /sepaysetup cũ (chỉ cần dán 1 API
+# Token — không cần webhook, không cần bot.py/ngrok, không cần biết merchant-id/
+# secret-key). Plugin tự POLL trực tiếp API của SePay (my.sepay.vn) theo chu kỳ.
+# Cấu hình qua lệnh trong-game: /sepaysetup (đã viết lại hoàn toàn ở v5.0.0).
+# Admin KHÔNG cần tự sửa tay các dòng dưới — wizard /sepaysetup tự điền sau khi
+# admin dán API token (tên ngân hàng/số TK/tên TK được lấy thẳng từ SePay).
+sepay-api:
+  enabled: false
+  # true = dùng môi trường test my.dev.sepay.vn (không đụng tới giao dịch ngân hàng
+  # thật — để bạn thử nghiệm/test plugin trước). false = dùng my.sepay.vn (thật).
+  sandbox: false
+  api-token: ""
+  bank-account-number: ""
+  bank-short-name: ""
+  bank-full-name: ""
+  bank-bin: ""
+  account-holder-name: ""
+  # Con trỏ phân trang khi poll giao dịch mới — KHÔNG tự sửa tay.
+  last-transaction-id: 0
+  # Số giây giữa mỗi lần poll giao dịch mới (mặc định 10s — đủ nhanh cho VietQR).
+  poll-interval-seconds: 10
+
+# ── Quick bank amounts ────────────────────────────────────────────────────────
+# Các mệnh giá nhanh hiển thị trong UI nạp ngân hàng
+quick-amounts:
+  - 10000
+  - 20000
+  - 50000
+  - 100000
+  - 200000
+  - 500000
+  - 1000000
+
+# ── Reward Multiplier ─────────────────────────────────────────────────────────
+# Chế độ thưởng:
+#   1 = bình thường (default)
+#   2 = nhân đôi — tự động tính x2 số lượng thưởng đã cấu hình
+Rewards_Card_Mode: 1
+Rewards_Bank_Mode: 1
+
+# ── Reward Effects ────────────────────────────────────────────────────────────
+# Hiệu ứng khi player nạp thành công
+Reward_Firework:     true   # Bắn 2 quả pháo hoa (cách nhau 2s)
+Reward_Sound:        true   # Sound level-up (<100k) hoặc Epic Achievement (>=100k)
+Reward_Notification: true   # Hiện dòng chữ xanh in đậm italic
+
+# ── Card API Sites ────────────────────────────────────────────────────────────
+# Cấu hình tự động qua lệnh /cardsetup trong game
+# Cấu trúc: card-api-sites.<domain>.partner-id / partner-key / channel-id
+card-api-sites:
+  thesieure.com:
+    partner-id:  ""
+    partner-key: ""
+    channel-id:  ""
+  gachthepro.com:
+    partner-id:  ""
+    partner-key: ""
+    channel-id:  ""
+  gachthefast.com:
+    partner-id:  ""
+    partner-key: ""
+    channel-id:  ""
+  gachthe1s.com:
+    partner-id:  ""
+    partner-key: ""
+    channel-id:  ""
+
+# ── Denom Rewards (Card) ──────────────────────────────────────────────────────
+# Cấu hình qua /chinhsuamenhgianap trong game
+# amt: số lượng thưởng
+# cmd: lệnh thực thi — biến dùng được: [playername] (tên người chơi), [amount] (số lượng thưởng)
+# Ví dụ cmd: "eco give [playername] [amount]" hoặc "give [playername] diamond [amount]"
+denom-rewards-card:
+  10000:
+    amt: ""
+    cmd: ""
+  20000:
+    amt: ""
+    cmd: ""
+  30000:
+    amt: ""
+    cmd: ""
+  50000:
+    amt: ""
+    cmd: ""
+  100000:
+    amt: ""
+    cmd: ""
+  200000:
+    amt: ""
+    cmd: ""
+  300000:
+    amt: ""
+    cmd: ""
+  500000:
+    amt: ""
+    cmd: ""
+  1000000:
+    amt: ""
+    cmd: ""
+
+# ── Denom Rewards (Bank) ──────────────────────────────────────────────────────
+denom-rewards-bank:
+  10000:
+    amt: ""
+    cmd: ""
+  20000:
+    amt: ""
+    cmd: ""
+  50000:
+    amt: ""
+    cmd: ""
+  100000:
+    amt: ""
+    cmd: ""
+  200000:
+    amt: ""
+    cmd: ""
+  500000:
+    amt: ""
+    cmd: ""
+  1000000:
+    amt: ""
+    cmd: ""
+
+# ── Fallback reward command ───────────────────────────────────────────────────
+# Dùng khi mệnh giá cụ thể chưa được cấu hình
+reward-command: ""
+
+# Giới hạn số thông báo CÙNG LOẠI tối đa trong 1 phút (chống spam khi 1 lỗi lặp liên
+# tục, vd SePay timeout liên tục). Điền 1 số nguyên bất kỳ (vd 10, 50), hoặc "false"
+# để TẮT hẳn giới hạn này (hiện toàn bộ thông báo, không chặn gì cả).
+# Mặc định: 20 (tức tối đa 20 thông báo/loại mỗi 60 giây — vượt mức sẽ bị chặn, không
+# thông báo nữa cho tới khi qua phút kế tiếp).
+Max_Notifications: 20
+
+# ══════════════════════════════════════════════════════════════════════════════
+# NOTIFICATION CONFIGS — bật/tắt từng loại thông báo/log riêng lẻ
+# ══════════════════════════════════════════════════════════════════════════════
+# Mỗi dòng dưới đây = 1 loại thông báo (console log và/hoặc nhắn admin online có
+# quyền naptien.admin). Mặc định TẤT CẢ đều "true" (bật). Set "false" để tắt loại
+# tương ứng — KHÔNG ảnh hưởng tin nhắn trực tiếp gửi cho player đang dùng lệnh
+# (vd "Đơn này đã được duyệt rồi") vì đó là phản hồi thao tác, không phải log/cảnh báo.
+#
+# CHỐNG SPAM: dù bật, mỗi loại tối đa chỉ bắn theo giới hạn "Max_Notifications" ở trên
+# (mặc định 20 lần / 60 giây) — vượt quá sẽ tự
+# động im lặng bỏ qua cho tới khi qua cửa sổ 60s kế tiếp (xem NotificationManager).
+notifications:
+  # Player vừa được give 1 cái map QR (nạp bank) thành công
+  qr-created: true
+  # Tạo/tải ảnh QR thất bại (lỗi mạng, ảnh hỏng,...)
+  qr-create-fail: true
+  # Player vừa gửi thẻ cào (nạp thẻ) lên hệ thống (qua bot hoặc standalone)
+  card-submitted: true
+  # Gửi thẻ lên bot Discord thất bại (server đang ở chế độ kết nối bot)
+  card-submit-fail: true
+  # Lỗi giao tiếp với web gạch thẻ (site cấu hình ở /cardsetup) — log có ghi rõ tên web
+  card-api-error: true
+  # Lỗi giao tiếp với SePay/bot khi đăng ký hoặc poll đơn nạp bank (standalone mode)
+  sepay-error: true
+  # Nhận được thanh toán bank (chưa duyệt) — thông báo admin online vào duyệt
+  bank-payment-received: true
+  # Duyệt đơn (card/bank) thất bại — vd lệnh thưởng dispatch lỗi ngay lúc duyệt
+  approve-fail: true
+  # Lệnh thưởng (reward command) chạy thất bại hoặc chưa được cấu hình cho mệnh giá
+  reward-invalid: true
+  # Log mỗi lần 1 lệnh thưởng được dispatch (console only — khá nhiều, có thể tắt nếu ồn)
+  reward-dispatch: true
+  # Đơn được duyệt nhưng player offline → lưu vào hàng chờ (console only, không spam chat)
+  reward-queued-offline: true
+  # Bắn pháo hoa / âm thanh thành tựu epic thất bại (lỗi tạo Firework, sound,...)
+  firework-fail: true
+  # Đơn QR nạp bank hết hạn (quá 30 phút chưa thanh toán, standalone mode)
+  order-expired: true
+  # Bot Discord tự ngắt kết nối với server (mất kết nối, bot restart,...)
+  bot-disconnect: true
+  # Lỗi xử lý webhook HTTP (SePay IPN, lệnh thưởng đẩy từ bot,...)
+  http-error: true
+  # Phát hiện có bản plugin mới trên Modrinth (cũng dùng cho thông báo "đang ở bản mới nhất")
+  update-available: true
+# ══════════════════════════════════════════════════════════════════════════════

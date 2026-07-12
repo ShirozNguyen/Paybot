@@ -1,0 +1,86 @@
+plugins {
+    id 'fabric-loom' version '1.9-SNAPSHOT'
+    id 'maven-publish'
+}
+
+loom {
+    accessWidenerPath = file("src/main/resources/paybot.accesswidener")
+}
+
+version  = project.mod_version
+group    = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    // Pb4's Maven — SGUI (server-side inventory GUI)
+    maven {
+        name = "Nucleoid"
+        url = "https://maven.nucleoid.xyz"
+    }
+    // Sonatype Snapshots (NanoHTTPD 2.3.1)
+    maven {
+        url = "https://oss.sonatype.org/content/repositories/snapshots"
+    }
+    mavenCentral()
+}
+
+dependencies {
+    // ─── Minecraft / Fabric ───────────────────────────────────────────────────
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings  "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // ─── SGUI — server-side inventory GUI (thay LibGui, phù hợp hơn cho server-only mod) ─
+    // NOTE: LibGui được thiết kế chủ yếu cho client-side mods.
+    //       SGUI được thiết kế đặc biệt cho server-side inventory GUI như plugin Bukkit.
+    modImplementation include("eu.pb4:sgui:${project.sgui_version}")
+
+    // ─── ZXing — sinh QR code ─────────────────────────────────────────────────
+    implementation include("com.google.zxing:core:3.5.2")
+    implementation include("com.google.zxing:javase:3.5.2")
+
+    // ─── NanoHTTPD — embedded HTTP server nhận webhook SePay ─────────────────
+    implementation include("org.nanohttpd:nanohttpd:2.3.1")
+
+    // ─── SnakeYAML — đọc/ghi config.yml và data files ────────────────────────
+    implementation include("org.yaml:snakeyaml:2.0")
+
+    // ─── MySQL Connector/J — database cho PayBot v5.1.0 ──────────────────────
+    implementation include("com.mysql:mysql-connector-j:9.0.0")
+}
+
+processResources {
+    inputs.property "version",           project.version
+    inputs.property "minecraft_version", project.minecraft_version
+    inputs.property "loader_version",    project.loader_version
+
+    filteringCharset "UTF-8"
+
+    filesMatching("fabric.mod.json") {
+        expand([
+                "version":           project.version,
+                "minecraft_version": project.minecraft_version,
+                "loader_version":    project.loader_version
+        ])
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release  = 17
+    it.options.encoding = 'UTF-8'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}" }
+    }
+}
