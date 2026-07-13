@@ -1,6 +1,7 @@
 package com.naptien.managers;
 
 import com.naptien.NapTienPlugin;
+import com.naptien.utils.SchedulerUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -119,7 +120,7 @@ public class SetupManager implements Listener {
         event.setCancelled(true);
         // event.getMessage() works on all versions; no Adventure dependency needed
         String input = event.getMessage().trim();
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
+        SchedulerUtils.runForPlayer(plugin, player, () -> {
             boolean done = session.handleInput(player, input);
             if (done) activeSessions.remove(player.getUniqueId());
         });

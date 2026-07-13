@@ -28,7 +28,7 @@
           5.0.0 (Phase B) — SePayApiClient (api-token, không cần webhook/bot/ngrok)
                    setup wizard rút gọn + PlaceholderAPI expansion (top nạp/tổng nạp)
     -->
-    <version>5.1.0</version>
+    <version>5.2.0</version>
     <packaging>jar</packaging>
 
     <name>PayBot</name>

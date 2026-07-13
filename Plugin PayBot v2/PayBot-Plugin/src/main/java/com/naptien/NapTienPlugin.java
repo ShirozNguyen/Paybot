@@ -17,6 +17,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
+import com.naptien.utils.SchedulerUtils;
+
 import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
@@ -73,14 +75,14 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
      */
     private volatile boolean bannedByOwner = false;
 
-    private BukkitTask offlineCheckTask;
-    private BukkitTask autoRewardPollTask;
-    private BukkitTask offlineTtlTask;
-    private BukkitTask standaloneCardPollTask;
-    private BukkitTask standaloneBankExpireTask;
-    private BukkitTask standaloneBankPollTask;
-    private BukkitTask sePayApiPollTask; // v5.0.0 Phase B
-    private BukkitTask configWatcherTask; // v5.0.3 [Part 18]: auto-reload config.yml mỗi 10s
+    private SchedulerUtils.WrappedTask offlineCheckTask;
+    private SchedulerUtils.WrappedTask autoRewardPollTask;
+    private SchedulerUtils.WrappedTask offlineTtlTask;
+    private SchedulerUtils.WrappedTask standaloneCardPollTask;
+    private SchedulerUtils.WrappedTask standaloneBankExpireTask;
+    private SchedulerUtils.WrappedTask standaloneBankPollTask;
+    private SchedulerUtils.WrappedTask sePayApiPollTask; // v5.0.0 Phase B
+    private SchedulerUtils.WrappedTask configWatcherTask; // v5.0.3 [Part 18]: auto-reload config.yml mỗi 10s
     private long configLastModified = 0L;
 
     @Override
@@ -163,8 +165,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
 
         // v5.0.3: bỏ ngrok auto-detect, thay bằng tự dò IP:port thật (chạy sau 2 giây)
         if (getConfig().getString("plugin-callback-url", "").trim().isEmpty()) {
-            getServer().getScheduler().runTaskLaterAsynchronously(
-                    this, this::detectAndSaveCallbackUrl, 40L);
+            SchedulerUtils.runAsyncLater(this, this::detectAndSaveCallbackUrl, 40L);
         }
 
         // v5.0.0 (Phase B): PlaceholderAPI là soft-depend — chỉ đăng ký nếu server có cài.
@@ -181,9 +182,8 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         String serverId = getConfig().getString("server-id", "");
 
         if (guildId != null && !guildId.isEmpty() && serverId != null && !serverId.isEmpty()) {
-            getServer().getScheduler().runTaskAsynchronously(this,
-                    () -> botHttpClient.fetchAndApplyConfig());
-            getServer().getScheduler().runTaskLaterAsynchronously(this, () -> {
+            SchedulerUtils.runAsync(this, () -> botHttpClient.fetchAndApplyConfig());
+            SchedulerUtils.runAsyncLater(this, () -> {
                 List<Map<String, String>> restored = botHttpClient.fetchOfflineRewardsFromBot();
                 if (restored != null && !restored.isEmpty()) {
                     offlineRewardManager.restoreFromBot(restored);
@@ -197,8 +197,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
 
         // v4.1.0: Kiểm tra cập nhật sau 30 giây (không block main thread)
         updateCheckManager = new UpdateCheckManager(this);
-        getServer().getScheduler().runTaskLaterAsynchronously(this,
-                () -> updateCheckManager.checkForUpdates(), 600L);
+        SchedulerUtils.runAsyncLater(this, () -> updateCheckManager.checkForUpdates(), 600L);
 
         // v4.0.12: báo IP server lên bot sau 10 giây.
         // v5.0.0 FIX: getServer().getIp() chỉ là bind-address (server.properties "server-ip",
@@ -207,7 +206,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         // public thật, kèm http_port (port HTTP server CỦA PLUGIN — khác port chơi) để bot
         // có thể PUSH thẳng reward/config tới plugin (xem PluginHttpServer), không cần đợi
         // plugin tự poll qua ngrok.
-        getServer().getScheduler().runTaskLaterAsynchronously(this, () -> {
+        SchedulerUtils.runAsyncLater(this, () -> {
             if (isStandaloneMode()) return;
             String ip = PublicIpResolver.resolve();
             if (ip == null) {
@@ -221,14 +220,12 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
 
         // v4.1.0: Periodic retry vô hạn cho standalone mode
         // Retry bank orders chưa register được với bot (mỗi 30s)
-        getServer().getScheduler().runTaskTimerAsynchronously(this,
-                () -> getStandaloneBankPoller().retryUnregistered(), 600L, 600L); // 30s
+        SchedulerUtils.runAsyncTimer(this, () -> getStandaloneBankPoller().retryUnregistered(), 600L, 600L); // 30s
         // Retry card orders bị connectionError (mỗi 30s)
-        getServer().getScheduler().runTaskTimerAsynchronously(this,
-                () -> getStandaloneCardProcessor().retryConnectionErrors(), 700L, 600L);
+        SchedulerUtils.runAsyncTimer(this, () -> getStandaloneCardProcessor().retryConnectionErrors(), 700L, 600L);
 
         // v5.1.0: Tự động ping bot định kỳ mỗi 60 giây ở chế độ background để tự đồng bộ cổng khi bot thay đổi port
-        getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+        SchedulerUtils.runAsyncTimer(this, () -> {
             if (!isStandaloneMode()) {
                 getBotHttpClient().pingBot();
             }
@@ -317,7 +314,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
      */
     private void scheduleStartupRecovery() {
         // Bank recovery — 5 giây sau khi plugin enable (100 ticks)
-        getServer().getScheduler().runTaskLaterAsynchronously(this, () -> {
+        SchedulerUtils.runAsyncLater(this, () -> {
             if (isStandaloneMode()) {
                 getLogger().info("[PayBot] Startup recovery: bắt đầu kiểm tra bank orders...");
                 standaloneBankPoller.recoverOnStartup();
@@ -325,7 +322,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         }, 100L);
 
         // Card recovery — 10 giây sau khi plugin enable (200 ticks)
-        getServer().getScheduler().runTaskLaterAsynchronously(this, () -> {
+        SchedulerUtils.runAsyncLater(this, () -> {
             if (isStandaloneMode() && setupManager.isCardApiConfigured()) {
                 getLogger().info("[PayBot] Startup recovery: bắt đầu kiểm tra card orders...");
                 standaloneCardProcessor.recoverUnsubmitted();
@@ -415,8 +412,8 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         // 1 lần/player), tự bot trả rỗng nếu chẳng có gì mới. Đây không phải kiểu "spam"
         // đã bị xoá trước đó (poll-mọi-player-mọi-30s-vô-điều-kiện) — chỉ là 1 request nhẹ
         // mỗi 30s tối đa, có server-id mới gọi (standalone/chưa connect thì khỏi gọi).
-        autoRewardPollTask = getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
-            getServer().getScheduler().runTask(this, () -> {
+        autoRewardPollTask = SchedulerUtils.runAsyncTimer(this, () -> {
+            SchedulerUtils.runSync(this, () -> {
                 for (Player p : Bukkit.getOnlinePlayers()) {
                     if (offlineRewardManager.hasPendingRewards(p.getName())) {
                         processOfflineRewards(p);
@@ -429,11 +426,11 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         // lý do đó giờ lỗi thời (đã bỏ ngrok, bot tự host trực tiếp). 10s vẫn là fallback
         // an toàn thôi — bình thường bot đã PUSH thẳng qua /execute-reward ngay khi có
         // reward, poll này chỉ bắt lại phần lỡ (server offline lúc bot push, lỗi mạng).
-        getServer().getScheduler().runTaskTimerAsynchronously(this,
+        SchedulerUtils.runAsyncTimer(this,
                 this::checkPendingRewardsFromBot, 200L, 200L);
 
         long pollPeriodTicks = Math.max(5, getConfig().getLong("sepay-api.poll-interval-seconds", 10)) * 20L;
-        sePayApiPollTask = getServer().getScheduler().runTaskTimerAsynchronously(this,
+        sePayApiPollTask = SchedulerUtils.runAsyncTimer(this,
                 this::pollSePayApiTransactions, 100L, pollPeriodTicks);
 
         // v5.0.3 [Part 18]: watcher tự phát hiện config.yml thay đổi (do push từ bot,
@@ -443,7 +440,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         if (getConfig().getBoolean("auto-config-sync", true)) {
             File cfgFile = new File(getDataFolder(), "config.yml");
             configLastModified = cfgFile.lastModified();
-            configWatcherTask = getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+            configWatcherTask = SchedulerUtils.runAsyncTimer(this, () -> {
                 long mtime = cfgFile.lastModified();
                 if (mtime == configLastModified) return; // chưa đổi gì, khỏi làm gì cả
                 configLastModified = mtime;
@@ -463,7 +460,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         // lập, không cần thông báo nhắc nhở lặp lại — chỉ báo 1 lần lúc join (onPlayerJoin).
         // TTL dọn dẹp reward quá 7 ngày vẫn giữ nguyên ở offlineTtlTask dưới đây.
 
-        offlineTtlTask = getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+        offlineTtlTask = SchedulerUtils.runAsyncTimer(this, () -> {
             String sid = getConfig().getString("server-id", "").trim();
             if (!sid.isEmpty()) offlineRewardManager.checkAndExpireOldRewards();
             // v5.0.0 FIX: bankOrders/cardOrders (LocalOrderManager) trước đây CHỈ ĐƯỢC
@@ -480,13 +477,13 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
             }
         }, 72000L, 72000L);
 
-        standaloneCardPollTask = getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+        standaloneCardPollTask = SchedulerUtils.runAsyncTimer(this, () -> {
             if (isStandaloneMode() && setupManager.isCardApiConfigured()) {
                 standaloneCardProcessor.pollPendingCards();
             }
         }, 200L, 200L);
 
-        standaloneBankExpireTask = getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+        standaloneBankExpireTask = SchedulerUtils.runAsyncTimer(this, () -> {
             if (!isStandaloneMode()) return;
             long cutoff = System.currentTimeMillis() - (30L * 60 * 1000);
             for (LocalOrderManager.BankOrder o : localOrderManager.getPendingBankOrders()) {
@@ -504,7 +501,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         }, 600L, 600L);
 
         // Poll bot xem bank order nào đã được thanh toán (60 giây/lần)
-        standaloneBankPollTask = getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+        standaloneBankPollTask = SchedulerUtils.runAsyncTimer(this, () -> {
             if (isStandaloneMode()) {
                 standaloneBankPoller.pollPendingOrders();
             }
@@ -528,7 +525,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         getLogger().info("[PayBot] Plugin stopped.");
     }
 
-    private void cancelTask(BukkitTask t) { if (t != null) t.cancel(); }
+    private void cancelTask(SchedulerUtils.WrappedTask t) { if (t != null) t.cancel(); }
 
     // ─── Player join ──────────────────────────────────────────────────────────
 
@@ -542,7 +539,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         // v5.0.2: Cảnh báo enforce-secure-profile trực tiếp tới admin/OP khi join.
         // Cooldown 10 phút/player để không spam mỗi lần reconnect.
         if (player.hasPermission("naptien.admin") || player.isOp()) {
-            getServer().getScheduler().runTaskLaterAsynchronously(this, () -> {
+            SchedulerUtils.runAsyncLater(this, () -> {
                 long now = System.currentTimeMillis();
                 long last = secureProfileWarnCooldown.getOrDefault(player.getUniqueId(), 0L);
                 if (now - last < 10 * 60_000L) return;
@@ -555,7 +552,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
                     boolean onlineMode    = "true".equalsIgnoreCase(props.getProperty("online-mode", "true"));
                     if (!secureProfile) return;
                     secureProfileWarnCooldown.put(player.getUniqueId(), now);
-                    Bukkit.getScheduler().runTask(this, () -> {
+                    SchedulerUtils.runForPlayer(this, player, () -> {
                         if (!player.isOnline()) return;
                         if (secureProfile && onlineMode) {
                             player.sendMessage(f("§c§l[PayBot] §r§cCẢNH BÁO: §fenforce-secure-profile=true + online-mode=true đang bật!"));
@@ -573,13 +570,13 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         // v5.0.2 FIX: quét + xoá QR map hết hạn (an toàn cho trường hợp player logout
         // trước khi đủ 30 phút hoặc server restart giữa lúc đang chờ — xem javadoc
         // cleanExpiredQRMapsOnJoin()).
-        getServer().getScheduler().runTaskLater(this, () -> {
+        SchedulerUtils.runSyncLater(this, () -> {
             if (player.isOnline()) cleanExpiredQRMapsOnJoin(player);
         }, 20L);
 
         // Auto-deliver reward đang chờ (queue từ trước khi player offline)
         if (offlineRewardManager.hasPendingRewards(player.getName())) {
-            getServer().getScheduler().runTaskLaterAsynchronously(this,
+            SchedulerUtils.runAsyncLater(this,
                     () -> processOfflineRewards(player), 40L);
         }
         // v5.0.0: hỏi bot ĐÚNG LÚC player vào (thay cho poll định kỳ cũ)
@@ -596,7 +593,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
     public void checkPendingRewardsFromBot() {
         String sid = getConfig().getString("server-id", "").trim();
         if (sid.isEmpty()) return; // standalone hoặc chưa connect — không có gì để hỏi
-        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+        SchedulerUtils.runAsync(this, () -> {
             List<JsonObject> rewards = botHttpClient.fetchPendingRewards();
             for (JsonObject reward : rewards) processReward(reward);
         });
@@ -626,7 +623,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
     public void processOfflineRewards(Player player) {
         List<Map<String, String>> pending = offlineRewardManager.getRewardsForPlayer(player.getName());
         if (pending.isEmpty()) return;
-        Bukkit.getScheduler().runTask(this, () -> {
+        SchedulerUtils.runForPlayer(this, player, () -> {
             if (!player.isOnline()) return;
             // Snapshot NGAY tại đây (trên main thread) — tránh giao trùng nếu có nguồn
             // khác cũng đang gọi method này gần như đồng thời (xem javadoc trên).
@@ -694,10 +691,10 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
                 localOrderManager.updateBankStatus(fm.invoiceId, LocalOrderManager.BANK_APPROVED);
                 // v5.0.0 (Phase B): báo bot relay Discord nếu connect mode
                 if (!isStandaloneMode()) {
-                    getServer().getScheduler().runTaskAsynchronously(this,
+                    SchedulerUtils.runAsync(this,
                             () -> botHttpClient.notifyBankPaidViaApi(fm.invoiceId, fm.playerName, fm.amount));
                 }
-                Bukkit.getScheduler().runTask(this, () -> {
+                SchedulerUtils.runSync(this, () -> {
                     boolean wasOnline = RewardDispatcher.dispatchOrQueue(this, fm.invoiceId, fm.playerName,
                             rewardCmds, rewardAmt, String.valueOf(fm.amount), "bank", fm.invoiceId, "");
                     NotificationManager.notifyAdmins(this, "bank-payment-received",
@@ -709,10 +706,10 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
                 // Chưa cấu hình lệnh thưởng → set PAID, chờ admin cấu hình rồi /approve
                 localOrderManager.updateBankStatus(fm.invoiceId, LocalOrderManager.BANK_PAID);
                 if (!isStandaloneMode()) {
-                    getServer().getScheduler().runTaskAsynchronously(this,
+                    SchedulerUtils.runAsync(this,
                             () -> botHttpClient.notifyBankPaidViaApi(fm.invoiceId, fm.playerName, fm.amount));
                 }
-                Bukkit.getScheduler().runTask(this, () -> {
+                SchedulerUtils.runSync(this, () -> {
                     NotificationManager.notifyAdmins(this, "bank-payment-received",
                             "§a[PayBot] §fĐơn §b#" + fm.invoiceId + " §fcủa §e" + fm.playerName
                             + " §fthanh toán §f" + formatVnd(fm.amount) + " VND §7(SePay API)"
@@ -747,7 +744,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
             offlineRewardManager.removeReward(playerName, rewardId);
             // v5.1.0: chỉ confirm với bot nếu đang kết nối (standalone không có bot queue)
             if (!isStandaloneMode()) {
-                getServer().getScheduler().runTaskAsynchronously(this,
+                SchedulerUtils.runAsync(this,
                         () -> botHttpClient.confirmOfflineReward(rewardId));
             }
             return;
@@ -767,7 +764,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         offlineRewardManager.removeReward(playerName, rewardId);
         // v5.1.0: chỉ confirm với bot nếu đang kết nối
         if (!isStandaloneMode()) {
-            getServer().getScheduler().runTaskAsynchronously(this,
+            SchedulerUtils.runAsync(this,
                     () -> botHttpClient.confirmOfflineReward(rewardId));
         }
     }
@@ -810,7 +807,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
                     "[PayBot] No reward-command for type=" + type + " reward_id=" + rewardId);
             final String rid = rewardId;
             if (!isStandaloneMode()) {
-                getServer().getScheduler().runTaskAsynchronously(this, () -> botHttpClient.confirmReward(rid));
+                SchedulerUtils.runAsync(this, () -> botHttpClient.confirmReward(rid));
             }
             return;
         }
@@ -827,12 +824,12 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         final java.util.List<String> fRawCmds = rawCmds;
         final String fPlayerName = playerName, fRewardAmt = rewardAmt,
                      fDenom = denomVnd, fType = type, fInvoice = invoiceId, fDiscordUid = discordUid;
-        Bukkit.getScheduler().runTask(this, () -> {
+        SchedulerUtils.runSync(this, () -> {
             RewardDispatcher.dispatchOrQueue(this, rid, fPlayerName, fRawCmds, fRewardAmt,
                     fDenom, fType, fInvoice, fDiscordUid);
             // confirmReward CHỈ gọi khi bot-connected (processReward được gọi từ bot)
             if (!isStandaloneMode()) {
-                getServer().getScheduler().runTaskAsynchronously(this, () -> botHttpClient.confirmReward(rid));
+                SchedulerUtils.runAsync(this, () -> botHttpClient.confirmReward(rid));
             }
         });
     }
@@ -1128,7 +1125,7 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
             if (ip == null || ip.isEmpty()) return;
             int port = getConfig().getInt("plugin-port", 25580);
             final String finalUrl = "http://" + ip + ":" + port;
-            getServer().getScheduler().runTask(this, () -> {
+            SchedulerUtils.runSync(this, () -> {
                 getConfig().set("plugin-callback-url", finalUrl);
                 saveConfig();
                 getLogger().info("[PayBot] ✓ Tự dò IP thật — plugin-callback-url: " + finalUrl);

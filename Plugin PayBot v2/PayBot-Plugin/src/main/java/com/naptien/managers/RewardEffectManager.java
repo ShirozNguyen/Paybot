@@ -1,6 +1,7 @@
 package com.naptien.managers;
 
 import com.naptien.NapTienPlugin;
+import com.naptien.utils.SchedulerUtils;
 import org.bukkit.*;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
@@ -49,7 +50,7 @@ public class RewardEffectManager {
             if (amount >= 100_000) {
                 // Âm thanh hoành tráng hơn cho nạp lớn
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 0.8f);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                SchedulerUtils.runSyncLater(plugin, () -> {
                     if (player.isOnline())
                         player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.5f, 1.2f);
                 }, 10L);
@@ -60,7 +61,7 @@ public class RewardEffectManager {
 
         if (firework) {
             spawnFirework(plugin, player);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            SchedulerUtils.runSyncLater(plugin, () -> {
                 if (player.isOnline()) spawnFirework(plugin, player);
             }, 40L); // 2 giây sau
         }

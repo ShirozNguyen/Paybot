@@ -6,6 +6,8 @@ import com.google.gson.JsonParser;
 import com.naptien.NapTienPlugin;
 import org.bukkit.Bukkit;
 
+import com.naptien.utils.SchedulerUtils;
+
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -72,7 +74,7 @@ public class UpdateCheckManager {
      * Không block main thread.
      */
     public void checkForUpdates() {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerUtils.runAsync(plugin, () -> {
             try {
                 HttpURLConnection conn =
                         (HttpURLConnection) new URL(MODRINTH_VERSIONS_URL).openConnection();

@@ -3,6 +3,7 @@ package com.naptien.managers;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.naptien.NapTienPlugin;
+import com.naptien.utils.SchedulerUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -125,7 +126,7 @@ public class StandaloneCardProcessor {
         plugin.getLogger().info("[Standalone] Card recovery: phát hiện " + failed.size()
                 + " đơn thẻ bị lỗi mạng → đang retry...");
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerUtils.runAsync(plugin, () -> {
             for (LocalOrderManager.CardOrder order : failed) {
                 plugin.getLogger().info("[Standalone] Card recovery: retry requestId=" + order.requestId
                         + " player=" + order.playerName + " (attempts so far=" + order.submitAttempts + ")");
@@ -173,7 +174,7 @@ public class StandaloneCardProcessor {
         NotificationManager.log(plugin, "card-submitted",
                 "[PayBot] " + player.getName() + " gửi thẻ: " + telco + " " + denom + " VND (standalone)");
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerUtils.runAsync(plugin, () -> {
             plugin.getLocalOrderManager().incrementCardSubmitAttempts(requestId);
 
             JsonObject result = callSubmitApiWithRetry(requestId, telco, denom, cardCode, cardSerial);
@@ -214,7 +215,7 @@ public class StandaloneCardProcessor {
         if (pending.isEmpty()) return;
 
         for (LocalOrderManager.CardOrder order : pending) {
-            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            SchedulerUtils.runAsync(plugin, () -> {
                 JsonObject result = callCheckApiWithRetry(
                         order.requestId, order.telco, order.denom, order.cardCode, order.cardSerial);
                 if (result == null) return; // Mạng lỗi, thử lần sau
@@ -331,7 +332,7 @@ public class StandaloneCardProcessor {
                 String rewardAmt = RewardDispatcher.computeRewardAmt(plugin, denom, "card");
                 // Cập nhật trạng thái APPROVED ngay (trước dispatch để tránh approve lại nếu /approve được gọi)
                 plugin.getLocalOrderManager().updateCardStatus(requestId, LocalOrderManager.CARD_APPROVED, message);
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                SchedulerUtils.runSync(plugin, () -> {
                     boolean wasOnline = RewardDispatcher.dispatchOrQueue(
                             plugin, requestId, playerName, rewardCmds, rewardAmt,
                             String.valueOf(denom), "card", null, "");
@@ -340,7 +341,7 @@ public class StandaloneCardProcessor {
                             + " §athành công ✓ — " + suffix + "\n§7ID: §f" + requestId);
                     // v5.1.0: nếu bot-connected → notify Discord
                     if (!plugin.isStandaloneMode()) {
-                        plugin.getServer().getScheduler().runTaskAsynchronously(plugin,
+                        SchedulerUtils.runAsync(plugin,
                                 () -> plugin.getBotHttpClient().notifyBankPaidViaApi(
                                         requestId, playerName, denom));
                     }
@@ -350,7 +351,7 @@ public class StandaloneCardProcessor {
                 notifyOps("§a[PayBot] §fThẻ §e" + playerName + " §f" + denomStr
                         + " §athành công ✓ §7— Chưa cấu hình lệnh thưởng, dùng §e/approve "
                         + requestId + " §7sau khi đã cấu hình /chinhsuamenhgianap.");
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                SchedulerUtils.runSync(plugin, () -> {
                     Player p = Bukkit.getPlayerExact(playerName);
                     if (p != null && p.isOnline()) {
                         RewardEffectManager.notifyPaymentReceived(plugin, p, denom);
@@ -372,7 +373,7 @@ public class StandaloneCardProcessor {
                 + (!message.isEmpty() ? " §7(" + message + ")" : "")
                 + "\n§7ID: §f" + requestId;
         notifyOps(msg);
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
+        SchedulerUtils.runSync(plugin, () -> {
             Player p = Bukkit.getPlayerExact(playerName);
             if (p != null && p.isOnline()) {
                 p.sendMessage(NapTienPlugin.f("§c[PayBot] §fThẻ của bạn không được xử lý: " + statusLabel));
@@ -381,7 +382,7 @@ public class StandaloneCardProcessor {
     }
 
     void notifyOps(String message) {
-        plugin.getServer().getScheduler().runTask(plugin, () ->
+        SchedulerUtils.runSync(plugin, () ->
             Bukkit.getOnlinePlayers().stream()
                 .filter(p -> p.hasPermission("naptien.admin"))
                 .forEach(p -> p.sendMessage(message))
