@@ -219,8 +219,8 @@ public class PayBotMod implements ModInitializer {
         startTasks();
 
         LOGGER.info("[PayBot] ════════════════════════════════════════");
-        LOGGER.info("[PayBot]   PayBot Fabric v5.0.1 — Sẵn sàng!");
-        LOGGER.info("[PayBot]   Loader: Fabric 0.16+ | MC: 1.21.1 | Java: 21");
+        LOGGER.info("[PayBot]   PayBot Fabric v" + getModVersion() + " — Sẵn sàng!");
+        LOGGER.info("[PayBot]   Loader: " + getLoaderVersion() + " | MC: " + getMcVersion() + " | Java: " + getJavaVersion());
         LOGGER.info("[PayBot]   Chế độ: " + (isStandaloneMode()
                 ? "[Standalone]"
                 : "[Bot-connected] guild=" + config.getString("guild-id", "")));

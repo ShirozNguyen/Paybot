@@ -461,14 +461,39 @@ public class PayBotConfig {
             for (List<String> block : liveBlocks) {
                 String key = keyOf(block);
                 if (key != null && !tplKeys.contains(key)) {
-                    PayBotMod.LOGGER.info("[PayBot] SmartConfigMerge: xoá key thừa '" + key
-                            + "' (không còn trong template bản hiện tại): "
+                    // v5.1.1 FIX: Không xóa block nếu có BẤT KỲ giá trị thật nào (non-empty,
+                    // non-default). Áp dụng cho TẤT CẢ key — không chỉ riêng sepay/card-api.
+                    // Nguyên nhân bug gốc: JAR v5.1.0 thiếu `sepay` và `card-api` trong template
+                    // → sync() coi chúng là "thừa" → xóa mất sau khi wizard vừa ghi vào.
+                    // Key chỉ bị xóa khi TẤT CẢ sub-value đều rỗng hoặc mặc định ("", '', false, 0).
+                    boolean hasRealData = block.stream()
+                            .filter(l -> !l.isBlank() && !l.startsWith("#") && l.contains(":"))
+                            .anyMatch(l -> {
+                                String val = l.substring(l.indexOf(':') + 1).trim();
+                                return !val.isEmpty()
+                                        && !val.equals("\"\"")
+                                        && !val.equals("''")
+                                        && !val.equals("false")
+                                        && !val.equals("0")
+                                        && !val.equals("[]");
+                            });
+                    if (hasRealData) {
+                        PayBotMod.LOGGER.info("[PayBot] SmartConfigMerger: giữ lại key '" + key
+                                + "' (không có trong template JAR hiện tại nhưng có dữ liệu thật"
+                                + " — KHÔNG xóa để tránh mất cấu hình admin đã thiết lập).");
+                        keptLines.addAll(block);
+                        continue;
+                    }
+                    PayBotMod.LOGGER.info("[PayBot] SmartConfigMerger: xoá key thừa '" + key
+                            + "' (không còn trong template, mọi giá trị đều mặc định/rỗng): "
                             + String.join(" | ", block).trim());
                     removed++;
                     continue;
                 }
                 keptLines.addAll(block);
             }
+
+
 
             // ── ADD: template có key mà live thiếu ──────────────────────────────
             int added = 0;

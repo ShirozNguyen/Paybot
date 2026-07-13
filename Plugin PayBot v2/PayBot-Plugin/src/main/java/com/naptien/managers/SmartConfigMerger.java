@@ -117,8 +117,31 @@ public class SmartConfigMerger {
             List<String> keptLines = new ArrayList<>();
             for (Block b : liveBlocks) {
                 if (b.topKey != null && !templateTopKeys.contains(b.topKey)) {
+                    // v5.1.0 FIX: Không xóa block nếu có BẤT KỲ giá trị thật nào (non-empty,
+                    // non-default). Áp dụng cho TẤT CẢ key — không chỉ riêng sepay/card-api.
+                    // Nguyên nhân bug: JAR thiếu key trong template → watcher coi là "thừa" → xóa
+                    // mất ngay sau khi wizard vừa ghi vào. Key chỉ bị xóa khi TẤT CẢ sub-value
+                    // đều rỗng hoặc mặc định ("", '', false, 0, []).
+                    boolean hasRealData = b.lines.stream()
+                            .filter(l -> !l.isBlank() && !l.startsWith("#") && l.contains(":"))
+                            .anyMatch(l -> {
+                                String val = l.substring(l.indexOf(':') + 1).trim();
+                                return !val.isEmpty()
+                                        && !val.equals("\"\"")
+                                        && !val.equals("''")
+                                        && !val.equals("false")
+                                        && !val.equals("0")
+                                        && !val.equals("[]");
+                            });
+                    if (hasRealData) {
+                        plugin.getLogger().info("[PayBot] SmartConfigMerger: giữ lại key '" + b.topKey
+                                + "' (không có trong template JAR hiện tại nhưng có dữ liệu thật"
+                                + " — KHÔNG xóa để tránh mất cấu hình admin đã thiết lập).");
+                        keptLines.addAll(b.lines);
+                        continue;
+                    }
                     plugin.getLogger().info("[PayBot] SmartConfigMerger: xoá key thừa '" + b.topKey
-                            + "' (không còn trong template bản hiện tại): "
+                            + "' (không còn trong template, mọi giá trị đều mặc định/rỗng): "
                             + String.join(" | ", b.lines).trim());
                     removed++;
                     continue; // bỏ block này — không ghi vào keptLines
