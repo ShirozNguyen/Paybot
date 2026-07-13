@@ -122,17 +122,7 @@ public class SmartConfigMerger {
                     // Nguyên nhân bug: JAR thiếu key trong template → watcher coi là "thừa" → xóa
                     // mất ngay sau khi wizard vừa ghi vào. Key chỉ bị xóa khi TẤT CẢ sub-value
                     // đều rỗng hoặc mặc định ("", '', false, 0, []).
-                    boolean hasRealData = b.lines.stream()
-                            .filter(l -> !l.isBlank() && !l.startsWith("#") && l.contains(":"))
-                            .anyMatch(l -> {
-                                String val = l.substring(l.indexOf(':') + 1).trim();
-                                return !val.isEmpty()
-                                        && !val.equals("\"\"")
-                                        && !val.equals("''")
-                                        && !val.equals("false")
-                                        && !val.equals("0")
-                                        && !val.equals("[]");
-                            });
+                    boolean hasRealData = checkBlockHasRealData(b.lines);
                     if (hasRealData) {
                         plugin.getLogger().info("[PayBot] SmartConfigMerger: giữ lại key '" + b.topKey
                                 + "' (không có trong template JAR hiện tại nhưng có dữ liệu thật"
@@ -255,5 +245,42 @@ public class SmartConfigMerger {
             }
         }
         return keys;
+    }
+
+    private static boolean checkBlockHasRealData(List<String> lines) {
+        if (lines == null || lines.isEmpty()) return false;
+        if (lines.size() == 1) {
+            String line = lines.get(0);
+            if (!line.contains(":")) return false;
+            String val = line.substring(line.indexOf(':') + 1).trim();
+            return isRealValue(val);
+        }
+        for (int i = 1; i < lines.size(); i++) {
+            String line = lines.get(i).trim();
+            if (line.isEmpty() || line.startsWith("#")) continue;
+            if (line.startsWith("-")) {
+                String val = line.substring(1).trim();
+                if (val.isEmpty()) continue;
+                if (val.contains(":")) {
+                    String subVal = val.substring(val.indexOf(':') + 1).trim();
+                    if (isRealValue(subVal)) return true;
+                } else {
+                    if (isRealValue(val)) return true;
+                }
+            } else if (line.contains(":")) {
+                String val = line.substring(line.indexOf(':') + 1).trim();
+                if (isRealValue(val)) return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isRealValue(String val) {
+        return !val.isEmpty()
+                && !val.equals("\"\"")
+                && !val.equals("''")
+                && !val.equals("false")
+                && !val.equals("0")
+                && !val.equals("[]");
     }
 }
