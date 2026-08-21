@@ -82,16 +82,6 @@ def neoforgeVersions = [
 ]
 
 task copyToDone {
-    subprojects.each { sp ->
-        afterEvaluate {
-            if (sp.tasks.findByName('remapJar')) {
-                dependsOn "${sp.path}:remapJar"
-            } else if (sp.tasks.findByName('jar')) {
-                dependsOn "${sp.path}:jar"
-            }
-        }
-    }
-
     def doneDir = file("C:/Users/Administrator/Documents/Works/done")
     doLast {
         delete doneDir
@@ -127,4 +117,3 @@ task copyToDone {
     }
 }
 
-build.finalizedBy copyToDone
