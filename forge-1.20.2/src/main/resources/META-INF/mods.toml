@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+
+[[mods]]
+modId="paybot"
+version="${version}"
+displayName="PayBot"
+authors="TheRealShiroz"
+description="PayBot Mod Multi-Loader - Payment and Bank QR code integration for Minecraft."
+
+[[dependencies.paybot]]
+modId="forge"
+mandatory=true
+versionRange="[52,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.paybot]]
+modId="minecraft"
+mandatory=true
+# v5.5.5 Part 44: module forge-modern phục vụ 1.20.2 - 1.21.11 (tên Mojang trực tiếp cả
+# dev lẫn runtime từ bản này — xem ForgeVersionAdapterModern.java). Bản 26.1+ (bỏ obfuscation
+# hoàn toàn, toolchain khác hẳn) sẽ có module forge-26x riêng, chưa làm ở Part 44.
+versionRange="[1.20.2]"
+ordering="NONE"
+side="BOTH"

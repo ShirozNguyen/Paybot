@@ -1,0 +1,51 @@
+// multiversion/settings.gradle — v5.5.5 [KHUNG STONECUTTER — GIAI ĐOẠN 1]
+//
+// ⚠️ ĐÂY LÀ PHẦN RỦI RO CAO NHẤT trong toàn bộ đợt sửa — cú pháp Stonecutter được lấy từ
+// tài liệu chính thức (stonecutter.kikugie.dev) NHƯNG trang docs đó chặn crawler AI trực
+// tiếp (trả về nội dung rác cố ý khi fetch thẳng — đã xác nhận, không phải tôi bịa). Thông
+// tin dưới đây lấy từ (a) đoạn trích search engine đã cache trang docs thật + (b) đối chiếu
+// với project thật đang chạy Stonecutter bản "26.2-fabric" (TeamMidnightDust/MidnightLib)
+// trên GitHub — CHƯA từng tự tay build-test. Bắt buộc Shiroz chạy `./gradlew :1.20.1-fabric:build`
+// trong thư mục multiversion/ để xác nhận trước khi tin bất kỳ dòng nào ở đây.
+//
+// Project này TÁCH BIỆT HOÀN TOÀN khỏi PayBot/settings.gradle chính — không include() vào
+// nhau, không đụng module fabric/forge/neoforge/plugin hiện có. Đây là project Gradle độc
+// lập, chạy riêng bằng `cd multiversion && ./gradlew ...`.
+
+pluginManagement {
+    repositories {
+        // Kho Maven riêng của Stonecutter (kikugie) — xác nhận qua project MidnightLib thật
+        maven { url = 'https://maven.kikugie.dev/releases' }
+        maven { url = 'https://maven.architectury.dev/' }
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.minecraftforge.net/' }
+        maven { url = 'https://maven.neoforged.net/releases/' }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+plugins {
+    // ⚠️ Số phiên bản "0.8" thấy được trong 1 ví dụ thật (project meza/Stonecraft dùng
+    // "0.8+"), nhưng KHÔNG chắc đây là bản mới nhất tại thời điểm Shiroz build — nên kiểm
+    // tra lại https://stonecutter.kikugie.dev/wiki/ hoặc https://plugins.gradle.org/plugin/dev.kikugie.stonecutter
+    // (site chính chặn AI, nhưng trình duyệt người dùng thường vẫn xem được bình thường)
+    // trước khi build, đổi số version bên dưới nếu cần.
+    id 'dev.kikugie.stonecutter' version '0.8.+'
+}
+
+rootProject.name = 'paybot-multiversion'
+
+// Tree "root" — tạo các subproject trong versions/ tương ứng mỗi bản kê ở đây.
+// Cú pháp Groovy đã xác nhận qua tài liệu chính thức (khác Kotlin ở dấu ngoặc/dấu phẩy):
+//   Kotlin: stonecutter.create(rootProject) { versions("1.20.1", "1.21.1") }
+//   Groovy: stonecutter.create getRootProject() { versions "1.20.1", "1.21.1" }
+//
+// GIAI ĐOẠN 1 — CHỈ 1 bản duy nhất (1.20.1-fabric), đúng bản đang build ổn định trong
+// project chính, để xác nhận khung Stonecutter hoạt động đúng TRƯỚC khi mở rộng thêm.
+// Không thêm bản nào khác cho tới khi bản này build thành công thật (không phải suy luận).
+// Cú pháp giữ ĐÚNG NGUYÊN VĂN như tài liệu chính thức (Groovy trailing-closure — KHÔNG có
+// dấu phẩy giữa getRootProject() và closure { }, đây là cú pháp "command chain" của Groovy).
+stonecutter.create getRootProject() {
+    versions "1.20.1-fabric"
+}

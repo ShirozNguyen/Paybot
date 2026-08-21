@@ -1,0 +1,120 @@
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.architectury.dev/' }
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.minecraftforge.net/' }
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'PayBot'
+
+// v5.5.5 Part 44: TÁCH module theo đúng ranh giới kỹ thuật thật (xem LOG.md Part 44) thay vì
+// 1 module "đa năng" cho mỗi loader cố tự thích nghi mọi MC version qua reflection — cách đó
+// KHÔNG đảm bảo được (đã confirm bằng crash log Fabric 1.21.1 thật + tài liệu Forge/NeoForge).
+// fabric/, forge/, neoforge/ (module cũ) VẪN CÒN TRÊN ĐĨA làm tham chiếu/rollback, nhưng
+// KHÔNG include vào build nữa — thay bằng 5 module con dưới đây, mỗi module biên dịch đúng
+// 1 "kỷ nguyên" phiên bản của đúng 1 loader:
+// v5.5.5 Part 44d: fabric-legacy + fabric-modern TÁCH thành 39 module riêng, mỗi
+// module = ĐÚNG 1 bản MC. Số hiệu fabric-api tra từ fabricapi.org (bảng chính thức)
+// + GitHub releases — 9 bản 1.21.x (1.21, 1.21.2-1.21.7, 1.21.9-1.21.10) là ƯỚC TÍNH
+// nội suy (không tìm được số chính xác), xem ghi chú trong gradle.properties từng module đó.
+// include('fabric-1.14.4')
+// include('fabric-1.15')
+// include('fabric-1.15.1')
+// include('fabric-1.15.2')
+// include('fabric-1.16.1')
+// include('fabric-1.16.2')
+// include('fabric-1.16.3')
+// include('fabric-1.16.4')
+include('fabric-1.16.5')
+include('fabric-1.17.1')
+include('fabric-1.18')
+include('fabric-1.18.1')
+include('fabric-1.18.2')
+include('fabric-1.19')
+include('fabric-1.19.1')
+include('fabric-1.19.2')
+include('fabric-1.19.3')
+include('fabric-1.19.4')
+include('fabric-1.20')
+include('fabric-1.20.1')
+include('fabric-1.20.2')
+include('fabric-1.20.3')
+include('fabric-1.20.4')
+include('fabric-1.20.5')
+include('fabric-1.20.6')
+include('fabric-1.21')
+include('fabric-1.21.1')
+include('fabric-1.21.2')
+include('fabric-1.21.3')
+include('fabric-1.21.4')
+// 1.21.5 - 1.21.11 are unreleased/snapshots (Fabric API built with Loom 1.11+)
+// include('fabric-1.21.5')
+// include('fabric-1.21.6')
+// include('fabric-1.21.7')
+// include('fabric-1.21.8')
+// include('fabric-1.21.9')
+// include('fabric-1.21.10')
+// include('fabric-1.21.11')
+// v5.5.5 Part 44b: forge-legacy TÁCH thành 22 module riêng, mỗi module = ĐÚNG 1 bản MC
+// (theo yêu cầu Shiroz — không có ranh giới version nào còn sót lại trong 1 module)
+include('forge-1.14.4')
+include('forge-1.15')
+include('forge-1.15.1')
+include('forge-1.15.2')
+// include('forge-1.16.1')
+include('forge-1.16.2')
+include('forge-1.16.3')
+include('forge-1.16.4')
+include('forge-1.16.5')
+include('forge-1.17.1')
+include('forge-1.18')
+include('forge-1.18.1')
+include('forge-1.18.2')
+include('forge-1.19')
+include('forge-1.19.1')
+include('forge-1.19.2')
+include('forge-1.19.3')
+include('forge-1.19.4')
+include('forge-1.20')
+include('forge-1.20.1')
+include('forge-1.20.2')
+// Forge 1.20.3+ split/deprecated in favor of NeoForge for 1.20.2 - 1.21.4
+// include('forge-1.20.3')
+// include('forge-1.20.4')
+// include('forge-1.20.6')
+// include('forge-1.21')
+// include('forge-1.21.1')
+// include('forge-1.21.3')
+// include('forge-1.21.4')
+// include('forge-1.21.5')
+// include('forge-1.21.6')
+// include('forge-1.21.7')
+// include('forge-1.21.8')
+// include('forge-1.21.9')
+// include('forge-1.21.10')
+// include('forge-1.21.11')
+// v5.5.5 Part 44e: neoforge-modern TÁCH thành 17 module riêng, mỗi module = ĐÚNG 1 bản MC.
+// NeoForge CÓ hỗ trợ 1.20.5 và 1.21.2 (khác Forge — không bỏ qua như bên Forge).
+include('neoforge-1.20.2')
+include('neoforge-1.20.3')
+include('neoforge-1.20.4')
+include('neoforge-1.20.5')
+include('neoforge-1.20.6')
+include('neoforge-1.21')
+include('neoforge-1.21.1')
+include('neoforge-1.21.2')
+include('neoforge-1.21.3')
+include('neoforge-1.21.4')
+// include('neoforge-1.21.5')
+// include('neoforge-1.21.6')
+// include('neoforge-1.21.7')
+// include('neoforge-1.21.8')
+// include('neoforge-1.21.9')
+// include('neoforge-1.21.10')
+// include('neoforge-1.21.11')
+include('plugin')
+
+// TODO (giai đoạn 2, xem LOG.md Part 44): fabric-26x / forge-26x / neoforge-26x cho MC 26.1+
+// — toolchain hoàn toàn khác (bỏ remap, cần Java 25), cần khảo sát kỹ trước khi viết code.

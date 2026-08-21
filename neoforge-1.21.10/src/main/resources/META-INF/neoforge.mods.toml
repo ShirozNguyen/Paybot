@@ -1,0 +1,30 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+
+[[mods]]
+modId="paybot"
+version="${version}"
+displayName="PayBot"
+authors="TheRealShiroz"
+description="PayBot Mod Multi-Loader - Payment and Bank QR code integration for Minecraft."
+
+[[dependencies.paybot]]
+modId="neoforge"
+mandatory=true
+# v5.5.5 Part 44: siết đúng range NeoForge 1.21.x (đã confirm 21.1.248 chạy thật qua log
+# Shiroz gửi) — trước đây để "[1,)" (chấp nhận mọi bản) là quá lỏng, có thể khiến FML load
+# nhầm jar này trên 1 bản NeoForge không tương thích thật.
+versionRange="[21.10.1,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.paybot]]
+modId="minecraft"
+mandatory=true
+# v5.5.5 Part 44: module neoforge-modern phục vụ 1.20.2 - 1.21.11 (NeoForge không tồn tại
+# trước 1.20.1, và bản 1.20.1 chính NeoForge cũng khuyên dùng Forge thay thế). Bản 26.1+ sẽ
+# có module neoforge-26x riêng, chưa làm ở Part 44.
+versionRange="[1.21.10]"
+ordering="NONE"
+side="BOTH"

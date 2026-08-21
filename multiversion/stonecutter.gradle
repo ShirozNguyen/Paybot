@@ -1,0 +1,15 @@
+// multiversion/stonecutter.gradle — v5.5.5 [KHUNG STONECUTTER — GIAI ĐOẠN 1]
+// Controller script cho "tree" gốc — chạy trong ngữ cảnh rootProject, chia sẻ cấu hình
+// cho mọi "node" (bản) đã khai báo trong settings.gradle.
+//
+// ⚠️ Cùng mức rủi ro như settings.gradle — dựa trên đoạn trích tài liệu đã cache qua search,
+// CHƯA build-test thật. "stonecutter active" đánh dấu bản nào đang "mở" để code editor/IDE
+// hiển thị đúng (bản đang chọn để xem/sửa code), không nhất thiết là bản duy nhất build được —
+// nhưng ở Giai đoạn 1 chỉ có đúng 1 bản nên không thành vấn đề.
+
+plugins {
+    id 'dev.kikugie.stonecutter'
+}
+
+stonecutter active "1.20.1-fabric" /* [SC] DO NOT EDIT — dòng này do Stonecutter tự quản lý,
+                                        đổi bằng lệnh Gradle task "setActiveVersion", không sửa tay */

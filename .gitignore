@@ -1,0 +1,29 @@
+# Gradle build outputs
+.gradle/
+build/
+bin/
+*/bin/
+
+# Log and documentation files
+CHANGELOG.md
+LOG.md
+
+# Temporary and trash folders
+trash/
+done/
+
+# IDE configurations
+.idea/
+.vscode/
+*.iml
+
+# Compiled outputs and archives
+*.jar
+*.class
+*.zip
+*.tar.gz
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db

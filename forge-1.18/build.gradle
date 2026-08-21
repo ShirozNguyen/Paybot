@@ -1,0 +1,59 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+base {
+    archivesName = "PayBot-Mod-Forge-1.18"
+}
+
+configurations {
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = true
+    }
+    compileClasspath.extendsFrom shadowBundle
+    runtimeClasspath.extendsFrom shadowBundle
+}
+
+dependencies {
+    forge "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}"
+
+    // Direct shaded libraries for Forge & NeoForge
+    shadowBundle 'org.xerial:sqlite-jdbc:3.45.3.0'
+    shadowBundle 'com.mysql:mysql-connector-j:8.4.0'
+    shadowBundle 'com.zaxxer:HikariCP:5.1.0'
+    shadowBundle 'org.yaml:snakeyaml:2.2'
+    shadowBundle 'com.google.zxing:core:3.5.3'
+    shadowBundle 'com.google.zxing:javase:3.5.3'
+    shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching(["META-INF/mods.toml"]) {
+        expand "version": project.version
+    }
+}
+
+shadowJar {
+    exclude "architectury.common.json"
+    // v5.5.5 Part 44: FIX crash JPMS thật ('Modules org.slf4j and paybot export package
+    // org.slf4j.helpers to module forge') — HikariCP kéo theo slf4j-api, game đã có sẵn
+    // slf4j riêng, 2 module cùng khai báo chứa package -> Forge từ chối load. Loại trừ khỏi
+    // jar của mình, dùng thẳng slf4j có sẵn của game lúc runtime.
+    exclude "org/slf4j/**"
+
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = "dev-shadow"
+}
+
+remapJar {
+    input.set shadowJar.archiveFile
+    dependsOn shadowJar
+    archiveClassifier = null
+}
+
+jar {
+    archiveClassifier = "dev"
+}

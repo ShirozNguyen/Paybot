@@ -1,0 +1,130 @@
+plugins {
+    id 'dev.architectury.loom' version '1.7.435' apply false
+    id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
+}
+
+subprojects {
+    if (project.name != 'plugin') {
+        apply plugin: 'dev.architectury.loom'
+
+        // v5.5.5 Part 44: mÃ¡Â»â€”i module version-tÃƒÂ¡ch riÃƒÂªng tÃ¡Â»Â± khai bÃƒÂ¡o minecraft_version cÃ¡Â»Â§a NÃƒâ€œ
+        // trong gradle.properties riÃƒÂªng (khÃƒÂ´ng dÃƒÂ¹ng chung rootProject.minecraft_version nÃ¡Â»Â¯a) Ã¢â‚¬â€
+        // Ã„â€˜ÃƒÂ¢y chÃƒÂ­nh lÃƒÂ  thay Ã„â€˜Ã¡Â»â€¢i cÃ¡Â»â€˜t lÃƒÂµi Ã„â€˜Ã¡Â»Æ’ mÃ¡Â»â€”i jar biÃƒÂªn dÃ¡Â»â€¹ch/remap Ã„â€˜ÃƒÂºng 1 bÃ¡ÂºÂ£n MC thÃ¡ÂºÂ­t, khÃƒÂ´ng
+        // cÃƒÂ²n tÃƒÂ¬nh trÃ¡ÂºÂ¡ng "biÃƒÂªn dÃ¡Â»â€¹ch nhÃ¡ÂºÂ¯m 1.20.1 nhÃ†Â°ng chÃ¡ÂºÂ¡y trÃƒÂªn 1.21.1" nhÃ†Â° trÃ†Â°Ã¡Â»â€ºc Part 44.
+        dependencies {
+            minecraft "com.mojang:minecraft:${project.minecraft_version}"
+            mappings loom.officialMojangMappings()
+        }
+    }
+}
+
+allprojects {
+    apply plugin: 'java'
+
+    version = rootProject.mod_version
+    group = rootProject.mod_group
+
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.architectury.dev/' }
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.quiltmc.org/repository/release/' }
+        maven { url = 'https://maven.minecraftforge.net/' }
+        maven { url = 'https://maven.neoforged.net/releases/' }
+        maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
+        def mc = project.hasProperty('minecraft_version') ? project.property('minecraft_version').toString() : '1.20.1'
+        if (mc.startsWith('1.20.5') || mc.startsWith('1.20.6') || mc.startsWith('1.21')) {
+            options.release = 21
+        } else {
+            options.release = 17
+        }
+    }
+}
+
+// v5.5.5 Part 44b: forge-legacy tÃƒÂ¡ch thÃƒÂ nh 22 module riÃƒÂªng Ã¢â‚¬â€  liÃ¡Â»â€¡t kÃƒÂª danh sÃƒÂ¡ch 1 lÃ¡ÂºÂ§n, dÃƒÂ¹ng
+// vÃƒÂ²ng lÃ¡ÂºÂ·p thay vÃƒÂ¬ lÃ¡ÂºÂ·p lÃ¡ÂºÂ¡i 22 dÃƒÂ²ng gÃ¡ÂºÂ§n giÃ¡Â»â€˜ng hÃ¡Â»â€¡t nhau.
+def fabricLegacyVersions = [
+    "1.14.4", "1.15", "1.15.1", "1.15.2",
+    "1.16.1", "1.16.2", "1.16.3", "1.16.4", "1.16.5", "1.17.1",
+    "1.18", "1.18.1", "1.18.2", "1.19", "1.19.1", "1.19.2", "1.19.3", "1.19.4",
+    "1.20", "1.20.1", "1.20.2", "1.20.3", "1.20.4"
+]
+def fabricModernVersions = [
+    "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5",
+    "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11"
+]
+def forgeLegacyVersions = [
+    "1.14.4", "1.15", "1.15.1", "1.15.2",
+    "1.16.1", "1.16.2", "1.16.3", "1.16.4", "1.16.5", "1.17.1",
+    "1.18", "1.18.1", "1.18.2", "1.19", "1.19.1", "1.19.2", "1.19.3", "1.19.4",
+    "1.20", "1.20.1"
+]
+
+def forgeModernVersions = [
+    "1.20.2", "1.20.3", "1.20.4", "1.20.6", "1.21", "1.21.1",
+    "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8",
+    "1.21.9", "1.21.10", "1.21.11"
+]
+
+def neoforgeVersions = [
+    "1.20.2", "1.20.3", "1.20.4", "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2",
+    "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11"
+]
+
+task copyToDone {
+    subprojects.each { sp ->
+        afterEvaluate {
+            if (sp.tasks.findByName('remapJar')) {
+                dependsOn "${sp.path}:remapJar"
+            } else if (sp.tasks.findByName('jar')) {
+                dependsOn "${sp.path}:jar"
+            }
+        }
+    }
+
+    def doneDir = file("C:/Users/Administrator/Documents/Works/done")
+    doLast {
+        delete doneDir
+
+        def fabricDir = new File(doneDir, "Fabric_Quilt")
+        def forgeDir = new File(doneDir, "Forge")
+        def neoForgeDir = new File(doneDir, "NeoForge")
+        def pluginsDir = new File(doneDir, "Plugins")
+
+        fabricDir.mkdirs()
+        forgeDir.mkdirs()
+        neoForgeDir.mkdirs()
+        pluginsDir.mkdirs()
+
+        subprojects.each { sp ->
+            def libsDir = sp.layout.buildDirectory.dir("libs").get().asFile
+            if (libsDir.exists()) {
+                libsDir.listFiles().each { file ->
+                    if (file.name.endsWith('.jar') && !file.name.endsWith('-dev.jar') && !file.name.endsWith('-shadow.jar') && !file.name.endsWith('-sources.jar')) {
+                        if (sp.name.startsWith('fabric-')) {
+                            copy { from file; into fabricDir }
+                        } else if (sp.name.startsWith('forge-')) {
+                            copy { from file; into forgeDir }
+                        } else if (sp.name.startsWith('neoforge-')) {
+                            copy { from file; into neoForgeDir }
+                        } else if (sp.name == 'plugin') {
+                            copy { from file; into pluginsDir }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+build.finalizedBy copyToDone

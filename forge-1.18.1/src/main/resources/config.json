@@ -1,0 +1,78 @@
+{
+  "database_type": "SQLite",
+  "mysql": {
+    "host": "localhost",
+    "port": 3306,
+    "database": "paybot",
+    "username": "root",
+    "password": "",
+    "useSSL": false,
+    "pool_size": 10
+  },
+  "server_id": "",
+  "guild_id": "",
+  "bot_url": "",
+  "plugin_callback_url": "",
+  "auto_config_sync": true,
+  "bot_cert_fingerprint": "",
+  "bot_cert_strict_pin": false,
+  "plugin_port": 25580,
+  "vietqr_template": "qr_only",
+  "transfer_content": {
+    "prefix": "NT",
+    "require_underscore": false,
+    "include_date_prefix": false,
+    "check_duplicate_orders": true,
+    "code_length": 12,
+    "code_mode": 0
+  },
+  "order_retention": {
+    "bank_days": -1,
+    "card_days": -1
+  },
+  "qr_show_info_overlay": false,
+  "sepay_api": {
+    "enabled": false,
+    "sandbox": false,
+    "api_token": "",
+    "bank_account_number": "",
+    "bank_short_name": "",
+    "bank_full_name": "",
+    "bank_bin": "",
+    "account_holder_name": "",
+    "last_transaction_id": 0,
+    "poll_interval_seconds": 10
+  },
+  "quick_amounts": [10000, 20000, 50000, 100000, 200000, 500000, 1000000],
+  "Rewards_Card_Mode": 1,
+  "Rewards_Bank_Mode": 1,
+  "Reward_Firework": true,
+  "Reward_Sound": true,
+  "Reward_Notification": true,
+  "card_api_sites": {
+    "thesieure": { "com": { "partner_id": "", "partner_key": "", "channel_id": "" } },
+    "gachthepro": { "com": { "partner_id": "", "partner_key": "", "channel_id": "" } },
+    "gachthefast": { "com": { "partner_id": "", "partner_key": "", "channel_id": "" } },
+    "gachthe1s": { "com": { "partner_id": "", "partner_key": "", "channel_id": "" } }
+  },
+  "reward_command": "",
+  "Max_Notifications": 20,
+  "notifications": {
+    "qr_created": true,
+    "qr_create_fail": true,
+    "card_submitted": true,
+    "card_submit_fail": true,
+    "card_api_error": true,
+    "sepay_error": true,
+    "bank_payment_received": true,
+    "approve_fail": true,
+    "reward_invalid": true,
+    "reward_dispatch": true,
+    "reward_queued_offline": true,
+    "firework_fail": true,
+    "order_expired": true,
+    "bot_disconnect": true,
+    "http_error": true,
+    "update_available": true
+  }
+}

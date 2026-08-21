@@ -1,0 +1,70 @@
+// neoforge-modern/build.gradle — v5.5.5 Part 44
+//
+// MC 1.20.2 - 1.21.11. Từ 1.20.2, NeoForge tách hẳn khỏi coordinate "net.neoforged:forge"
+// (chỉ dùng cho giai đoạn chuyển tiếp ở 1.20.1) sang coordinate CHÍNH THỨC riêng
+// "net.neoforged:neoforge" — Architectury Loom dùng config `neoForge` (F hoa) cho coordinate
+// mới này, khác hẳn config `forge` dùng ở forge-legacy/forge-modern.
+//
+// Biên dịch nhắm ĐÚNG 1.21.1 — khớp NGUYÊN VĂN log Shiroz gửi ("NeoForge mod loading,
+// version 21.1.248, for MC 1.21.1"). Trước đây (module neoforge/ cũ) lỡ dùng coordinate
+// 1.20.1 ("net.neoforged:forge:1.20.1-47.1.106") khiến NeoForge thật từ chối load thẳng
+// ("File ... is for Minecraft Forge or an older version of NeoForge, and cannot be loaded")
+// — đây chính là lỗi Part 44 sửa.
+
+plugins {
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+base {
+    archivesName = "PayBot-Mod-NeoForge-1.21.7"
+}
+
+configurations {
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = true
+    }
+    compileClasspath.extendsFrom shadowBundle
+    runtimeClasspath.extendsFrom shadowBundle
+}
+
+dependencies {
+    neoForge "net.neoforged:neoforge:${project.neoforge_version}"
+
+    // Cùng danh sách thư viện shade như forge-legacy/forge-modern (đảm bảo nhất quán)
+    shadowBundle 'org.xerial:sqlite-jdbc:3.45.3.0'
+    shadowBundle 'com.mysql:mysql-connector-j:8.4.0'
+    shadowBundle 'com.zaxxer:HikariCP:5.1.0'
+    shadowBundle 'org.yaml:snakeyaml:2.2'
+    shadowBundle 'com.google.zxing:core:3.5.3'
+    shadowBundle 'com.google.zxing:javase:3.5.3'
+    shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching(["META-INF/neoforge.mods.toml"]) {
+        expand "version": project.version
+    }
+}
+
+shadowJar {
+    exclude "architectury.common.json"
+    // v5.5.5 Part 44: loại trừ slf4j đóng gói theo HikariCP (xem giải thích ở forge-legacy) —
+    // NeoForge cũng chạy JPMS chặt như Forge nên đây LÀ lỗi thật, không chỉ phòng ngừa.
+    exclude "org/slf4j/**"
+
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = "dev-shadow"
+}
+
+remapJar {
+    input.set shadowJar.archiveFile
+    dependsOn shadowJar
+    archiveClassifier = null
+}
+
+jar {
+    archiveClassifier = "dev"
+}
