@@ -53,8 +53,13 @@ public final class ReloadCommand implements CommandExecutor {
             plugin.getLogger().info("[PayBot] Admin " + sender.getName() + " đã thực hiện /paybot reload thành công.");
         } catch (final Exception e) {
             sender.sendMessage(NapTienPlugin.f("§c[PayBot] §fLỗi khi reload cấu hình: " + e.getMessage()));
-            plugin.getLogger().severe("[PayBot] Lỗi khi reload config: " + e.getMessage());
-            e.printStackTrace();
+            // FIX [audit]: e.printStackTrace() in thẳng ra System.err, KHÔNG đi qua
+            // plugin.getLogger() như phần còn lại của codebase — trên server có nhiều plugin,
+            // dòng stacktrace này lẫn vào log chung không có tiền tố "[PayBot]"/timestamp nhất
+            // quán, khó lọc/đối chiếu khi debug. Log qua logger với cùng mức SEVERE, kèm
+            // exception đầy đủ (logger tự in stacktrace) để nhất quán với mọi chỗ khác trong
+            // codebase (vd DatabaseManager dùng plugin.getLogger().log(Level.SEVERE, msg, e)).
+            plugin.getLogger().log(java.util.logging.Level.SEVERE, "[PayBot] Reload thất bại — stacktrace:", e);
         }
         return true;
     }

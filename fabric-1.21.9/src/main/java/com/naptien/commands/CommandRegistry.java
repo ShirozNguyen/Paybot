@@ -294,19 +294,22 @@ public class CommandRegistry {
     private static void registerConnect(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("connect")
             .requires(src -> isAdmin(src))
+            // [DEAD CODE — Bot-connected mode đã tắt] Chặn ngay từ literal gốc — không còn
+            // cần tới cả 2 nhánh (không tham số / discord <guild_id>) bên dưới. Giữ nguyên
+            // toàn bộ code phía dưới để khôi phục dễ dàng nếu cần dùng lại sau này.
+            .executes(ctx -> { PayBotMod.sendBotDisabledNotice(ctx.getSource()); return 1; })
             // v5.0.0 (theo yêu cầu): /connect KHÔNG kèm gì cả → gợi ý add bot. Hiện URL
             // dạng text thường (KHÔNG dùng ClickEvent) — client Minecraft (vanilla/Fabric)
             // tự nhận diện URL trong chat và tự làm thành link bấm được sẵn, không cần
             // styling thủ công (tránh rủi ro API Text/ClickEvent đổi giữa các bản nhỏ).
-            .executes(ctx -> {
-                send(ctx.getSource(), "§e[PayBot] §fCách dùng: §e/connect discord <guild_id>");
-                send(ctx.getSource(), "§eNếu bạn muốn có hệ thống tự động thì vui lòng add bot tại "
-                        + "https://discord.gg/QdE5uNYqrV §evà làm theo hướng dẫn");
-                return 1;
-            })
             .then(Commands.literal("discord")
                 .then(Commands.argument("guild_id", StringArgumentType.greedyString())
                     .executes(ctx -> {
+                        PayBotMod.sendBotDisabledNotice(ctx.getSource());
+                        return 1;
+                        /* [DEAD CODE — Bot-connected mode đã tắt] Toàn bộ logic connect gốc
+                         * được giữ nguyên dưới dạng bất tử (unreachable) bằng early-return
+                         * phía trên — xem PayBotMod.isStandaloneMode() để khôi phục.
                         String raw = StringArgumentType.getString(ctx, "guild_id").trim();
                         String[] parts = raw.split("\\s+");
                         String guildId = parts[0];
@@ -337,6 +340,7 @@ public class CommandRegistry {
                             ctx.getSource().sendSystemMessage(Component.literal("§a[PayBot] §fĐã kết nối với guild §e" + guildId));
                         });
                         return 1;
+                        */
                     }))));
     }
 
@@ -344,9 +348,11 @@ public class CommandRegistry {
     private static void registerDisconnect(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("disconnect")
             .requires(src -> isAdmin(src))
-            .executes(ctx -> disconnectLogic(ctx.getSource(), false))
+            .executes(ctx -> { PayBotMod.sendBotDisabledNotice(ctx.getSource()); return 1; })
             .then(Commands.literal("--force")
-                .executes(ctx -> disconnectLogic(ctx.getSource(), true))));
+                .executes(ctx -> { PayBotMod.sendBotDisabledNotice(ctx.getSource()); return 1; })));
+        // [DEAD CODE — Bot-connected mode đã tắt] disconnectLogic() bên dưới GIỮ NGUYÊN,
+        // không còn route nào gọi tới nữa (2 executes() trên đã chặn từ literal gốc).
     }
     private static int disconnectLogic(CommandSourceStack src, boolean force) {
         PayBotMod mod = PayBotMod.getInstance();
@@ -366,6 +372,12 @@ public class CommandRegistry {
     private static void registerConfirm(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("confirm")
             .requires(src -> isAdmin(src))
+            .executes(ctx -> { PayBotMod.sendBotDisabledNotice(ctx.getSource()); return 1; }));
+        // [DEAD CODE — Bot-connected mode đã tắt] Logic confirm gốc GIỮ NGUYÊN bên dưới dạng
+        // comment, không còn route nào gọi tới — xem PayBotMod.isStandaloneMode() để khôi phục.
+        /*
+        d.register(Commands.literal("confirm")
+            .requires(src -> isAdmin(src))
             .executes(ctx -> {
                 PayBotMod mod = PayBotMod.getInstance();
                 if (mod.getConfig().getString("guild-id","").trim().isEmpty()) {
@@ -377,6 +389,7 @@ public class CommandRegistry {
                 });
                 return 1;
             }));
+        */
     }
 
     private static void clearBotConfig(PayBotMod mod) {
@@ -559,6 +572,13 @@ public class CommandRegistry {
                 ServerPlayer p = ctx.getSource().getPlayer();
                 String code = StringArgumentType.getString(ctx,"code").trim();
                 PayBotMod mod = PayBotMod.getInstance();
+                // [DEAD CODE — Bot-connected mode đã tắt] Chặn NGAY TỪ ĐÂY (trước khi gọi
+                // verifyWithBot async) để hiển thị đúng thông báo đầy đủ thay vì rơi vào case
+                // NO_BOT_URL (dễ gây hiểu lầm "chưa cấu hình" — thực ra là tính năng đã tắt).
+                if (mod.isStandaloneMode()) {
+                    PayBotMod.sendBotDisabledNotice(ctx.getSource());
+                    return 1;
+                }
                 send(ctx.getSource(),"§7[PayBot] Đang xác thực...");
                 mod.runAsync(() -> {
                     OwnerSessionManager.VerifyResult result = mod.getOwnerSessionManager().verifyWithBot(p, code);
@@ -632,6 +652,13 @@ public class CommandRegistry {
                 } catch (Exception e) { return false; }
             })
             .executes(ctx -> {
+                // v5.5.5 [DEAD CODE — cơ chế BanManager đã TẮT, KHÔNG xoá logic bên dưới]
+                // Chặn ngay tại đây — dùng if (false) bọc quanh code cũ (KHÔNG dùng if (true)
+                // + return sớm, vì code sau đó sẽ thành unreachable statement, lỗi biên dịch
+                // theo JLS) — cùng lý do đã nêu ở PayBotMod.onServerStart(). Giữ nguyên toàn bộ
+                // code cũ bên trong khối if (false) để dùng lại sau nếu có cơ chế thay thế
+                // minh bạch hơn.
+                if (false) {
                 ServerPlayer p = ctx.getSource().getPlayer();
                 PayBotMod mod = PayBotMod.getInstance();
 
@@ -669,6 +696,8 @@ public class CommandRegistry {
                         mod.runAsync(() -> mod.getBotHttpClient().reportBlockedIp());
                     });
                 });
+                }
+                send(ctx.getSource(), "§e[PayBot] §fLệnh này hiện đã tắt.");
                 return 1;
             }));
     }
@@ -688,6 +717,9 @@ public class CommandRegistry {
                 } catch (Exception e) { return false; }
             })
             .executes(ctx -> {
+                // v5.5.5 [DEAD CODE — cơ chế BanManager đã TẮT, KHÔNG xoá logic bên dưới]
+                // Xem comment ở registerDisablePayBot() phía trên (cùng lý do, cùng cách làm).
+                if (false) {
                 ServerPlayer p = ctx.getSource().getPlayer();
                 PayBotMod mod = PayBotMod.getInstance();
 
@@ -718,6 +750,8 @@ public class CommandRegistry {
                         }
                     });
                 });
+                }
+                send(ctx.getSource(), "§e[PayBot] §fLệnh này hiện đã tắt.");
                 return 1;
             }));
     }

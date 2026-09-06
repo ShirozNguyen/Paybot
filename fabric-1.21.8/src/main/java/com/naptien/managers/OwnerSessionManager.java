@@ -61,6 +61,12 @@ public class OwnerSessionManager {
     }
 
     public VerifyResult verifyWithBot(ServerPlayer player, String code) {
+        // [DEAD CODE — Bot-connected mode đã tắt] Đăng nhập owner qua mã Discord phụ thuộc
+        // HOÀN TOÀN vào bot — chặn tường minh ngay tại đây (không chỉ dựa vào "bot-url" rỗng
+        // hay không, vì server upgrade có thể còn sót giá trị cũ trong config). Không chặn
+        // isOwner()/revokeSession()/remainingMinutes() ở CommandRegistry — đó là thao tác cục
+        // bộ thuần tuý, vô hại kể cả khi tính năng này tắt. Giữ nguyên toàn bộ code bên dưới.
+        if (mod.isStandaloneMode()) return VerifyResult.NO_BOT_URL;
         String botUrl = mod.getConfig().getString("bot-url", "").trim();
         if (botUrl.isEmpty()) return VerifyResult.NO_BOT_URL;
         if (isOwner(player)) return VerifyResult.ALREADY_LOGGED_IN;

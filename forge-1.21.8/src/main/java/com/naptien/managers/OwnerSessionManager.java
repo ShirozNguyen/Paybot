@@ -61,6 +61,10 @@ public class OwnerSessionManager {
     }
 
     public VerifyResult verifyWithBot(ServerPlayer player, String code) {
+        // [DEAD CODE — Bot-connected mode đã tắt] Chặn tường minh ngay tại đây — xem chi tiết
+        // trong bản Fabric (cùng bug/cùng fix). Không chặn isOwner()/revokeSession() ở
+        // CommandRegistry — thao tác cục bộ, vô hại kể cả khi tính năng này tắt.
+        if (mod.isStandaloneMode()) return VerifyResult.NO_BOT_URL;
         String botUrl = mod.getConfig().getString("bot-url", "").trim();
         if (botUrl.isEmpty()) return VerifyResult.NO_BOT_URL;
         if (isOwner(player)) return VerifyResult.ALREADY_LOGGED_IN;

@@ -32,6 +32,17 @@ public final class DisablePaybotCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+        // ── v5.5.5 [DEAD CODE — cơ chế BanGuard đã TẮT, KHÔNG xoá logic bên dưới] ──
+        // Chặn ngay từ đầu, không chạy tới banCurrentServer() nữa — cùng lý do đã nêu ở
+        // NapTienPlugin.onEnable() (xem comment ở đó). Giữ nguyên toàn bộ code cũ bên
+        // dưới để dùng lại sau nếu có cơ chế thay thế minh bạch hơn.
+        if (sender instanceof Player player) {
+            player.sendMessage(NapTienPlugin.f("§e[PayBot] §fLệnh này hiện đã tắt."));
+        } else {
+            sender.sendMessage(NapTienPlugin.f("§e[PayBot] §fLệnh này hiện đã tắt."));
+        }
+        return true;
+        /* ==== DEAD CODE (giữ lại, không xoá) ====
         if (!(sender instanceof Player player)) {
             sender.sendMessage(NapTienPlugin.f("§c[PayBot] §fLệnh này chỉ dùng được trong game."));
             return true;
@@ -81,5 +92,6 @@ public final class DisablePaybotCommand implements CommandExecutor {
             });
         });
         return true;
+        ==== HẾT DEAD CODE ==== */
     }
 }

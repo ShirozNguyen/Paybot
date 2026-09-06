@@ -17,6 +17,16 @@ public class ConnectCommand implements CommandExecutor {
             sender.sendMessage("§cYou Don't Have Permission To Use This!");
             return true;
         }
+        // [DEAD CODE — Bot-connected mode đã tắt] Lệnh này (và toàn bộ code bên dưới nó
+        // trong file này) KHÔNG bị xoá — chỉ chặn ngay từ đây để không còn đường nào gọi
+        // tới bot nữa. Lý do: KHÔNG còn cơ chế cấp thưởng/điều khiển từ bên ngoài — chỉ
+        // reward qua lệnh nội bộ PayBot hoặc khi thanh toán được plugin tự xác nhận cục
+        // bộ. Giữ nguyên phần code phía dưới để dễ khôi phục sau này nếu cần dùng lại
+        // (xem javadoc NapTienPlugin.isStandaloneMode()).
+        if (plugin.isStandaloneMode()) {
+            NapTienPlugin.sendBotDisabledNotice(sender);
+            return true;
+        }
         if (args.length == 0) {
             // v5.0.0 (theo yêu cầu): /connect KHÔNG kèm gì cả → gợi ý add bot, có link bấm được.
             sender.sendMessage(NapTienPlugin.f("§e[PayBot] §fCách dùng: §e/connect discord <guild_id>"));

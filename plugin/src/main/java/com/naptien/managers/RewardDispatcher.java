@@ -94,6 +94,12 @@ public final class RewardDispatcher {
             }
             return mode;
         } catch (Exception e) {
+            // v5.5.5 Part 52 [BUG NHỎ — audit]: TRƯỚC ĐÂY return 1 im lặng khi rawStr KHÔNG
+            // parse được số nào cả (vd admin gõ nhầm "abc"/"2x2") — ngược đời so với nhánh phía
+            // trên: giá trị CHỈ LẺ SỐ (vd "2.5", vẫn parse được) thì CÓ cảnh báo, còn giá trị SAI
+            // HẲN ĐỊNH DẠNG (nặng hơn) lại KHÔNG cảnh báo gì. Thêm cảnh báo cho nhất quán.
+            plugin.getLogger().warning("[PayBot] CẢNH BÁO: " + key + " có giá trị KHÔNG hợp lệ '"
+                    + raw + "' (không parse được thành số), đã tự động dùng mặc định 1x.");
             return 1;
         }
     }
@@ -267,7 +273,16 @@ public final class RewardDispatcher {
                 Bukkit.getPluginManager().callEvent(new com.naptien.events.PayBotTopupEvent(
                         target.getName(), parsedVnd, type != null ? type.toUpperCase() : "BANK", invoiceId
                 ));
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException e) {
+                // v5.5.5 Part 52 [BUG NHỎ — audit]: TRƯỚC ĐÂY im lặng hoàn toàn. Reward THẬT SỰ
+                // đã được phát ở trên (không mất tiền/reward) — nhưng ghi nhận thống kê tổng nạp
+                // (TopupStatsManager, dùng cho PlaceholderAPI) VÀ event PayBotTopupEvent (addon
+                // khác có thể lắng nghe) bị bỏ qua im lặng, tạo khoảng trống thống kê không giải
+                // thích được nếu admin sau này thắc mắc sao tổng nạp không khớp số đơn đã duyệt.
+                plugin.getLogger().warning("[PayBot] deliverNowSync: denomVnd='" + denomVnd
+                        + "' không parse được — BỎ QUA ghi thống kê topup + PayBotTopupEvent cho "
+                        + target.getName() + " (reward vẫn đã phát bình thường, chỉ thống kê bị thiếu).");
+            }
         }
     }
 

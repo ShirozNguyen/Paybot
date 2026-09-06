@@ -68,8 +68,24 @@ public class DatabaseManager {
             return future.get(20, java.util.concurrent.TimeUnit.SECONDS);
         } catch (java.util.concurrent.TimeoutException e) {
             future.cancel(true);
+            // v5.5.5 Part 52 [BUG — audit fallback/hidden-except]: TRƯỚC ĐÂY return false hoàn
+            // toàn im lặng ở đây. Hậu quả: tryConnectMySQLDirect() có logging rất chi tiết phân
+            // biệt rõ nguyên nhân (sai host/port/user/pass vs unknown database vs lỗi khác) ở
+            // các dòng phía trong, NHƯNG timeout 20s xảy ra ở TẦNG NGOÀI này lại chặn đứng toàn
+            // bộ logging đó (future bị cancel trước khi kịp log) — admin chỉ thấy thông báo
+            // chung chung "Kiểm tra lại mục mysql trong config.yml" dù nguyên nhân thật là
+            // TIMEOUT MẠNG (cần kiểm tra firewall/kết nối mạng/MySQL có đang chạy không — hướng
+            // xử lý khác hẳn "sai config").
+            plugin.getLogger().log(Level.SEVERE, "[PayBot] Kết nối MySQL bị TIMEOUT sau 20 giây — "
+                    + "khả năng cao do firewall chặn, MySQL server không chạy, hoặc mạng có vấn đề "
+                    + "(KHÁC với lỗi sai username/password/database — đó sẽ báo lỗi ngay, không timeout).");
             return false;
         } catch (Exception e) {
+            // Cùng lý do trên — log rõ thay vì nuốt im lặng, dù đây là nhánh hiếm gặp (lỗi ở
+            // tầng Future/Executor, không phải lỗi SQL thông thường đã được log trong
+            // tryConnectMySQLDirect()).
+            plugin.getLogger().log(Level.SEVERE, "[PayBot] Lỗi không xác định khi thử kết nối MySQL "
+                    + "(executor/future): " + e.getMessage(), e);
             return false;
         } finally {
             executor.shutdownNow();
@@ -807,7 +823,18 @@ public class DatabaseManager {
                 return rs.next();
             }
         } catch (SQLException e) {
-            return false;
+            // v5.5.5 Part 52 [BUG — audit fallback/hidden-except]: TRƯỚC ĐÂY return false (=
+            // "chưa tồn tại") hoàn toàn im lặng khi lỗi SQL — đây là fail-OPEN cho 1 hàm chống
+            // TRÙNG MÃ NẠP, sai hướng: nếu DB trục trặc đúng lúc kiểm tra, code coi mã ngẫu
+            // nhiên vừa sinh là "chắc chắn chưa dùng" dù thực ra KHÔNG BIẾT — rủi ro (dù hiếm)
+            // sinh trùng mã giao dịch, khiến chuyển khoản thật bị gán nhầm đơn. Đổi fail-CLOSED
+            // (coi như "có thể trùng") — caller duy nhất (TransferContentGenerator) đã có sẵn
+            // vòng lặp thử lại tới 100 lần nên đổi hướng này không tốn thêm chi phí thật, chỉ
+            // khiến vòng lặp thử thêm 1 mã khác thay vì liều dùng mã chưa chắc chắn.
+            plugin.getLogger().log(Level.WARNING, "[PayBot] hasBankOrder(" + invoiceId
+                    + ") lỗi SQL khi kiểm tra trùng mã — coi như CÓ THỂ trùng để an toàn: "
+                    + e.getMessage(), e);
+            return true;
         }
     }
 
@@ -952,8 +979,6 @@ public class DatabaseManager {
         }
         return 0;
     }
-
-    // ─── Offline Rewards CRUD ─────────────────────────────────────────────────
 
     // ─── Offline Rewards CRUD ─────────────────────────────────────────────────
 
@@ -1513,6 +1538,14 @@ public class DatabaseManager {
             boolean ssl = cfg.getBoolean("mysql.useSSL", false);
             return formatDbConfigJson(use, host, port, db, user, pass, ssl);
         } catch (Exception e) {
+            // v5.5.5 Part 52 [BUG — audit fallback/hidden-except]: TRƯỚC ĐÂY return "{}" hoàn
+            // toàn im lặng. Hậu quả: đây chính là JSON được ghi vào file chia sẻ nội bộ cho
+            // PayBotPlusPlus đọc (đặc tả bảo mật Phần I, Part 46) — nếu method này lỗi, addon
+            // sẽ nhận file rỗng, không có host/user/pass để kết nối, và KHÔNG CÓ BẤT KỲ DẤU VẾT
+            // nào trong log PayBot để admin lần ra nguyên nhân (chỉ thấy addon báo "không kết
+            // nối được DB" mà không biết vì sao).
+            plugin.getLogger().log(Level.SEVERE, "[PayBot] getDbConfigJson() lỗi khi build JSON "
+                    + "chia sẻ cho PayBotPlusPlus — addon sẽ nhận file config RỖNG: " + e.getMessage(), e);
             return "{}";
         }
     }

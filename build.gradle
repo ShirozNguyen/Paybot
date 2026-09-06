@@ -4,13 +4,18 @@ plugins {
 }
 
 subprojects {
-    if (project.name != 'plugin') {
+    // v5.5.5 Part 48: loại trừ thêm module có "-26." trong tên (fabric-26.1, neoforge-26.1, ...).
+    // Lý do: dev.architectury.loom 1.7.435 (khai báo ở trên) xác nhận KHÔNG chạy được với MC 26.1+
+    // (GitHub issue architectury-loom#328 — crash vì cố tìm mapping trong khi 26.1+ không obfuscation
+    // nên không còn mapping nào để tìm). Các module 26.x tự áp dụng plugin Loom/ModDev/ForgeGradle
+    // riêng ngay trong build.gradle của chính module đó — xem fabric-26.1/build.gradle.
+    if (project.name != 'plugin' && !project.name.contains('-26.')) {
         apply plugin: 'dev.architectury.loom'
 
-        // v5.5.5 Part 44: mÃ¡Â»â€”i module version-tÃƒÂ¡ch riÃƒÂªng tÃ¡Â»Â± khai bÃƒÂ¡o minecraft_version cÃ¡Â»Â§a NÃƒâ€œ
-        // trong gradle.properties riÃƒÂªng (khÃƒÂ´ng dÃƒÂ¹ng chung rootProject.minecraft_version nÃ¡Â»Â¯a) Ã¢â‚¬â€
-        // Ã„â€˜ÃƒÂ¢y chÃƒÂ­nh lÃƒÂ  thay Ã„â€˜Ã¡Â»â€¢i cÃ¡Â»â€˜t lÃƒÂµi Ã„â€˜Ã¡Â»Æ’ mÃ¡Â»â€”i jar biÃƒÂªn dÃ¡Â»â€¹ch/remap Ã„â€˜ÃƒÂºng 1 bÃ¡ÂºÂ£n MC thÃ¡ÂºÂ­t, khÃƒÂ´ng
-        // cÃƒÂ²n tÃƒÂ¬nh trÃ¡ÂºÂ¡ng "biÃƒÂªn dÃ¡Â»â€¹ch nhÃ¡ÂºÂ¯m 1.20.1 nhÃ†Â°ng chÃ¡ÂºÂ¡y trÃƒÂªn 1.21.1" nhÃ†Â° trÃ†Â°Ã¡Â»â€ºc Part 44.
+        // v5.5.5 Part 44: mỗi module version-tách riêng tự khai báo minecraft_version của Nó
+        // trong gradle.properties riêng (không dùng chung rootProject.minecraft_version nữa) —
+        // đây chính là thay đổi cốt lõi để mỗi jar biên dịch/remap đúng 1 bản MC thật, không
+        // còn tình trạng "biên dịch nhắm 1.20.1 nhưng chạy trên 1.21.1" như trước Part 44.
         dependencies {
             minecraft "com.mojang:minecraft:${project.minecraft_version}"
             mappings loom.officialMojangMappings()
@@ -43,7 +48,12 @@ allprojects {
     tasks.withType(JavaCompile) {
         options.encoding = 'UTF-8'
         def mc = project.hasProperty('minecraft_version') ? project.property('minecraft_version').toString() : '1.20.1'
-        if (mc.startsWith('1.20.5') || mc.startsWith('1.20.6') || mc.startsWith('1.21')) {
+
+        // v5.5.5 Part 48: thêm nhánh 26.x — trước đây chuỗi "26.1" không khớp bất kỳ điều kiện
+        // nào bên dưới nên sẽ rơi xuống else -> release 17, sai hoàn toàn.
+        if (mc.startsWith('26.')) {
+            options.release = 25
+        } else if (mc.startsWith('1.20.5') || mc.startsWith('1.20.6') || mc.startsWith('1.21')) {
             options.release = 21
         } else {
             options.release = 17
@@ -51,18 +61,20 @@ allprojects {
     }
 }
 
-// v5.5.5 Part 44b: forge-legacy tÃƒÂ¡ch thÃƒÂ nh 22 module riÃƒÂªng Ã¢â‚¬â€  liÃ¡Â»â€¡t kÃƒÂª danh sÃƒÂ¡ch 1 lÃ¡ÂºÂ§n, dÃƒÂ¹ng
-// vÃƒÂ²ng lÃ¡ÂºÂ·p thay vÃƒÂ¬ lÃ¡ÂºÂ·p lÃ¡ÂºÂ¡i 22 dÃƒÂ²ng gÃ¡ÂºÂ§n giÃ¡Â»â€˜ng hÃ¡Â»â€¡t nhau.
+// v5.5.5 Part 44b: forge-legacy tách thành 22 module riêng, liệt kê danh sách 1 lần,
+ // dùng vòng lặp thay vì lặp lại 22 dòng gần giống hệt nhau.
 def fabricLegacyVersions = [
     "1.14.4", "1.15", "1.15.1", "1.15.2",
     "1.16.1", "1.16.2", "1.16.3", "1.16.4", "1.16.5", "1.17.1",
     "1.18", "1.18.1", "1.18.2", "1.19", "1.19.1", "1.19.2", "1.19.3", "1.19.4",
     "1.20", "1.20.1", "1.20.2", "1.20.3", "1.20.4"
 ]
+
 def fabricModernVersions = [
     "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5",
     "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11"
 ]
+
 def forgeLegacyVersions = [
     "1.14.4", "1.15", "1.15.1", "1.15.2",
     "1.16.1", "1.16.2", "1.16.3", "1.16.4", "1.16.5", "1.17.1",
@@ -82,7 +94,19 @@ def neoforgeVersions = [
 ]
 
 task copyToDone {
-    def doneDir = file("C:/Users/Administrator/Documents/Works/done")
+    subprojects.each { sp ->
+        afterEvaluate {
+            if (sp.tasks.findByName('remapJar')) {
+                dependsOn "${sp.path}:remapJar"
+            } else if (sp.tasks.findByName('jar')) {
+                dependsOn "${sp.path}:jar"
+            }
+        }
+    }
+
+    // Dùng đường dẫn tương đối để hoạt động trên cả Windows lẫn GitHub Actions/Linux.
+    def doneDir = file("$rootDir/done")
+
     doLast {
         delete doneDir
 
@@ -98,9 +122,15 @@ task copyToDone {
 
         subprojects.each { sp ->
             def libsDir = sp.layout.buildDirectory.dir("libs").get().asFile
+
             if (libsDir.exists()) {
                 libsDir.listFiles().each { file ->
-                    if (file.name.endsWith('.jar') && !file.name.endsWith('-dev.jar') && !file.name.endsWith('-shadow.jar') && !file.name.endsWith('-sources.jar')) {
+                    if (
+                        file.name.endsWith('.jar') &&
+                        !file.name.endsWith('-dev.jar') &&
+                        !file.name.endsWith('-shadow.jar') &&
+                        !file.name.endsWith('-sources.jar')
+                    ) {
                         if (sp.name.startsWith('fabric-')) {
                             copy { from file; into fabricDir }
                         } else if (sp.name.startsWith('forge-')) {
@@ -117,3 +147,5 @@ task copyToDone {
     }
 }
 
+// Không ép build phải chạy copyToDone.
+// GitHub Actions sẽ lấy JAR từ build/libs.

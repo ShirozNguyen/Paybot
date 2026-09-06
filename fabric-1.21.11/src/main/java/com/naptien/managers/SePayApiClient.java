@@ -98,7 +98,13 @@ public class SePayApiClient {
         for (JsonElement el : res.body.getAsJsonArray("transactions")) {
             JsonObject o = el.getAsJsonObject();
             TransactionInfo t = new TransactionInfo();
-            try { t.id = Long.parseLong(str(o, "id")); } catch (NumberFormatException ignored) { continue; }
+            try { t.id = Long.parseLong(str(o, "id")); }
+            catch (NumberFormatException ignored) {
+                // v5.5.5 Part 53 [BUG lặp lại y hệt plugin/ — xem LOG.md Part 52 mục 52.8]: bỏ cả
+                // giao dịch ngân hàng thật không log gì. Thêm log để admin biết mà tra nếu lặp lại.
+                PayBotMod.LOGGER.warn("[PayBot] SePay: bỏ qua 1 giao dịch có id không parse được (raw=\"{}\")", str(o, "id"));
+                continue;
+            }
             t.accountNumber   = str(o, "account_number");
             t.transactionDate = str(o, "transaction_date");
             t.content         = str(o, "transaction_content");
@@ -184,6 +190,12 @@ public class SePayApiClient {
     }
 
     private static long parseAmount(String s) {
-        try { return (long) Double.parseDouble(s); } catch (Exception e) { return 0L; }
+        try { return (long) Double.parseDouble(s); }
+        catch (Exception e) {
+            // v5.5.5 Part 53 [BUG lặp lại y hệt plugin/ — xem LOG.md Part 52 mục 52.9]: số tiền
+            // giao dịch ngân hàng thật parse lỗi -> ghi 0đ im lặng -> không khớp đơn hàng nào.
+            PayBotMod.LOGGER.warn("[PayBot] SePay: không parse được số tiền giao dịch (raw=\"{}\") — ghi nhận tạm 0đ, cần kiểm tra tay.", s);
+            return 0L;
+        }
     }
 }

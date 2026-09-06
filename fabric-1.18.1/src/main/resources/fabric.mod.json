@@ -14,6 +14,9 @@
       "com.naptien.fabric.PayBotFabricInit"
     ]
   },
+  "mixins": [
+    "paybot.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.15.11",
     "minecraft": "1.18.1"

@@ -159,6 +159,12 @@ public class BanManager {
             }
             // Ẩn file trên Windows (không báo lỗi nếu không được)
             try { Files.setAttribute(f.toPath(), "dos:hidden", true); } catch (Exception ignored) {}
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            // v5.5.5 Part 54 [BUG NHỎ — audit]: TRƯỚC ĐÂY im lặng hoàn toàn. Nếu ghi file lỗi
+            // (disk đầy, quyền truy cập...), 1 lệnh ban MỚI sẽ KHÔNG được lưu lại — có thể mất
+            // hiệu lực sau khi restart server mà không ai biết. Thêm log để admin ít nhất có
+            // dấu vết (fail-open có chủ đích của class này vẫn giữ nguyên — chỉ thêm log).
+            PayBotMod.LOGGER.warn("[BanManager] Không ghi được ban list vào " + BAN_FILE + ": " + e.getMessage());
+        }
     }
 }

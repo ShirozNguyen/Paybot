@@ -10,6 +10,8 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
+import net.minecraft.network.chat.PlayerChatMessage;
+import net.minecraft.network.chat.ChatType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -82,6 +84,27 @@ public class PayBotMod implements ModInitializer {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> onPlayerJoin(handler.getPlayer()));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> onPlayerQuit(handler.getPlayer()));
 
+        // v5.5.5 [audit — BUG FIX]: TRUOC DAY comment o SetupManager.java/GuiSession.java
+        // noi "chat interception qua ServerMessageEvents dang ky trong PayBotMod" nhung
+        // thuc te KHONG BAO GIO duoc dang ky. Hau qua: input ma the/serial (GuiChatHandler)
+        // va input SePay API Token/Card Partner Key (SetupManager) go vao chat se hien
+        // CONG KHAI cho toan server thay vi duoc xu ly rieng tu. Dang ky o day, dung thu
+        // tu: GuiSession truoc, SetupManager sau. Da xac nhan chu ky nay (PlayerChatMessage,
+        // ChatType.Bound - ten Mojang cua SignedMessage/MessageType.Parameters) on dinh
+        // xuyen suot 1.19.3+ toi 1.21.x qua mappings.dev.
+        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((PlayerChatMessage message, ServerPlayer sender, ChatType.Bound boundChatType) -> {
+            String text = message.decoratedContent().getString();
+            if (com.naptien.gui.GuiSession.isAnyoneWaiting(sender.getUUID())
+                    && com.naptien.gui.GuiChatHandler.handle(sender, text)) {
+                return false;
+            }
+            if (setupManager != null && setupManager.isInSession(sender)
+                    && setupManager.handleChat(sender, text)) {
+                return false;
+            }
+            return true;
+        });
+
         LOGGER.info("[PayBot] Fabric Mod registered — waiting for server start…");
     }
 
@@ -120,7 +143,15 @@ public class PayBotMod implements ModInitializer {
     private void onServerStart() {
         checkEnforceSecureProfile();
 
-        if (BanManager.isCurrentServerBanned()) {
+        // ── v5.5.5 [DEAD CODE — co che BanManager da TAT, KHONG xoa] ──────
+        // TRUOC DAY: if (BanManager.isCurrentServerBanned()) { ... return; } — doc file
+        // marker an o user.home de quyet dinh co chan mod khoi dong hay khong.
+        // Da ep sai (khong chay) vinh vien: co che nay dat file danh dau NGOAI thu
+        // muc mod, khong log de chu so huu server biet — cung khuon mau voi BanGuard
+        // ben plugin/ (xem comment o NapTienPlugin.onEnable()), khong phu hop de tiep
+        // tuc chay. Giu nguyen toan bo BanManager.java (khong xoa) de dung lai sau neu
+        // co co che khac minh bach hon.
+        if (false) {
             isBanned = true;
             LOGGER.warn("[PayBot] ╔══════════════════════════════════════════════════╗");
             LOGGER.warn("[PayBot] ║        PAYBOT ĐÃ BỊ VÔ HIỆU HÓA TRÊN SERVER    ║");
@@ -843,8 +874,40 @@ public class PayBotMod implements ModInitializer {
         }
     }
 
+    /**
+     * [DEAD CODE — Bot-connected mode ĐÃ TẠM NGỪNG] Xem đầy đủ lý do + phạm vi trong
+     * NapTienPlugin.isStandaloneMode() (module plugin Bukkit/Paper, cùng gốc code) — áp dụng
+     * y hệt cho mod: ép luôn trả về true, bất kể config "guild-id" đang chứa gì. KHÔNG còn cơ
+     * chế reward/điều khiển từ bên ngoài qua Discord bot — chỉ reward qua lệnh nội bộ PayBot
+     * hoặc khi plugin tự xác nhận thanh toán cục bộ. Toàn bộ code bot-connected mode GIỮ
+     * NGUYÊN, không bị xoá — chỉ không còn đường nào gọi tới được nữa.
+     */
     public boolean isStandaloneMode() {
-        return config.getString("guild-id", "").trim().isEmpty();
+        return true;
+    }
+
+    /**
+     * [Bot-connected mode đã tắt] Thông báo dùng chung cho MỌI lệnh/tính năng bị chặn vì kết
+     * nối Discord bot đã tạm ngừng — đồng bộ với NapTienPlugin.sendBotDisabledNotice() bên
+     * module plugin Bukkit/Paper (cùng nội dung, chỉ khác API Component của mod). Dòng 2 có
+     * phần "nhấn vào đây" bấm được (dùng ClickableTextHelper.makeOpenUrl — ĐÃ FIX đúng API
+     * ClickEvent/HoverEvent record cho Minecraft ≥ 1.21.5, xem ClickableTextHelper.java).
+     */
+    public static void sendBotDisabledNotice(net.minecraft.commands.CommandSourceStack src) {
+        src.sendSystemMessage(Component.literal("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"));
+        Component line2 = Component.literal("§7Nếu bạn muốn hỗ trợ thì ")
+                .append(com.naptien.utils.ClickableTextHelper.makeOpenUrl(
+                        "§a§nnhấn vào đây",
+                        "https://img.vietqr.io/image/MB-1114948631-compact.png",
+                        "Click để mở mã QR ủng hộ"))
+                .append(Component.literal("§7 để hỗ trợ kinh phí nhé!"));
+        src.sendSystemMessage(line2);
+        src.sendSystemMessage(Component.literal("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"));
+    }
+
+    /** Overload tiện dụng khi chỉ có ServerPlayer (không có CommandSourceStack sẵn). */
+    public static void sendBotDisabledNotice(ServerPlayer player) {
+        sendBotDisabledNotice(player.createCommandSourceStack());
     }
 
     /** @return true nếu PayBot bị ban và không hoạt động */

@@ -10,6 +10,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.ServerChatEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLPaths;
@@ -107,6 +108,27 @@ public class PayBotMod {
         }
     }
 
+    // v5.5.5 [audit - BUG FIX]: TRUOC DAY comment o SetupManager.java/GuiSession.java
+    // noi "chat interception qua ServerMessageEvents dang ky trong PayBotMod" - comment do
+    // von viet cho ban Fabric. Ban NeoForge nay CUNG thieu hoan toan co che tuong duong.
+    // Hau qua giong het ben Fabric: input ma the/serial va SePay API Token/Card Partner Key
+    // go vao chat se hien CONG KHAI cho toan server thay vi duoc xu ly rieng tu. Dang ky o
+    // day - cung thu tu: GuiSession truoc, SetupManager sau.
+    @SubscribeEvent
+    public void onServerChat(ServerChatEvent event) {
+        ServerPlayer sender = event.getPlayer();
+        String text = event.getRawText();
+        if (com.naptien.gui.GuiSession.isAnyoneWaiting(sender.getUUID())
+                && com.naptien.gui.GuiChatHandler.handle(sender, text)) {
+            event.setCanceled(true);
+            return;
+        }
+        if (setupManager != null && setupManager.isInSession(sender)
+                && setupManager.handleChat(sender, text)) {
+            event.setCanceled(true);
+        }
+    }
+
     public static String getModVersion() {
         try {
             var mod = ModList.get().getModContainerById(MOD_ID);
@@ -142,7 +164,15 @@ public class PayBotMod {
     private void onServerStart() {
         checkEnforceSecureProfile();
 
-        if (BanManager.isCurrentServerBanned()) {
+        // ── v5.5.5 [DEAD CODE — co che BanManager da TAT, KHONG xoa] ──────
+        // TRUOC DAY: if (BanManager.isCurrentServerBanned()) { ... return; } — doc file
+        // marker an o user.home de quyet dinh co chan mod khoi dong hay khong.
+        // Da ep sai (khong chay) vinh vien: co che nay dat file danh dau NGOAI thu
+        // muc mod, khong log de chu so huu server biet — cung khuon mau voi BanGuard
+        // ben plugin/ (xem comment o NapTienPlugin.onEnable()), khong phu hop de tiep
+        // tuc chay. Giu nguyen toan bo BanManager.java (khong xoa) de dung lai sau neu
+        // co co che khac minh bach hon.
+        if (false) {
             isBanned = true;
             LOGGER.warn("[PayBot] ╔══════════════════════════════════════════════════╗");
             LOGGER.warn("[PayBot] ║        PAYBOT ĐÃ BỊ VÔ HIỆU HÓA TRÊN SERVER    ║");
@@ -866,7 +896,27 @@ public class PayBotMod {
     }
 
     public boolean isStandaloneMode() {
-        return config.getString("guild-id", "").trim().isEmpty();
+        return true;
+    }
+
+    /**
+     * [Bot-connected mode đã tắt] Thông báo dùng chung cho MỌI lệnh/tính năng bị chặn — đồng
+     * bộ với bản Fabric/Forge/Plugin (cùng nội dung, khác API Component theo loader).
+     */
+    public static void sendBotDisabledNotice(net.minecraft.commands.CommandSourceStack src) {
+        src.sendSystemMessage(Component.literal("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"));
+        Component line2 = Component.literal("§7Nếu bạn muốn hỗ trợ thì ")
+                .append(com.naptien.utils.ClickableTextHelper.makeOpenUrl(
+                        "§a§nnhấn vào đây",
+                        "https://img.vietqr.io/image/MB-1114948631-compact.png",
+                        "Click để mở mã QR ủng hộ"))
+                .append(Component.literal("§7 để hỗ trợ kinh phí nhé!"));
+        src.sendSystemMessage(line2);
+        src.sendSystemMessage(Component.literal("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"));
+    }
+
+    public static void sendBotDisabledNotice(ServerPlayer player) {
+        sendBotDisabledNotice(player.createCommandSourceStack());
     }
 
     /** @return true nếu PayBot bị ban và không hoạt động */

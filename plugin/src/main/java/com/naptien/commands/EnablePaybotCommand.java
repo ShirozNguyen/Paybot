@@ -31,6 +31,10 @@ public final class EnablePaybotCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+        // v5.5.5: cơ chế BanGuard đã TẮT (xem comment ở NapTienPlugin.onEnable() và
+        // DisablePaybotCommand) — bannedByOwner giờ luôn false ngay từ khởi động, nên
+        // nhánh "!isBannedByOwner()" bên dưới sẽ luôn đúng và lệnh này tự nhiên không
+        // làm gì thêm. Không cần đổi logic gì khác — chỉ ghi chú lại để rõ ràng.
         if (!(sender instanceof Player player)) {
             sender.sendMessage(NapTienPlugin.f("§c[PayBot] §fLệnh này chỉ dùng được trong game."));
             return true;

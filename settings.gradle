@@ -3,8 +3,21 @@ pluginManagement {
         maven { url = 'https://maven.architectury.dev/' }
         maven { url = 'https://maven.fabricmc.net/' }
         maven { url = 'https://maven.minecraftforge.net/' }
+        // v5.5.5 Part 49: thêm cho module 26.x dùng ModDevGradle (net.neoforged.moddev) —
+        // xác nhận qua chính settings.gradle gốc của NeoForge (github.com/neoforged/NeoForge)
+        // dùng đúng URL này. Plugin có trên Gradle Plugin Portal (gradlePluginPortal() bên dưới
+        // đã đủ resolve) nhưng thêm trực tiếp để an toàn/nhất quán với template chính thức.
+        maven { url = 'https://maven.neoforged.net/releases' }
         gradlePluginPortal()
     }
+}
+
+// v5.5.5 Part 49: foojay-resolver-convention — tự động tải/cấp JDK 25 nếu máy Shiroz chưa có
+// sẵn (module 26.x bắt buộc Java 25). Chỉ ảnh hưởng module nào thật sự cần toolchain 25;
+// module cũ (Java 17/21) không bị đụng vì Gradle chỉ dùng plugin này khi có toolchain
+// request không khớp JDK đang chạy.
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
 }
 
 rootProject.name = 'PayBot'
@@ -49,14 +62,16 @@ include('fabric-1.21.1')
 include('fabric-1.21.2')
 include('fabric-1.21.3')
 include('fabric-1.21.4')
-// 1.21.5 - 1.21.11 are unreleased/snapshots (Fabric API built with Loom 1.11+)
-// include('fabric-1.21.5')
-// include('fabric-1.21.6')
-// include('fabric-1.21.7')
-// include('fabric-1.21.8')
-// include('fabric-1.21.9')
-// include('fabric-1.21.10')
-// include('fabric-1.21.11')
+// v5.5.5 [audit]: 1.21.5-1.21.11 ĐÃ RELEASE CHÍNH THỨC từ lâu (xác nhận qua Fabric API
+// CurseForge/Modrinth — vd 1.21.11 release "R" từ tháng 1/2026), comment cũ "unreleased/
+// snapshots" đã lỗi thời tại thời điểm audit này (05/09/2026). Bật lại theo yêu cầu.
+include('fabric-1.21.5')
+include('fabric-1.21.6')
+include('fabric-1.21.7')
+include('fabric-1.21.8')
+include('fabric-1.21.9')
+include('fabric-1.21.10')
+include('fabric-1.21.11')
 // v5.5.5 Part 44b: forge-legacy TÁCH thành 22 module riêng, mỗi module = ĐÚNG 1 bản MC
 // (theo yêu cầu Shiroz — không có ranh giới version nào còn sót lại trong 1 module)
 include('forge-1.14.4')
@@ -107,14 +122,28 @@ include('neoforge-1.21.1')
 include('neoforge-1.21.2')
 include('neoforge-1.21.3')
 include('neoforge-1.21.4')
-// include('neoforge-1.21.5')
-// include('neoforge-1.21.6')
-// include('neoforge-1.21.7')
-// include('neoforge-1.21.8')
-// include('neoforge-1.21.9')
-// include('neoforge-1.21.10')
-// include('neoforge-1.21.11')
+// v5.5.5 [audit]: 1.21.5-1.21.11 ĐÃ RELEASE CHÍNH THỨC (xác nhận qua blog neoforged.net —
+// "NeoForge 21.11 for Minecraft 1.21.11", "NeoForge 21.9 for Minecraft 1.21.9", "NeoForge
+// 21.6 for Minecraft 1.21.6"). Bật lại theo yêu cầu.
+include('neoforge-1.21.5')
+include('neoforge-1.21.6')
+include('neoforge-1.21.7')
+include('neoforge-1.21.8')
+include('neoforge-1.21.9')
+include('neoforge-1.21.10')
+include('neoforge-1.21.11')
 include('plugin')
 
-// TODO (giai đoạn 2, xem LOG.md Part 44): fabric-26x / forge-26x / neoforge-26x cho MC 26.1+
-// — toolchain hoàn toàn khác (bỏ remap, cần Java 25), cần khảo sát kỹ trước khi viết code.
+// v5.5.5 Part 48: bắt đầu dải 26.x (xem LOG.md Part 44 cho bối cảnh gốc + Part 48 cho research
+// đầy đủ). Toolchain hoàn toàn khác các module 1.x ở trên — Java 25, không remap, mỗi module 26.x
+// tự áp plugin riêng (xem root build.gradle + ghi chú trong từng build.gradle module).
+include('fabric-26.1')
+include('neoforge-26.1')
+include('forge-26.1')
+include('fabric-26.2')
+include('neoforge-26.2')
+include('forge-26.2')
+
+// CHƯA LÀM — kế hoạch tiếp theo (Part 52+):
+// 26.3: CHƯA release chính thức (còn snapshot tại thời điểm Part 48-51) — chưa thể dựng module
+// thật, chờ Mojang + 3 loader ra bản ổn định trước. Xem LOG.md Part 51 cho khung placeholder.

@@ -1,0 +1,32 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# PayBot MySQL Database Configuration
+#
+# 📖 HƯỚNG DẪN CẤU HÌNH DÀNH CHO ADMIN (DATABASE CONFIGURATION GUIDE):
+#
+# 1. host: Địa chỉ máy chủ MySQL Database.
+#    - Ví dụ dạng chuẩn: host: "guns.lol/therealshiroz"  hoặc  host: 'guns.lol/therealshiroz'  hoặc  host: localhost
+#    - Ví dụ dán kèm cổng: host: "guns.lol/therealshiroz3306" (Hệ thống sẽ tự động tách cổng 3306 ra)
+#
+# 2. port: Cổng kết nối Database (Mặc định: 3306).
+#
+# 3. database: Tên CSDL được cấp hoặc muốn tạo.
+#    - Ví dụ trên Hosting: database: "test12131231"
+#    - Ví dụ mặc định: database: "paybot"
+#
+# 4. username: Tên người dùng CSDL được cấp.
+#    - Ví dụ trên Hosting: username: "test12131231"
+#    - Ví dụ mặc định: username: "root"
+#
+# 5. password: Mật khẩu CSDL.
+#    - Hỗ trợ điền trong nháy kép "...", nháy đơn '...', hoặc không có nháy.
+#    - Ví dụ: password: "123568654324@231123123"
+#
+# 6. use-ssl: Bật/tắt SSL (Khuyên dùng false nếu chạy trên MySQL Hosting chung).
+# ─────────────────────────────────────────────────────────────────────────────
+
+host: "localhost"
+port: 3306
+database: "paybot"
+username: "root"
+password: ""
+use-ssl: false

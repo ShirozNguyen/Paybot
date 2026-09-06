@@ -45,6 +45,19 @@ public class PluginHttpServer extends NanoHTTPD {
             // server độc hại, v.v.). Thêm check X-API-Key — CÙNG hằng số 2 chiều đã
             // dùng sẵn (chiều plugin→bot vốn đã check key này từ v5.0.0). Trừ
             // /api/sepay-ipn (SePay gọi vào, không biết key nội bộ này).
+            // [DEAD CODE — Bot-connected mode đã tắt] 4 endpoint dưới đây (execute-reward,
+            // bot-disconnect, receive-config, check-online) chỉ tồn tại để phục vụ Discord bot
+            // — KHÔNG còn cơ chế cấp thưởng/điều khiển từ bên ngoài nữa (xem javadoc
+            // NapTienPlugin.isStandaloneMode()). Chặn NGAY TỪ ĐÂY, TRƯỚC CẢ bước kiểm tra
+            // X-API-Key — vì 1 endpoint không còn làm gì thì không cần tốn công xác thực nó.
+            // "/api/sepay-ipn" KHÔNG bị đụng tới — SePay webhook không liên quan Discord bot,
+            // vẫn là đường xác nhận thanh toán CHÍNH của standalone mode, phải luôn hoạt động.
+            // Toàn bộ code xử lý của 4 endpoint này (handleExecuteReward/handleBotDisconnect/
+            // handleReceiveConfig/handleCheckOnline) được GIỮ NGUYÊN bên dưới, chỉ không còn
+            // route nào gọi tới — để khôi phục dễ dàng sau này nếu cần dùng lại.
+            if (!uri.equals("/api/sepay-ipn") && plugin.isStandaloneMode()) {
+                return jsonResponse(Response.Status.NOT_FOUND, "{\"ok\":false,\"msg\":\"disabled\"}");
+            }
             if (!uri.equals("/api/sepay-ipn")) {
                 String expected = plugin.getConfig().getString("bot-api-key", BotHttpClient.DEFAULT_API_KEY).trim();
                 String received = session.getHeaders().getOrDefault("x-api-key", "").trim();
@@ -90,6 +103,32 @@ public class PluginHttpServer extends NanoHTTPD {
         String rawCmd = "";
         if (data.has("reward_cmd") && !data.get("reward_cmd").isJsonNull())
             rawCmd = data.get("reward_cmd").getAsString().trim();
+
+        // ── [SECURITY FIX — audit toàn diện] ─────────────────────────────────
+        // TRƯỚC ĐÂY: "reward_cmd" nhận THẲNG từ body request và đưa nguyên văn vào
+        // Bukkit.dispatchCommand(CONSOLE, ...) (xem RewardDispatcher.deliverNowSync) — tức
+        // là BẤT KỲ ai gửi được request hợp lệ tới /execute-reward (chỉ cần đúng X-API-Key
+        // — hằng số DEFAULT_API_KEY HARDCODE GIỐNG HỆT NHAU trong MỌI bản phân phối plugin/
+        // mod, trích xuất được chỉ bằng cách giải nén/decompile file .jar công khai — cùng
+        // đúng server_id, vốn là UUID ngẫu nhiên nhưng vẫn là 1 chuỗi có thể rò rỉ) đều có
+        // thể ép server THỰC THI BẤT KỲ LỆNH CONSOLE NÀO (vd "op <tên>", ban, whitelist,...)
+        // — tức lỗ hổng RCE (Remote Code Execution) toàn quyền console, không có bất kỳ
+        // whitelist/giới hạn nào. Đây là lỗi NGHIÊM TRỌNG NHẤT tìm thấy trong toàn bộ audit.
+        //
+        // FIX: KHÔNG BAO GIỜ tin trực tiếp lệnh do request cung cấp. Chỉ chấp nhận reward_cmd
+        // nếu nó KHỚP Y HỆT một trong các template lệnh mà CHÍNH ADMIN của server này đã tự
+        // cấu hình sẵn trong config.yml (reward-command / reward-command-card / -bank hoặc
+        // từng mục denom-rewards-*.cmd) — tức allowlist dựa trên dữ liệu ĐÃ ĐƯỢC TIN TƯỞNG
+        // cục bộ, không phải blacklist (blacklist theo pattern không bao giờ đáng tin cho
+        // RCE). Nếu không khớp bất kỳ template nào → coi như không gửi kèm, rơi xuống nhánh
+        // resolve từ denom/config cục bộ như bình thường (không còn đường nào để kẻ tấn công
+        // ép chạy 1 lệnh mà admin server đó chưa từng tự cấu hình).
+        if (!rawCmd.isEmpty() && !isKnownConfiguredRewardCommand(rawCmd)) {
+            NotificationManager.warn(plugin, "reward-invalid",
+                    "[PayBot] /execute-reward: reward_cmd nhận được KHÔNG khớp bất kỳ template lệnh "
+                    + "nào đã cấu hình sẵn trên server này — TỪ CHỐI thực thi (chống RCE). raw=\"" + rawCmd + "\"");
+            rawCmd = "";
+        }
 
         java.util.List<String> rawCmds;
         if (!rawCmd.isEmpty()) {
@@ -149,6 +188,28 @@ public class PluginHttpServer extends NanoHTTPD {
         return jsonResponse(Response.Status.OK, "{\"ok\":true}");
     }
 
+    /**
+     * Kiểm tra 1 chuỗi lệnh có KHỚP Y HỆT (sau khi trim) một template lệnh mà admin server
+     * này đã tự cấu hình sẵn trong config.yml hay không — dùng làm allowlist chống RCE cho
+     * /execute-reward (xem SECURITY FIX ở handleExecuteReward). So khớp trên TEMPLATE gốc
+     * (trước khi thay placeholder [Tên]/[Số lượng]), đúng như cách reward_cmd được bot gửi.
+     */
+    private boolean isKnownConfiguredRewardCommand(String rawCmd) {
+        for (String key : new String[] {"reward-command", "reward-command-card", "reward-command-bank"}) {
+            String configured = plugin.getConfig().getString(key, "").trim();
+            if (!configured.isEmpty() && configured.equals(rawCmd)) return true;
+        }
+        for (String section : new String[] {"denom-rewards-card", "denom-rewards-bank"}) {
+            org.bukkit.configuration.ConfigurationSection sec = plugin.getConfig().getConfigurationSection(section);
+            if (sec == null) continue;
+            for (String key : sec.getKeys(false)) {
+                String configured = sec.getString(key + ".cmd", "").trim();
+                if (!configured.isEmpty() && configured.equals(rawCmd)) return true;
+            }
+        }
+        return false;
+    }
+
     private int applyRewards(JsonObject rewards, String section) {
         int count = 0;
         for (String key : rewards.keySet()) {
@@ -197,9 +258,33 @@ public class PluginHttpServer extends NanoHTTPD {
         if (!"in".equals(data.has("transferType") ? data.get("transferType").getAsString() : ""))
             return jsonResponse(Response.Status.OK, "{\"success\":true}");
 
+        // v5.5.5 Part 52 [BUG NGHIÊM TRỌNG — tìm thấy khi audit fallback/hidden-except]:
+        // TRƯỚC ĐÂY 3 nhánh dưới đây (transferType khác "in", parse transferAmount lỗi,
+        // transferAmount<=0) đều trả "success":true HOÀN TOÀN IM LẶNG — không log gì. Với
+        // 2 nhánh đầu (transferType/amount hợp lệ nhưng <=0) trả success là ĐÚNG (SePay có
+        // gửi cả giao dịch "out"/0đ, không cần xử lý, không phải lỗi). NHƯNG nhánh parse lỗi
+        // (dòng dưới) là BUG THẬT: nếu payload SePay gửi có transferAmount không parse được
+        // (dữ liệu bất thường/đổi định dạng phía SePay), code trả "success":true giống hệt
+        // như đã xử lý xong — SePay thấy 200+success sẽ KHÔNG BAO GIỜ gửi lại giao dịch đó
+        // nữa, giao dịch bị mất vĩnh viễn mà không có bất kỳ dấu vết nào để admin biết mà xử
+        // lý tay. Đối chiếu: bản PluginHttpServer bên mod-loader (fabric-26.1 v.v.) xử lý case
+        // này ĐÚNG hơn — log WARNING + trả lỗi thay vì giả vờ thành công. Áp dụng lại đúng
+        // pattern đó ở đây.
         int transferAmount;
         try { transferAmount = (int) Double.parseDouble(data.get("transferAmount").getAsString()); }
-        catch (Exception e) { return jsonResponse(Response.Status.OK, "{\"success\":true}"); }
+        catch (Exception e) {
+            NotificationManager.warn(plugin, "sepay-error",
+                    "[PayBot] SePay IPN: transferAmount không parse được (payload bất thường) — "
+                    + "raw data: " + data + " — lỗi: " + e.getMessage());
+            PayBotDebug.logSwallowed(plugin, "SePay IPN: transferAmount parse thất bại, raw=" + data, e);
+            // [Đã kiểm chứng qua tài liệu chính thức SePay, KHÔNG đoán]: SePay retry dựa vào
+            // HTTP status code NGOÀI khoảng 200-299 (retry_conditions.non_2xx_status_code),
+            // KHÔNG dựa vào nội dung JSON body — trả 200 kèm "success":false vẫn bị SePay coi
+            // là ĐÃ NHẬN THÀNH CÔNG, sẽ KHÔNG retry, y hệt bug cũ. Phải trả status ngoài 2xx
+            // để SePay thực sự gửi lại (theo Fibonacci backoff, tối đa 8 lần trong ~33 phút —
+            // đủ thời gian cho lỗi tạm thời tự khỏi hoặc admin phát hiện qua log WARNING trên).
+            return jsonResponse(Response.Status.INTERNAL_ERROR, "{\"success\":false,\"error\":\"invalid transferAmount\"}");
+        }
         if (transferAmount <= 0) return jsonResponse(Response.Status.OK, "{\"success\":true}");
 
         String content = (data.has("content") ? data.get("content").getAsString() : "").toUpperCase();

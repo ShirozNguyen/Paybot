@@ -1,0 +1,83 @@
+// v5.5.5 Part 48: fabric-26.1 — module TỰ áp dụng plugin Fabric Loom riêng (KHÔNG dùng
+// 'dev.architectury.loom' mà root build.gradle áp cho mọi subproject khác). Lý do: Architectury
+// Loom bản cũ (1.7.435, đang khai báo ở root) xác nhận crash với 26.1+ (thiếu mapping để tìm —
+// GitHub issue architectury-loom#328). Có bản 'dev.architectury.loom-no-remap' mới hơn có vẻ đã
+// hỗ trợ lại (release 8/7/2026, có mod thật dùng thành công), NHƯNG chưa tìm được ví dụ
+// build.gradle cụ thể để chép theo. Ngược lại, plugin Fabric Loom gốc 'net.fabricmc.fabric-loom'
+// có hướng dẫn migrate CHÍNH THỨC rõ ràng (docs.fabricmc.net) nên module này dùng thẳng, an toàn
+// hơn. root build.gradle đã sửa để KHÔNG áp dev.architectury.loom cho module có "-26." trong tên
+// (xem subprojects{} ở root) — nếu sau này xác nhận Architectury Loom no-remap hoạt động tốt và
+// muốn hợp nhất lại cách quản lý dependency chung, có thể đổi lại.
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.15.+'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+base {
+    archivesName = "PayBot-Mod-Fabric-26.1"
+}
+
+java {
+    toolchain {
+        // v5.5.5 Part 48: Java 25 bắt buộc cho MC 26.1 (xác nhận Fabric blog + NeoForged primer).
+        // Ghi đè lại default Java 21 mà allprojects{} ở root đặt cho các module cũ.
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+configurations {
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = true
+    }
+    compileClasspath.extendsFrom shadowBundle
+    runtimeClasspath.extendsFrom shadowBundle
+}
+
+dependencies {
+    // v5.5.5 Part 48: implementation/compileOnly thay modImplementation/modCompileOnly —
+    // đúng 1 trong 4 bước migrate chính thức của Fabric cho 26.1 (docs.fabricmc.net/26.1/develop/porting).
+    implementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // Thư viện shaded trực tiếp — giữ nguyên danh sách như fabric-1.21.11, không đổi gì ở phần này
+    shadowBundle 'org.xerial:sqlite-jdbc:3.45.3.0'
+    shadowBundle 'com.mysql:mysql-connector-j:8.4.0'
+    shadowBundle 'com.zaxxer:HikariCP:5.1.0'
+    shadowBundle 'org.yaml:snakeyaml:2.2'
+    shadowBundle 'com.google.zxing:core:3.5.3'
+    shadowBundle 'com.google.zxing:javase:3.5.3'
+    shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    // v5.5.5 Part 48: vẫn giữ quilt.mod.json — thử nghiệm theo yêu cầu Shiroz xem Quilt Loader
+    // còn load được mod build kiểu no-remap hay không. CHƯA xác minh được — field
+    // "intermediate_mappings": "net.fabricmc:intermediary" trong quilt.mod.json rất có thể không
+    // còn đúng ở 26.1 (hết obfuscation = hết khái niệm intermediary), nhưng không tìm được tài
+    // liệu Quilt chính thức nào hướng dẫn thay bằng gì (đội Quilt đã khai tử QSL/QKL/QFAPI từ
+      // 26.1, không thấy hướng dẫn migrate no-remap nào được công bố). Cần Shiroz tự build/test thật.
+    filesMatching(["fabric.mod.json", "quilt.mod.json"]) {
+        expand "version": project.version
+    }
+}
+
+shadowJar {
+    exclude "architectury.common.json"
+    exclude "org/slf4j/**"
+
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = "dev-shadow"
+}
+
+// v5.5.5 Part 48: KHÔNG còn remapJar — bước migrate chính thức thứ 4 của Fabric (remapJar -> jar).
+// 26.1 không obfuscation nên không còn gì để remap; shadowJar chính là artifact cuối cùng.
+jar {
+    archiveClassifier = "dev"
+}
+
+tasks.named("assemble") {
+    dependsOn shadowJar
+}

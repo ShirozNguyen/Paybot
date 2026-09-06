@@ -143,7 +143,11 @@ public class FabricVersionAdapter1_16 implements VersionAdapter {
         if (reflectionInit) return;
         reflectionInit = true;
 
-        String[] nameCandidates = {"locked", "f_77906_", "field_1838"};
+        String[] nameCandidates = {"locked"};
+        // v5.5.5: Mojang mapping chính thức xác nhận chỉ có đúng tên "locked" —
+        // 2 tên cũ (f_77906_ kiểu SRG/Forge, field_1838 kiểu Yarn/Intermediary) sai ngữ
+        // cảnh vì module này dùng loom.officialMojangMappings(), đã bỏ (không gây lỗi
+        // chức năng trước đó vì "locked" luôn khớp ở lượt thử đầu tiên).
         for (String name : nameCandidates) {
             try {
                 Field f = MapItemSavedData.class.getDeclaredField(name);

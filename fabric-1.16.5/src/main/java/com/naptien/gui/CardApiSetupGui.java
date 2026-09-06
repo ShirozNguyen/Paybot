@@ -15,10 +15,18 @@ import java.util.List;
 /**
  * CardApiSetupGui (Fabric) — SGUI chọn site card API (qua GuiBackend).
  *
+ * v5.5.5 [audit — DEAD CODE, KHÔNG xoá]: từ v5.0.2, CommandRegistry./cardsetup đã
+ * chuyển sang chat-based flow qua SetupManager (xem comment ở
+ * CommandRegistry.registerCardSetup() và GuiChatHandler — "API_WAIT_* cases đã xoá").
+ * KHÔNG còn nơi nào trong codebase gọi tới class này (đã xác nhận bằng grep toàn bộ
+ * project) — giữ nguyên file để tham khảo lịch sử, không xoá, nhưng không nên gọi lại
+ * mà không kiểm tra kỹ trạng thái GuiSession.API_WAIT_* (đã deprecated, xem GuiSession.java).
+ *
  * Changelog:
  *   v4.0.1-fabric — initial
  *   v4.0.4-fabric — fix SGUI 1.6.1: ClickCallback là void
  *   v5.2.0        — Refactor sang GuiBackend hỗ trợ đa phiên bản Minecraft.
+ *   v5.0.2        — (retroactive note) không còn được gọi từ CommandRegistry.
  */
 public class CardApiSetupGui {
     // Đồng bộ với bot.py SUPPORTED_SITES — không có gachthefast2.com

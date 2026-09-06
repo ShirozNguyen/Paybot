@@ -66,6 +66,13 @@ public class PluginHttpServer extends NanoHTTPD {
             return err("Parse error");
         }
 
+        // [DEAD CODE — Bot-connected mode đã tắt] TOÀN BỘ endpoint dưới đây (reward-push/
+        // execute-reward, bank-paid, card-result, receive-config) chỉ phục vụ Discord bot —
+        // chặn NGAY TỪ ĐÂY, trước cả bước kiểm tra X-API-Key. "/api/sepay-ipn" KHÔNG bị đụng.
+        if (!uri.equals("/api/sepay-ipn") && mod.isStandaloneMode()) {
+            return err("disabled");
+        }
+
         // v5.0.5: TRƯỚC ĐÂY chiều bot → mod CHỈ xác thực bằng server_id khớp
         // (verifyServerId) — ai biết được server_id đều giả mạo được request từ
         // "bot". Thêm check X-API-Key — cùng hằng số 2 chiều (chiều mod→bot vốn đã
@@ -186,7 +193,13 @@ public class PluginHttpServer extends NanoHTTPD {
         try {
             if (data.has("reward_amount"))
                 amount = (int) Double.parseDouble(data.get("reward_amount").getAsString());
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            // v5.5.5 Part 54 [BUG NHỎ - audit, cung pattern da sua ben fabric/plugin]: TRUOC DAY
+            // im lang. amount chi dung de log/hien thi (lenh thuong that nam trong rawCmd).
+            PayBotMod.LOGGER.warn("[RewardPush] reward_amount khong parse duoc (raw=\"" +
+                    (data.has("reward_amount") ? data.get("reward_amount").getAsString() : "null") +
+                    "\") - dung tam 0 (chi anh huong hien thi, khong anh huong lenh thuong that).");
+        }
 
         if (playerName.isEmpty() || rawCmd.isEmpty()) return err("Missing fields");
 

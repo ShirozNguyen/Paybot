@@ -44,9 +44,13 @@ public class IdCommand implements CommandExecutor {
                 ? "§a[Standalone]"
                 : "§b[Bot-connected — Guild: " + guildId + "]"));
 
+        // [DEAD CODE — Bot-connected mode đã tắt] Nhánh "else" bên dưới giờ không bao giờ
+        // chạy tới (standalone luôn = true), giữ nguyên để dễ khôi phục sau này. Đồng thời bỏ
+        // gợi ý "/connect" ở nhánh standalone vì lệnh đó đã bị chặn — gợi ý sai sẽ gây hiểu
+        // lầm cho admin (tưởng còn dùng được).
         if (standalone) {
             sender.sendMessage("");
-            sender.sendMessage("§7→ Dùng §e/connect discord <guild_id> §7để kết nối bot.");
+            NapTienPlugin.sendBotDisabledNotice(sender);
         } else {
             sender.sendMessage("");
             sender.sendMessage("§7→ Dùng §e/disconnect §7để ngắt kết nối bot.");

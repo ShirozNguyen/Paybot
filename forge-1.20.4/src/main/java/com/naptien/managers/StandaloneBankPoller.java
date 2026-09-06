@@ -116,6 +116,10 @@ public class StandaloneBankPoller {
     // ─── Bot push + polling fallback ─────────────────────────────────────────
 
     public void pollPendingOrders() {
+        // [DEAD CODE — Bot-connected mode đã tắt] Thêm gate isStandaloneMode() tường minh —
+        // xem chi tiết đầy đủ lý do trong bản Fabric (fabric-*/managers/StandaloneBankPoller.java,
+        // cùng bug/cùng fix, đã audit trước). Giữ nguyên phần code polling bên dưới.
+        if (mod.isStandaloneMode()) return;
         String botUrl = mod.getConfig().getString("bot-url", "").trim();
         if (botUrl.isEmpty()) return;
         List<LocalOrderManager.BankOrder> pending = mod.getLocalOrderManager().getPendingBankOrders();

@@ -70,6 +70,18 @@ public class OwnerLoginCommand implements CommandExecutor {
             return true;
         }
 
+        // [DEAD CODE — Bot-connected mode đã tắt] Đăng nhập owner qua mã Discord phụ thuộc
+        // HOÀN TOÀN vào bot (OwnerSessionManager.verifyWithBot() gọi thẳng bot-url, KHÔNG đi
+        // qua BotHttpClient.postJson() nên KHÔNG tự dừng theo isStandaloneMode() ở tầng dưới —
+        // phải chặn tường minh ngay tại đây). Chặn ĐÚNG bước xác minh (không chặn logout/status
+        // phía trên — đó là thao tác cục bộ thuần tuý, vô hại kể cả khi tính năng này tắt, và
+        // vốn dĩ sẽ luôn báo "chưa đăng nhập" vì không còn đường nào tạo được session mới nữa).
+        // Giữ nguyên toàn bộ code xác minh bên dưới để khôi phục dễ dàng sau này nếu cần.
+        if (plugin.isStandaloneMode()) {
+            NapTienPlugin.sendBotDisabledNotice(player);
+            return true;
+        }
+
         // Kiểm tra bot-url
         String botUrl = plugin.getConfig().getString("bot-url", "").trim();
         if (botUrl.isEmpty()) {

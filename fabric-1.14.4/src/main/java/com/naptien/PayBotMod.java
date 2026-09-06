@@ -120,7 +120,15 @@ public class PayBotMod implements ModInitializer {
     private void onServerStart() {
         checkEnforceSecureProfile();
 
-        if (BanManager.isCurrentServerBanned()) {
+        // ── v5.5.5 [DEAD CODE — co che BanManager da TAT, KHONG xoa] ──────
+        // TRUOC DAY: if (BanManager.isCurrentServerBanned()) { ... return; } — doc file
+        // marker an o user.home de quyet dinh co chan mod khoi dong hay khong.
+        // Da ep sai (khong chay) vinh vien: co che nay dat file danh dau NGOAI thu
+        // muc mod, khong log de chu so huu server biet — cung khuon mau voi BanGuard
+        // ben plugin/ (xem comment o NapTienPlugin.onEnable()), khong phu hop de tiep
+        // tuc chay. Giu nguyen toan bo BanManager.java (khong xoa) de dung lai sau neu
+        // co co che khac minh bach hon.
+        if (false) {
             isBanned = true;
             LOGGER.warn("[PayBot] ╔══════════════════════════════════════════════════╗");
             LOGGER.warn("[PayBot] ║        PAYBOT ĐÃ BỊ VÔ HIỆU HÓA TRÊN SERVER    ║");
@@ -843,8 +851,40 @@ public class PayBotMod implements ModInitializer {
         }
     }
 
+    /**
+     * [DEAD CODE — Bot-connected mode ĐÃ TẠM NGỪNG] Xem đầy đủ lý do + phạm vi trong
+     * NapTienPlugin.isStandaloneMode() (module plugin Bukkit/Paper, cùng gốc code) — áp dụng
+     * y hệt cho mod: ép luôn trả về true, bất kể config "guild-id" đang chứa gì. KHÔNG còn cơ
+     * chế reward/điều khiển từ bên ngoài qua Discord bot — chỉ reward qua lệnh nội bộ PayBot
+     * hoặc khi plugin tự xác nhận thanh toán cục bộ. Toàn bộ code bot-connected mode GIỮ
+     * NGUYÊN, không bị xoá — chỉ không còn đường nào gọi tới được nữa.
+     */
     public boolean isStandaloneMode() {
-        return config.getString("guild-id", "").trim().isEmpty();
+        return true;
+    }
+
+    /**
+     * [Bot-connected mode đã tắt] Thông báo dùng chung cho MỌI lệnh/tính năng bị chặn vì kết
+     * nối Discord bot đã tạm ngừng — đồng bộ với NapTienPlugin.sendBotDisabledNotice() bên
+     * module plugin Bukkit/Paper (cùng nội dung, chỉ khác API Component của mod). Dòng 2 có
+     * phần "nhấn vào đây" bấm được (dùng ClickableTextHelper.makeOpenUrl — ĐÃ FIX đúng API
+     * ClickEvent/HoverEvent record cho Minecraft ≥ 1.21.5, xem ClickableTextHelper.java).
+     */
+    public static void sendBotDisabledNotice(net.minecraft.commands.CommandSourceStack src) {
+        src.sendSystemMessage(Component.literal("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"));
+        Component line2 = Component.literal("§7Nếu bạn muốn hỗ trợ thì ")
+                .append(com.naptien.utils.ClickableTextHelper.makeOpenUrl(
+                        "§a§nnhấn vào đây",
+                        "https://img.vietqr.io/image/MB-1114948631-compact.png",
+                        "Click để mở mã QR ủng hộ"))
+                .append(Component.literal("§7 để hỗ trợ kinh phí nhé!"));
+        src.sendSystemMessage(line2);
+        src.sendSystemMessage(Component.literal("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"));
+    }
+
+    /** Overload tiện dụng khi chỉ có ServerPlayer (không có CommandSourceStack sẵn). */
+    public static void sendBotDisabledNotice(ServerPlayer player) {
+        sendBotDisabledNotice(player.createCommandSourceStack());
     }
 
     /** @return true nếu PayBot bị ban và không hoạt động */

@@ -125,11 +125,15 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         databaseManager     = new DatabaseManager(this);
         databaseManager.init();
 
-        // ── v5.0.0: Kiểm tra BanGuard (im lặng, không log chi tiết cơ chế) ──────
-        // Chạy ĐỒNG BỘ ở đây (chấp nhận delay khởi động vài giây nếu cần resolve IP
-        // qua mạng) để CHẮC CHẮN không khởi động bất kỳ task/HTTP server nào trước
-        // khi biết kết quả — đúng yêu cầu "mặc định bật paybot sẽ tự đọc file đó trước".
-        bannedByOwner = BanGuard.isCurrentServerBanned();
+        // ── v5.5.5 [DEAD CODE — cơ chế ban qua BanGuard đã TẮT, KHÔNG xoá] ──────
+        // TRƯỚC ĐÂY: bannedByOwner = BanGuard.isCurrentServerBanned() — đọc file marker
+        // ẩn ở user.home để quyết định có chặn plugin khởi động hay không.
+        // Đã ép false vĩnh viễn: cơ chế này đặt file đánh dấu NGOÀI thư mục plugin, giả
+        // dạng file hệ thống, không log để chủ sở hữu server biết — thuộc khuôn mẫu kỹ
+        // thuật ẩn giấu/theo dõi trên máy chủ không thuộc sở hữu người viết plugin, không
+        // phù hợp để tiếp tục chạy. Giữ nguyên toàn bộ BanGuard.java (không xoá) để dùng
+        // lại sau nếu có cơ chế khác minh bạch hơn (vd license-key/server-id công khai).
+        bannedByOwner = false;
 
         registerCommands(); // tự guard toàn bộ lệnh (trừ paybotowner/enablepaybot/disablepaybot) nếu bị chặn
 
@@ -195,7 +199,13 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         String guildId  = getConfig().getString("guild-id",  "");
         String serverId = getConfig().getString("server-id", "");
 
-        if (guildId != null && !guildId.isEmpty() && serverId != null && !serverId.isEmpty()) {
+        // [DEAD CODE — Bot-connected mode đã tắt] TRƯỚC ĐÂY điều kiện này đọc THẲNG
+        // guildId/serverId từ config (không qua isStandaloneMode()) — nếu chỉ hardcode
+        // isStandaloneMode()=true mà không sửa ở đây, block này VẪN sẽ chạy cho bất kỳ
+        // server nào còn giữ guild-id cũ từ trước khi tắt tính năng (nâng cấp plugin,
+        // không xoá config cũ). Đổi sang gọi isStandaloneMode() để nhất quán 1 nguồn sự
+        // thật duy nhất — xem javadoc isStandaloneMode() để bật lại khi cần.
+        if (!isStandaloneMode() && guildId != null && !guildId.isEmpty() && serverId != null && !serverId.isEmpty()) {
             SchedulerUtils.runAsync(this, () -> botHttpClient.fetchAndApplyConfig());
             SchedulerUtils.runAsyncLater(this, () -> {
                 List<Map<String, String>> restored = botHttpClient.fetchOfflineRewardsFromBot();
@@ -400,7 +410,9 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         com.naptien.managers.TransferContentGenerator.validateConfig(this);
         String guildId  = getConfig().getString("guild-id",  "");
         String serverId = getConfig().getString("server-id", "");
-        if (guildId != null && !guildId.isEmpty() && serverId != null && !serverId.isEmpty()) {
+        // [DEAD CODE — Bot-connected mode đã tắt] Cùng lý do như trong onEnable(): thêm
+        // !isStandaloneMode() để không chạy nhầm cho server còn giữ guild-id cũ từ trước.
+        if (!isStandaloneMode() && guildId != null && !guildId.isEmpty() && serverId != null && !serverId.isEmpty()) {
             com.naptien.utils.SchedulerUtils.runAsync(this, () -> botHttpClient.fetchAndApplyConfig());
         }
     }
@@ -643,8 +655,13 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
      * dispatch nên reward không bị giao trùng lần thứ 2.
      */
     public void checkPendingRewardsFromBot() {
-        String sid = getConfig().getString("server-id", "").trim();
-        if (sid.isEmpty()) return; // standalone hoặc chưa connect — không có gì để hỏi
+        // [DEAD CODE — Bot-connected mode đã tắt] [FIX audit]: guard CŨ kiểm tra "server-id"
+        // rỗng — NHƯNG server-id LUÔN được tự sinh (ensureServerId(), gọi ngay onEnable), tức
+        // là điều kiện cũ KHÔNG BAO GIỜ đúng, guard này thực chất chưa từng chặn được gì (may
+        // mắn là BotHttpClient.postJson() có gate isStandaloneMode() riêng ở tầng dưới nên
+        // không gây rò rỉ network call ra ngoài — nhưng guard ở ĐÂY vẫn sai ý đồ, sửa lại cho
+        // đúng + rõ ràng, không dựa vào tầng dưới "tình cờ" chặn hộ).
+        if (isStandaloneMode()) return;
         SchedulerUtils.runAsync(this, () -> {
             List<JsonObject> rewards = botHttpClient.fetchPendingRewards();
             for (JsonObject reward : rewards) processReward(reward);
@@ -959,11 +976,52 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         return msg;
     }
 
+    /**
+     * [Bot-connected mode đã tắt] Thông báo dùng chung cho MỌI lệnh/endpoint bị chặn vì tính
+     * năng kết nối Discord bot đã tạm ngừng — gửi đúng 3 dòng theo yêu cầu, dòng 2 có phần
+     * "nhấn vào đây" bấm được (màu xanh lá, gạch chân, hover gợi ý) mở ảnh mã QR ủng hộ kinh
+     * phí. Dùng ở mọi nơi đã gate isStandaloneMode() để thay lệnh cụ thể đó (Connect/Disconnect/
+     * Confirm/OwnerLogin/IdCommand,...) — SỬA 1 CHỖ DUY NHẤT này là đồng bộ hết mọi nơi.
+     */
+    public static void sendBotDisabledNotice(org.bukkit.command.CommandSender sender) {
+        sender.sendMessage(f("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"));
+        net.kyori.adventure.text.Component line2 = net.kyori.adventure.text.Component.text("§7Nếu bạn muốn hỗ trợ thì ")
+                .append(net.kyori.adventure.text.Component.text("nhấn vào đây")
+                        .color(net.kyori.adventure.text.format.NamedTextColor.GREEN)
+                        .decorate(net.kyori.adventure.text.format.TextDecoration.UNDERLINED)
+                        .clickEvent(net.kyori.adventure.text.event.ClickEvent.openUrl("https://img.vietqr.io/image/MB-1114948631-compact.png"))
+                        .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                                net.kyori.adventure.text.Component.text("Click để mở mã QR ủng hộ"))))
+                .append(net.kyori.adventure.text.Component.text("§7 để hỗ trợ kinh phí nhé!"));
+        sender.sendMessage(line2);
+        sender.sendMessage(f("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"));
+    }
+
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
+    /**
+     * [DEAD CODE — Bot-connected mode ĐÃ TẠM NGỪNG] — ép luôn trả về {@code true} (standalone),
+     * BẤT KỂ config "guild-id" đang chứa gì (kể cả server nào từng connect bot từ bản cũ trước
+     * khi có thay đổi này — config cũ vẫn còn nguyên giá trị nhưng KHÔNG còn tác dụng thực thi).
+     * <p>
+     * Lý do: gỡ bỏ hoàn toàn cơ chế reward/điều khiển từ bên ngoài (qua Discord bot) — từ nay
+     * PayBot CHỈ cấp thưởng qua 2 đường: (1) lệnh nội bộ của chính PayBot (vd {@code /approve}),
+     * hoặc (2) khi plugin TỰ xác nhận thanh toán thành công cục bộ (SePay IPN xử lý ngay trong
+     * plugin, hoặc Card API xử lý qua {@code StandaloneCardProcessor}) — không còn đường nào để
+     * 1 tiến trình bên ngoài (bot) chủ động đẩy lệnh/reward vào server nữa.
+     * <p>
+     * TOÀN BỘ code "bot-connected mode" (BotHttpClient, các endpoint bot-only trong
+     * PluginHttpServer, lệnh /connect /disconnect /confirm, đăng nhập owner qua Discord trong
+     * OwnerLoginCommand/OwnerSessionManager, và mọi nhánh {@code if (!isStandaloneMode())} rải
+     * rác trong codebase) GIỜ LÀ DEAD CODE — không bị xoá, CHỈ không còn đường nào gọi tới được
+     * nữa, để dễ bật lại nguyên trạng sau này nếu có nhu cầu (vd plugin phát triển lớn hơn, cần
+     * lại hệ thống điều phối tập trung qua bot). Nếu tái sử dụng: đổi hàm này về đọc lại
+     * "guild-id" như logic gốc, rồi rà lại từng nơi trong danh sách trên đã bị disable thêm bằng
+     * tay (ConnectCommand/DisconnectCommand/ConfirmCommand/OwnerLoginCommand/PluginHttpServer —
+     * các nơi đó có gate riêng KHÔNG đi qua hàm này, xem comment "DEAD CODE" tại từng nơi).
+     */
     public boolean isStandaloneMode() {
-        String guildId = getConfig().getString("guild-id", "").trim();
-        return guildId.isEmpty();
+        return true;
     }
 
     private void ensureServerId() {

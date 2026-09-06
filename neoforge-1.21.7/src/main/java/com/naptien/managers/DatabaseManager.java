@@ -36,8 +36,14 @@ public class DatabaseManager {
             return future.get(20, java.util.concurrent.TimeUnit.SECONDS);
         } catch (java.util.concurrent.TimeoutException e) {
             future.cancel(true);
+            // v5.5.5 Part 53 [BUG lặp lại y hệt plugin/ — xem LOG.md Part 52 mục 52.3]: cùng bug,
+            // cùng nguyên nhân (mod-side DatabaseManager viết cùng kiến trúc với plugin/, chia sẻ
+            // luôn bug này). Log rõ timeout thay vì nuốt im lặng.
+            PayBotMod.LOGGER.error("[PayBot] Kết nối MySQL bị TIMEOUT sau 20 giây — khả năng cao "
+                    + "do firewall chặn, MySQL server không chạy, hoặc mạng có vấn đề.");
             return false;
         } catch (Exception e) {
+            PayBotMod.LOGGER.error("[PayBot] Lỗi không xác định khi thử kết nối MySQL (executor/future): {}", e.getMessage(), e);
             return false;
         } finally {
             executor.shutdownNow();
@@ -952,7 +958,12 @@ public class DatabaseManager {
                 return rs.next();
             }
         } catch (SQLException e) {
-            return false;
+            // v5.5.5 Part 53 [BUG lặp lại y hệt plugin/ — xem LOG.md Part 52 mục 52.4]: fail-open
+            // (return false = "chưa tồn tại") sai hướng cho hàm chống trùng — đổi fail-closed.
+            // Caller (TransferContentGenerator) xác nhận có vòng lặp thử lại 100 lần + fallback
+            // timestamp, đổi hướng này an toàn.
+            PayBotMod.LOGGER.warn("[PayBot] hasBankOrder({}) lỗi SQL khi kiểm tra trùng mã — coi như CÓ THỂ trùng để an toàn: {}", invoiceId, e.getMessage(), e);
+            return true;
         }
     }
 

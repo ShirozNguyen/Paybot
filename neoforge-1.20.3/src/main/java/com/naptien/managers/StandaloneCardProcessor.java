@@ -61,7 +61,70 @@ public class StandaloneCardProcessor {
         String site   = mod.getConfig().getString("card-api.site","");
         String pid    = mod.getConfig().getString("card-api.partner-id","");
         String pkey   = mod.getConfig().getString("card-api.partner-key","");
-        if (botUrl.isEmpty()) return;
+
+        // [FIX GỐC — audit v5.5.5 Part 53] TRƯỚC ĐÂY hàm này CHỈ có 1 đường duy nhất: relay
+        // qua bot ("if (botUrl.isEmpty()) return;" — không làm gì cả nếu rỗng). NGHĨA LÀ: 1
+        // admin standalone THẬT (đã /cardsetup xong nhưng KHÔNG có bot-url — đúng trạng thái
+        // universal từ khi tắt bot-connected mode) bấm nạp thẻ thì KHÔNG CÓ GÌ XẢY RA — thẻ
+        // không được gửi đi đâu cả, không lỗi, không thông báo, im lặng tuyệt đối.
+        // Nguyên nhân: DirectCardSubmitHandler.submitDirectly() (gọi thẳng web thứ 3, không
+        // cần bot) đã được viết đầy đủ (retry 5×POST+5×GET có backoff) NHƯNG chưa từng được
+        // gọi ở bất kỳ đâu trong toàn bộ codebase (xác nhận qua grep toàn project) — hàm sống
+        // duy nhất luôn là nhánh relay-qua-bot. Từ khi bot-connected mode bị tắt vĩnh viễn
+        // (xem PayBotMod.isStandaloneMode()), đây KHÔNG còn là edge-case nữa mà là đường DUY
+        // NHẤT admin nào cũng đi qua — bắt buộc phải nối vào, không thể để dead code.
+        if (botUrl.isEmpty()) {
+            if (site.isEmpty() || pid.isEmpty() || pkey.isEmpty()) {
+                PayBotMod.LOGGER.warn("[CardProcessor] submitAndPoll: standalone nhưng card-api "
+                        + "chưa cấu hình đủ (site/partner-id/partner-key) — dùng /cardsetup trước.");
+                mod.getLocalOrderManager().markCardConnectionError(requestId, true);
+                return;
+            }
+            JsonObject result = com.naptien.managers.DirectCardSubmitHandler.submitDirectly(
+                    site, pid, pkey, telco, denom, cardCode, cardSerial, requestId);
+            if (result == null) {
+                // Thất bại toàn bộ sau 5×POST+5×GET (đã retry đầy đủ bên trong submitDirectly).
+                mod.getLocalOrderManager().markCardConnectionError(requestId, true);
+                mod.notifyAdmins("§c[PayBot] §fGửi thẻ trực tiếp thất bại (hết lượt retry) cho §e"
+                        + playerName + "§f, mã thẻ requestId=" + requestId.substring(0, 8) + "...");
+                return;
+            }
+            mod.getLocalOrderManager().markCardConnectionError(requestId, false);
+            String status  = result.has("status")  ? result.get("status").getAsString()  : "";
+            String message = result.has("message") ? result.get("message").getAsString() : "";
+            // [GIỚI HẠN ĐÃ BIẾT — nói rõ, không giấu] Nếu status trả về là CARD_PROCESSING
+            // ("99" — web thứ 3 nhận đơn nhưng chưa xử lý xong ngay), luồng relay-qua-bot CŨ
+            // có thể còn 1 bước "hỏi lại sau" riêng phía bot.py (không có trong codebase Java
+            // này nên KHÔNG THỂ xác minh chính xác tham số/API "check status" — không đoán mò
+            // theo yêu cầu). Ở đây xử lý AN TOÀN: báo admin biết để tự /approve khi web thứ 3
+            // xử lý xong, KHÔNG tự động resubmit lại thẻ (resubmit thẻ đã nộp có rủi ro bị web
+            // thứ 3 trả về "thẻ đã sử dụng" nếu họ không coi lần gọi lại là idempotent).
+            if (LocalOrderManager.CARD_PROCESSING.equals(status)) {
+                PayBotMod.LOGGER.warn("[CardProcessor] Thẻ requestId=" + requestId.substring(0, 8)
+                        + "... đang ở trạng thái PROCESSING từ web thứ 3 — cần admin tự kiểm tra "
+                        + "lại sau và /approve thủ công (không tự động resubmit).");
+            }
+            if (!status.isEmpty()) {
+                notifyCardResultFromPush(requestId, status, message);
+            }
+            return;
+        }
+
+        attemptSubmitAndPollViaBot(requestId, playerName, telco, denom, cardCode, cardSerial, botUrl, sid, site, pid, pkey);
+    }
+
+    /**
+     * [DEAD CODE — Bot-connected mode đã tắt] Đường relay-qua-bot CŨ — GIỮ NGUYÊN nguyên vẹn,
+     * chỉ tách ra thành method riêng để submitAndPoll() có thể rẽ nhánh rõ ràng. Chỉ còn chạy
+     * được nếu server nào đó CHỦ ĐỘNG set "bot-url" dù guild-id rỗng (edge-case hiếm, không
+     * phải luồng chính thức nào của tính năng "kết nối bot" — connect command đã bị chặn hoàn
+     * toàn nên guild-id không thể tự có giá trị nữa, nhưng bot-url là field riêng nên về lý
+     * thuyết admin vẫn có thể tự tay điền — giữ nhánh này chạy được cho trường hợp đó thay vì
+     * chặn cứng, vì đây không phải "liên kết Discord bot" theo đúng nghĩa đã bị tắt).
+     */
+    private void attemptSubmitAndPollViaBot(String requestId, String playerName, String telco,
+                               int denom, String cardCode, String cardSerial,
+                               String botUrl, String sid, String site, String pid, String pkey) {
 
         JsonObject body = new JsonObject();
         body.addProperty("server_id",   sid);
@@ -93,6 +156,10 @@ public class StandaloneCardProcessor {
     }
 
     public void pollPendingCards() {
+        // [DEAD CODE — Bot-connected mode đã tắt] Cùng lý do như StandaloneBankPoller.
+        // pollPendingOrders() — thêm gate isStandaloneMode() tường minh, không chỉ dựa vào
+        // "bot-url" rỗng hay không (server upgrade có thể còn sót bot-url cũ trong config).
+        if (mod.isStandaloneMode()) return;
         String botUrl = mod.getConfig().getString("bot-url","").trim();
         if (botUrl.isEmpty()) return;
         List<LocalOrderManager.CardOrder> processing = mod.getLocalOrderManager().getProcessingCardOrders();

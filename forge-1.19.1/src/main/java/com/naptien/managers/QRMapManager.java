@@ -4,6 +4,7 @@ import com.naptien.PayBotMod;
 import com.naptien.utils.ItemStackHelper;
 import com.naptien.utils.ItemTagCompat;
 import com.naptien.utils.MapItemCompat;
+import com.naptien.utils.PayBotDebug;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MapItem;
@@ -99,7 +100,12 @@ public class QRMapManager {
         try {
             Integer id = MapItem.getMapId(mapItem);
             if (id != null) mapIdInt = id;
-        } catch (Throwable ignored) {}
+        } catch (Throwable t) {
+            // v5.5.5 Part 53 [BUG NHỎ — audit]: TRƯỚC ĐÂY im lặng. mapIdInt=0 sai sẽ được dùng
+            // cho cơ chế tự xoá QR map sau 30 phút (deleteQRMap, xem dưới) — nếu sai, có thể
+            // không xoá đúng map, hoặc xoá nhầm map khác có id=0 nếu tồn tại.
+            PayBotDebug.logSwallowed("QRMapManager: MapItem.getMapId() thất bại, dùng tạm id=0", t);
+        }
 
         if (state != null && qrImg != null) {
             BufferedImage scaled = new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);

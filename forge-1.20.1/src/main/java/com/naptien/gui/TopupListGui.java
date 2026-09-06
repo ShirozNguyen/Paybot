@@ -178,7 +178,13 @@ public class TopupListGui {
         int mode2 = Math.max(1, mod.getConfig().getInt("Rewards_Bank_Mode", 1));
         int rewardAmt = 0;
         try { if (!rawAmt.isEmpty()) rewardAmt = (int)(Double.parseDouble(rawAmt) * mode2); }
-        catch (Exception ignored) {}
+        catch (Exception e) {
+            // v5.5.5 Part 55 [BUG NHO - audit]: TRUOC DAY im lang. rewardAmt feed vao placeholder
+            // [amount] trong lenh thuong - loi config admin, muc do thap hon cac bug truoc nhung
+            // van nen log.
+            PayBotMod.LOGGER.warn("[TopupListGui] denom-rewards-bank." + b.amount + ".amt=\"" + rawAmt
+                    + "\" khong parse duoc - [amount] se la 0 trong lenh thuong.");
+        }
 
         if (!cmd.isEmpty()) {
             final String fcmd = cmd

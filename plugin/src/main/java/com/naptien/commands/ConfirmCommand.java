@@ -17,6 +17,12 @@ public class ConfirmCommand implements CommandExecutor {
             sender.sendMessage("§cYou Don't Have Permission To Use This!");
             return true;
         }
+        // [DEAD CODE — Bot-connected mode đã tắt] Xem comment cùng loại trong
+        // ConnectCommand.java — giữ nguyên code bên dưới, chỉ chặn từ đây.
+        if (plugin.isStandaloneMode()) {
+            NapTienPlugin.sendBotDisabledNotice(sender);
+            return true;
+        }
         // BUG FIX v4.1.0: Chỉ check guild-id (tương tự DisconnectCommand).
         String guildId = plugin.getConfig().getString("guild-id", "").trim();
         if (guildId.isEmpty()) {

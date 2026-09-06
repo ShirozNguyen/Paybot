@@ -1,29 +1,38 @@
-# Gradle build outputs
+# Gradle
 .gradle/
-build/
-bin/
-*/bin/
+**/build/
 
-# Log and documentation files
+# Keep Gradle Wrapper
+!gradle/wrapper/gradle-wrapper.jar
+
+# Documentation / logs
 CHANGELOG.md
 LOG.md
+*.log
 
-# Temporary and trash folders
+# Temporary / generated
 trash/
 done/
+*.class
+*.zip
+*.tar.gz
 
-# IDE configurations
+# IDE
 .idea/
 .vscode/
 *.iml
 
-# Compiled outputs and archives
-*.jar
-*.class
-*.zip
-*.tar.gz
-*.log
-
-# OS generated files
+# OS
 .DS_Store
 Thumbs.db
+
+# Compiled files
+*.class
+*.jar
+
+# Archives
+*.zip
+*.tar.gz
+
+# Temp files
+croc-stdin-*

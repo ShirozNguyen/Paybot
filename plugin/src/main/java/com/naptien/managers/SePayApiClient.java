@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.naptien.NapTienPlugin;
+import org.bukkit.Bukkit;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -90,7 +91,19 @@ public class SePayApiClient {
         for (JsonElement el : res.body.getAsJsonArray("transactions")) {
             JsonObject o = el.getAsJsonObject();
             TransactionInfo t = new TransactionInfo();
-            try { t.id = Long.parseLong(str(o, "id")); } catch (NumberFormatException ignored) { continue; }
+            try { t.id = Long.parseLong(str(o, "id")); }
+            catch (NumberFormatException ignored) {
+                // v5.5.5 Part 52 [BUG — audit fallback/hidden-except]: TRƯỚC ĐÂY continue hoàn
+                // toàn im lặng — bỏ qua CẢ giao dịch (không chỉ id) mà không log gì. Đây là kết
+                // quả từ SePay API thật (không phải input người dùng), nếu SePay từng trả 1 giao
+                // dịch có id không parse được (dữ liệu bất thường/đổi định dạng phía SePay), giao
+                // dịch đó biến mất khỏi luồng xử lý của PayBot vĩnh viễn (sinceId không tăng nên
+                // sẽ được thấy lại ở lần poll sau — không mất hẳn, nhưng lặp lại lỗi tương tự thì
+                // vẫn cứ bị bỏ qua mãi) mà không ai biết. Log lại để admin ít nhất biết mà tra.
+                plugin.getLogger().warning("[PayBot] SePay: bỏ qua 1 giao dịch có id không parse "
+                        + "được (raw=\"" + str(o, "id") + "\") — kiểm tra lại nếu lặp lại nhiều lần.");
+                continue;
+            }
             t.accountNumber    = str(o, "account_number");
             t.transactionDate  = str(o, "transaction_date");
             t.content          = str(o, "transaction_content");
@@ -174,6 +187,18 @@ public class SePayApiClient {
     }
 
     private static long parseAmount(String s) {
-        try { return (long) Double.parseDouble(s); } catch (Exception e) { return 0L; }
+        try { return (long) Double.parseDouble(s); }
+        catch (Exception e) {
+            // v5.5.5 Part 52 [BUG — audit fallback/hidden-except]: TRƯỚC ĐÂY return 0L im lặng.
+            // Đây là số tiền TRONG GIAO DỊCH NGÂN HÀNG THẬT (amount_in/amount_out từ SePay) — nếu
+            // parse lỗi, giao dịch bị ghi nhận với số tiền 0đ, sẽ KHÔNG khớp được với bất kỳ đơn
+            // hàng pending nào (logic match dựa vào so khớp số tiền), khiến 1 khoản chuyển khoản
+            // thật không được xử lý mà không có dấu vết nào giải thích tại sao (log trước đây
+            // hoàn toàn im lặng ở bước này).
+            Bukkit.getLogger().warning("[PayBot] SePay: không parse được số tiền giao "
+                    + "dịch (raw=\"" + s + "\") — ghi nhận tạm 0đ, giao dịch này sẽ KHÔNG khớp "
+                    + "được đơn hàng nào, cần kiểm tra tay.");
+            return 0L;
+        }
     }
 }

@@ -32,18 +32,26 @@ public class BotHttpClient {
 
     /**
      * v5.0.0 — Key xác thực request lên bot.py (middleware auth_middleware trong
-     * build_http_app() check header "X-API-Key"). PHẢI khớp với BOT_API_KEY (env var)
-     * hoặc default trong bot.py, nếu không MỌI request (trừ /api/sepay-ipn) sẽ bị bot
-     * trả 403 Forbidden. Đọc từ config "bot-api-key" để admin đổi được không cần build
-     * lại mod — fallback về default khớp với default trong bot.py nếu admin chưa đổi.
+     * build_http_app() check header "X-API-Key"). PHẢI khớp tuyệt đối với hằng số
+     * BOT_API_KEY hardcode trong bot.py, nếu không MỌI request (trừ /api/sepay-ipn)
+     * sẽ bị bot trả 403 Forbidden.
+     *
+     * v5.5.5 FIX: đồng bộ với plugin/ (Bukkit) v5.0.2 FIX — TRƯỚC đây đọc từ config
+     * "bot-api-key" để admin "tự đổi được không cần build lại mod", nhưng đây là khoá
+     * bí mật nội bộ giữa plugin/mod và bot.py, KHÔNG phải thứ admin server nên tự ý
+     * sửa (đổi 1 bên mà quên đổi bên kia là tự khoá API của chính mình, 403 toàn bộ,
+     * rất khó debug). PayBotConfig.java (mod) đã có logic tự xoá "bot-api-key" khỏi
+     * config.yml từ v5.0.2 với giả định key này ĐÃ hardcode ở đây — nhưng thực tế
+     * BotHttpClient (mod) trước bản sửa này vẫn đọc config, ngược với giả định đó.
+     * Giờ hardcode cứng trong code (khớp 3 nơi: plugin, mod, bot.py) — nhất quán với
+     * plugin/ và với chính giả định của PayBotConfig.java.
      */
     public static final String DEFAULT_API_KEY =
             "TheRealShirozOnTopAndIMadeThisAPIKeyForSecretThingYouShouldntBypassThisAPIKeyYay";
 
     /** Gắn header X-API-Key vào connection — gọi SAU openConnection(), TRƯỚC getOutputStream(). */
     public static void applyApiKey(HttpURLConnection conn, PayBotMod mod) {
-        String key = mod.getConfig().getString("bot-api-key", DEFAULT_API_KEY).trim();
-        if (!key.isEmpty()) conn.setRequestProperty("X-API-Key", key);
+        conn.setRequestProperty("X-API-Key", DEFAULT_API_KEY);
     }
 
     private final PayBotMod mod;
@@ -344,6 +352,10 @@ public class BotHttpClient {
     }
 
     private JsonObject post(String path, JsonObject body, boolean silent) throws Exception {
+        // [DEAD CODE — Bot-connected mode đã tắt] Ngoại lệ "/api/connect"/"/api/connect-plugin"
+        // không còn ý nghĩa thực tế — nơi DUY NHẤT gọi "/api/connect" (registerConnect trong
+        // CommandRegistry) đã tự chặn ngay từ đầu bằng isStandaloneMode(). Giữ nguyên ngoại lệ
+        // để nếu bật lại connected mode sau này thì logic connect vẫn đúng ngay.
         if (mod.isStandaloneMode() && !path.equals("/api/connect") && !path.equals("/api/connect-plugin")) {
             return null;
         }
@@ -355,7 +367,13 @@ public class BotHttpClient {
         try {
             url = new java.net.URL(botUrl);
         } catch (java.net.MalformedURLException e) {
-            return doPost(botUrl, path, body);
+            // v5.5.5 Part 53 [BUG lặp lại y hệt plugin/ — xem LOG.md Part 52 mục 52.6]: doPost()
+            // bên dưới CŨNG tự "new URL(botUrl + path)" dùng chính botUrl vừa lỗi format — chắc
+            // chắn lỗi lại y hệt, "fallback" này không có tác dụng thật + bỏ qua toàn bộ logic
+            // quét cổng dự phòng phía dưới. Log rõ + throw thay vì lặp lại thao tác vô ích.
+            PayBotMod.LOGGER.warn("[PayBot] Cấu hình \"bot-url\" không hợp lệ: \"{}\" — {}. Kiểm tra "
+                    + "lại giá trị này (phải có dạng đầy đủ vd \"https://host:port\").", botUrl, e.getMessage());
+            throw e;
         }
 
         String protocol = url.getProtocol();
@@ -448,7 +466,10 @@ public class BotHttpClient {
         body.addProperty("server_id", sid);
         try {
             post("/api/pending-rewards", body, true);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // v5.5.5 Part 54 [BUG SOT - quen sua o Part 53 du da sua ben plugin/ Part 52]: im lang
+            // hoan toan truoc day, khong nhat quan voi cac log loi mang khac trong cung file.
+            PayBotMod.LOGGER.debug("[Bot] pingBot: {}", e.getMessage());
         }
     }
 

@@ -282,17 +282,43 @@ public class FabricVersionAdapterModern implements VersionAdapter {
             return;
         }
 
-        // Phương án 1: truyền thẳng List<Component> — rẻ, thử trước dù khả năng thành công thấp.
-        if (attemptLoreValue(stack, componentList, "List<Component> trực tiếp")) return;
-
-        // Phương án 2: dựng wrapper qua reflection từ tên Mojang khả dĩ nhất.
+        // [FIX — audit v5.5.5 Part 53, xác minh qua mappings.dev CHÍNH THỨC xuyên suốt
+        // 1.20.6 → 1.21.11] TRƯỚC ĐÂY có "Phương án 1: truyền thẳng List<Component>" thử
+        // trước — ĐÃ XÁC NHẬN ĐÂY LÀ BUG GỐC, không phải phương án dự phòng vô hại:
+        //
+        // DataComponentTypes.LORE có kiểu THẬT là DataComponentType<ItemLore> (record 2 field
+        // lines/styledLines) — KHÔNG PHẢI DataComponentType<List<Component>>. Do generics Java
+        // bị erase khi gọi qua reflection (invokeSilently gọi Method.invoke(Object,Object...),
+        // JVM không kiểm tra khớp kiểu T thật sự tại set()/get()), nên "Phương án 1" truyền
+        // thẳng 1 List thô KHÔNG BAO GIỜ ném exception — set() "thành công" vô điều kiện, và
+        // get() đọc lại trả về ĐÚNG CÁI List thô đó (vì get() chỉ trả lại y nguyên object đã
+        // lưu, không tự ép kiểu) → attemptLoreValue() luôn thấy verify != null → LUÔN báo
+        // "THÀNH CÔNG" giả — khiến "Phương án 2" (dùng đúng wrapper ItemLore, phương án ĐÚNG
+        // duy nhất theo cấu trúc component thật) KHÔNG BAO GIỜ được thử tới trong thực tế.
+        //
+        // Lỗi thật chỉ lộ ra SAU đó, khi server mã hoá item để gửi cho client hiển thị tooltip
+        // (STREAM_CODEC của LORE component được viết riêng cho kiểu ItemLore) — 1 List thô nằm
+        // sai chỗ khiến bước mã hoá/hiển thị đó thất bại (client không thấy lore) mà KHÔNG có
+        // exception nào lộ ra ở phía set() để code này bắt được — đúng loại lỗi "verify chỗ
+        // này nhưng crash chỗ khác" khiến nhiều lần sửa trước tưởng đã xong.
+        //
+        // FIX: bỏ hẳn Phương án 1 — không còn đường nào để lưu sai kiểu nữa, luôn dựng đúng
+        // ItemLore trước khi set.
         Class<?> itemLoreClass = resolveClassEitherWay("net.minecraft.world.item.component.ItemLore");
-        if (itemLoreClass != null) {
-            Object wrapper = buildListWrapperInstance(itemLoreClass, componentList);
-            if (wrapper != null && attemptLoreValue(stack, wrapper, "wrapper " + itemLoreClass.getName())) return;
+        if (itemLoreClass == null) {
+            LOGGER.error("[FabricModern] Không tìm thấy class ItemLore trên runtime này — không thể set lore đúng kiểu.");
+            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setLore: thiếu class net.minecraft.world.item.component.ItemLore", null);
+            return;
         }
-
-        LOGGER.warn("[FabricModern] KHÔNG set được lore bằng bất kỳ cách nào đã thử — xem log debug-mode phía trên.");
+        Object wrapper = buildListWrapperInstance(itemLoreClass, componentList);
+        if (wrapper == null) {
+            LOGGER.error("[FabricModern] Có class ItemLore nhưng KHÔNG dựng được instance qua constructor/factory — xem debug-mode.");
+            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setLore: buildListWrapperInstance trả về null", null);
+            return;
+        }
+        if (!attemptLoreValue(stack, wrapper, "wrapper " + itemLoreClass.getName())) {
+            LOGGER.warn("[FabricModern] KHÔNG set được lore bằng wrapper ItemLore — xem log debug-mode phía trên.");
+        }
     }
 
     private boolean attemptLoreValue(ItemStack stack, Object value, String description) {
@@ -310,11 +336,17 @@ public class FabricVersionAdapterModern implements VersionAdapter {
         return false;
     }
 
-    /** v5.5.5 Part 44b: đã xác minh qua Javadoc chính thức (NeoForge 1.21.1-21.1.216 + CraftTweaker
-     *  docs) — net.minecraft.world.item.component.ItemLore là RECORD 2 field (lines, styledLines),
-     *  CÓ static factory ItemLore.of(List)/ItemLore.of(List,List). Ưu tiên static factory trước
-     *  (khả năng tự suy ra styledLines đúng cách hơn truyền cùng 1 list 2 lần cho constructor),
-     *  constructor record chỉ còn là dự phòng. */
+    /** [FIX comment — audit v5.5.5 Part 53] Comment CŨ ở đây khẳng định "đã xác minh qua Javadoc
+     *  chính thức... CÓ static factory ItemLore.of(List)/ItemLore.of(List,List)" — ĐÃ TRA LẠI
+     *  qua mappings.dev (Mojang mapping chính thức) xuyên suốt 1.20.6 → 1.21.11: ItemLore
+     *  KHÔNG có bất kỳ static factory nào tên "of" hay tên khác — chỉ có ĐÚNG 2 constructor
+     *  record: {@code ItemLore(List<Component> lines)} và
+     *  {@code ItemLore(List<Component> lines, List<Component> styledLines)}, ổn định không đổi
+     *  suốt dải version trên. Comment cũ SAI nhưng KHÔNG gây lỗi chức năng — vòng lặp static
+     *  factory bên dưới vốn dĩ luôn không tìm thấy gì (đúng thực tế) rồi tự rơi xuống nhánh
+     *  constructor (cũng đúng thực tế) — giữ lại vòng lặp static factory làm phòng hờ (không
+     *  hại gì) cho trường hợp version tương lai có thêm factory, nhưng SỬA LẠI comment cho đúng
+     *  để không còn ai đọc rồi tưởng thật, tốn công tìm 1 API không tồn tại. */
     private Object buildListWrapperInstance(Class<?> wrapperClass, List<Component> componentList) {
         try {
             for (Method m : wrapperClass.getDeclaredMethods()) {
@@ -368,15 +400,31 @@ public class FabricVersionAdapterModern implements VersionAdapter {
         if (existingTag != null) newTag = existingTag.copy();
         newTag.putString("paybot_invoice_id", invoiceId);
 
-        if (attemptCustomDataValue(stack, newTag, "CompoundTag trực tiếp")) return;
-
+        // [FIX — audit v5.5.5 Part 53, xác minh qua mappings.dev CHÍNH THỨC] CÙNG LOẠI BUG với
+        // setLore() phía trên: DataComponentTypes.CUSTOM_DATA có kiểu thật DataComponentType
+        // <CustomData> (final class, field CompoundTag riêng tư bên trong) — KHÔNG PHẢI
+        // DataComponentType<CompoundTag> trực tiếp. "Phương án 1: CompoundTag trực tiếp" trước
+        // đây luôn "verify thành công" giả (cùng lý do generics erasure qua reflection như lore)
+        // vì get() trả lại nguyên chính CompoundTag đã lưu, vẫn chứa "paybot_invoice_id" —
+        // khiến Phương án 2 (wrapper CustomData, phương án ĐÚNG) không bao giờ thực sự được cần
+        // tới. Khác với ItemLore (không có factory), CustomData CÓ static factory thật đã xác
+        // nhận qua mapping: {@code public static CustomData of(CompoundTag)} — ưu tiên factory
+        // này trước (buildTagWrapperInstance đã hỗ trợ, chỉ cần đổi thứ tự gọi bên dưới).
         Class<?> customDataClass = resolveClassEitherWay("net.minecraft.world.item.component.CustomData");
-        if (customDataClass != null) {
-            Object wrapper = buildTagWrapperInstance(customDataClass, newTag);
-            if (wrapper != null && attemptCustomDataValue(stack, wrapper, "wrapper " + customDataClass.getName())) return;
+        if (customDataClass == null) {
+            LOGGER.error("[FabricModern] Không tìm thấy class CustomData trên runtime này — không thể set invoice-id đúng kiểu.");
+            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setInvoiceId: thiếu class net.minecraft.world.item.component.CustomData", null);
+            return;
         }
-
-        PayBotDebug.logSwallowed("FabricVersionAdapterModern.setInvoiceId: không set được bằng bất kỳ cách nào đã thử", null);
+        Object wrapper = buildTagWrapperInstance(customDataClass, newTag);
+        if (wrapper == null) {
+            LOGGER.error("[FabricModern] Có class CustomData nhưng KHÔNG dựng được instance qua factory/constructor — xem debug-mode.");
+            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setInvoiceId: buildTagWrapperInstance trả về null", null);
+            return;
+        }
+        if (!attemptCustomDataValue(stack, wrapper, "wrapper " + customDataClass.getName())) {
+            LOGGER.warn("[FabricModern] KHÔNG set được invoice-id bằng wrapper CustomData — xem log debug-mode phía trên.");
+        }
     }
 
     private boolean attemptCustomDataValue(ItemStack stack, Object value, String description) {
@@ -395,24 +443,16 @@ public class FabricVersionAdapterModern implements VersionAdapter {
         return false;
     }
 
+    /** [FIX thứ tự — audit v5.5.5 Part 53] TRƯỚC ĐÂY thử constructor (private) trước, static
+     *  factory sau. Đã xác nhận qua mapping chính thức: CustomData có constructor {@code
+     *  private CustomData(CompoundTag)} NHƯNG cũng có factory tĩnh THẬT {@code public static
+     *  CustomData of(CompoundTag)}. Gọi constructor private qua reflection (setAccessible(true))
+     *  vẫn hoạt động nên KHÔNG phải bug functional — nhưng gọi thẳng API public chính thức
+     *  (of()) đúng ý đồ Mojang hơn là lách qua constructor private, nên đổi thứ tự: ưu tiên
+     *  static factory public trước, constructor private chỉ còn là dự phòng cho version nào lỡ
+     *  không có factory. */
     private Object buildTagWrapperInstance(Class<?> wrapperClass, CompoundTag tag) {
-        // Thử constructor nhận CompoundTag trước.
-        try {
-            for (Constructor<?> ctor : wrapperClass.getDeclaredConstructors()) {
-                ctor.setAccessible(true);
-                Class<?>[] pTypes = ctor.getParameterTypes();
-                if (pTypes.length == 1 && pTypes[0].isAssignableFrom(CompoundTag.class)) {
-                    try {
-                        return ctor.newInstance(tag);
-                    } catch (Throwable ignored) {
-                        // thử tiếp
-                    }
-                }
-            }
-        } catch (Throwable ignored) {
-            // không có constructor phù hợp
-        }
-        // Thử static factory method nhận CompoundTag, trả về đúng kiểu wrapperClass (vd CustomData.of(tag)).
+        // Ưu tiên static factory method public nhận CompoundTag (vd CustomData.of(tag)).
         try {
             for (Method m : wrapperClass.getDeclaredMethods()) {
                 if (Modifier.isStatic(m.getModifiers())
@@ -428,6 +468,22 @@ public class FabricVersionAdapterModern implements VersionAdapter {
             }
         } catch (Throwable ignored) {
             // không có static factory phù hợp
+        }
+        // Dự phòng: constructor nhận CompoundTag (kể cả private, qua setAccessible).
+        try {
+            for (Constructor<?> ctor : wrapperClass.getDeclaredConstructors()) {
+                ctor.setAccessible(true);
+                Class<?>[] pTypes = ctor.getParameterTypes();
+                if (pTypes.length == 1 && pTypes[0].isAssignableFrom(CompoundTag.class)) {
+                    try {
+                        return ctor.newInstance(tag);
+                    } catch (Throwable ignored) {
+                        // thử tiếp
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+            // không có constructor phù hợp
         }
         return null;
     }

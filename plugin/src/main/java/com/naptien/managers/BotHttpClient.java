@@ -514,6 +514,12 @@ public class BotHttpClient {
     }
 
     private JsonObject postJson(String path, JsonObject body, boolean silent) throws Exception {
+        // [DEAD CODE — Bot-connected mode đã tắt] Ngoại lệ "/api/connect-plugin"/"/api/connect"
+        // dưới đây giờ KHÔNG còn ý nghĩa thực tế: ConnectCommand (nơi DUY NHẤT gọi tới
+        // "/api/connect") đã tự chặn ngay từ đầu bằng isStandaloneMode() nên không bao giờ gọi
+        // tới được dòng này nữa. Giữ nguyên ngoại lệ (không xoá) để nếu bật lại connected mode
+        // sau này (đổi isStandaloneMode() trả lại theo config) thì logic connect vẫn đúng ngay,
+        // không cần nhớ khôi phục thêm chỗ này.
         if (plugin.isStandaloneMode() && !path.equals("/api/connect-plugin") && !path.equals("/api/connect")) {
             return null;
         }
@@ -525,7 +531,17 @@ public class BotHttpClient {
         try {
             url = new java.net.URL(botUrl);
         } catch (java.net.MalformedURLException e) {
-            return doPostJson(botUrl, path, body);
+            // v5.5.5 Part 52 [BUG — audit fallback/hidden-except]: TRƯỚC ĐÂY gọi thẳng
+            // doPostJson(botUrl, path, body) — NHƯNG doPostJson() bên trong CŨNG tự parse lại
+            // "new URL(botUrl + path)" (dòng ~582), dùng CHÍNH chuỗi botUrl vừa lỗi format ở
+            // đây — nếu đã sai định dạng ở bước parse này thì chắc chắn lỗi lại y hệt ở bước
+            // đó, "fallback" này thực chất không làm gì khác ngoài trì hoãn lỗi 1 bước, ĐỒNG
+            // THỜI bỏ qua toàn bộ logic quét cổng dự phòng (dòng 538-571) mà nhánh bình thường
+            // có. Sửa: báo lỗi rõ ràng ngay tại đây thay vì lặp lại thao tác chắc chắn thất bại.
+            plugin.getLogger().warning("[PayBot] Cấu hình \"bot-url\" không hợp lệ: \"" + botUrl
+                    + "\" — " + e.getMessage() + ". Kiểm tra lại giá trị này trong config.yml "
+                    + "(phải có dạng đầy đủ vd \"https://host:port\").");
+            throw e;
         }
 
         String protocol = url.getProtocol();
@@ -645,7 +661,12 @@ public class BotHttpClient {
         body.addProperty("server_id", sid);
         try {
             postJson("/api/pending-rewards", body, true);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // v5.5.5 Part 52 [BUG NHỎ — audit]: TRƯỚC ĐÂY im lặng hoàn toàn, KHÔNG nhất quán với
+            // reportServerIp() ngay phía trên (cùng file, cùng kiểu lỗi mạng, có log Level.FINER).
+            // Thêm log cùng mức cho nhất quán — pingBot() chạy định kỳ nên không cần log to
+            // (FINER = chỉ hiện khi bật debug), nhưng vẫn nên có dấu vết thay vì im lặng tuyệt đối.
+            plugin.getLogger().log(Level.FINER, "[Bot] pingBot: " + e.getMessage());
         }
     }
 

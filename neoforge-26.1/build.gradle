@@ -1,0 +1,80 @@
+// v5.5.5 Part 49: neoforge-26.1 — cùng lý do tách khỏi Architectury Loom chung như fabric-26.1
+// (xem LOG.md Part 48): bản 1.7.435 đang dùng ở root xác nhận crash với 26.1+. Module này tự áp
+// ModDevGradle (net.neoforged.moddev) — plugin CHÍNH THỨC của chính NeoForge cho toolchain mới,
+// xác nhận version 2.0.141 qua gradle.properties gốc của repo NeoForge nhánh 26.1.x trên GitHub.
+//
+// LƯU Ý QUAN TRỌNG: đây là phần ÍT được xác minh nhất trong 2 module 26.x đã làm (kém chắc chắn
+// hơn cả fabric-26.1) — có xác nhận plugin id + version + block "neoForge { version = ... }"
+// tồn tại qua tài liệu chính thức, nhưng CHƯA tìm được 1 ví dụ build.gradle đầy đủ, đã build
+// thành công thật cho MC 26.1 cụ thể để đối chiếu. Shiroz BẮT BUỘC phải tự gradlew build thật
+// trước khi coi module này dùng được — khả năng cao cần chỉnh sửa thêm so với những gì viết ở đây.
+plugins {
+    id 'net.neoforged.moddev' version '2.0.141'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+base {
+    archivesName = "PayBot-Mod-NeoForge-26.1"
+}
+
+java {
+    toolchain {
+        // v5.5.5 Part 49: Java 25 bắt buộc, ghi đè default 21 từ allprojects{} ở root.
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+neoForge {
+    // v5.5.5 Part 49: cú pháp "neoForge { version = ... }" xác nhận qua tài liệu/ví dụ chính
+    // thức ModDevGradle — CHƯA tự verify bằng build thật (xem cảnh báo đầu file).
+    version = project.neoforge_version
+}
+
+configurations {
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = true
+    }
+    compileClasspath.extendsFrom shadowBundle
+    runtimeClasspath.extendsFrom shadowBundle
+}
+
+dependencies {
+    // Cùng danh sách thư viện shade như neoforge-1.21.11, không đổi gì ở phần này
+    shadowBundle 'org.xerial:sqlite-jdbc:3.45.3.0'
+    shadowBundle 'com.mysql:mysql-connector-j:8.4.0'
+    shadowBundle 'com.zaxxer:HikariCP:5.1.0'
+    shadowBundle 'org.yaml:snakeyaml:2.2'
+    shadowBundle 'com.google.zxing:core:3.5.3'
+    shadowBundle 'com.google.zxing:javase:3.5.3'
+    shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching(["META-INF/neoforge.mods.toml"]) {
+        expand "version": project.version
+    }
+}
+
+shadowJar {
+    exclude "architectury.common.json"
+    // v5.5.5 Part 49: giữ loại trừ slf4j như neoforge-1.21.11 — HikariCP kéo theo slf4j-api
+    // transitive, JPMS của NeoForge (kể cả bản 26.1) nhiều khả năng vẫn chặt như trước, chưa
+    // có lý do gì để tin điều này đã đổi ở 26.1 (không phải phần primer nhắc tới).
+    exclude "org/slf4j/**"
+
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = "dev-shadow"
+}
+
+// v5.5.5 Part 49: KHÔNG còn remapJar — ModDevGradle cho 26.1 không remap (giống Fabric Loom
+// no-remap). shadowJar là artifact cuối cùng trực tiếp.
+jar {
+    archiveClassifier = "dev"
+}
+
+tasks.named("assemble") {
+    dependsOn shadowJar
+}

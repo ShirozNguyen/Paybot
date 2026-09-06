@@ -64,6 +64,12 @@ public class GuiSession {
         s.stage = Stage.NONE; s.telco = ""; s.denom = 0; s.code = ""; s.serial = "";
         s.editDenom = 0; s.editType = ""; s.editAmt = ""; s.editCmd = "";
         s.apiSite = ""; s.partnerId = "";
+        // v5.5.5 [audit]: thiếu so với plugin/ (đã có từ v5.0.0) — nếu OP gõ /testnapbank
+        // hoặc /testnapthe rồi đóng GUI mà không chọn mệnh giá, testMode=true bị treo lại
+        // và ảnh hưởng tới lần mở GUI nạp tiền THẬT tiếp theo của chính OP đó (vô tình
+        // chạy như test thay vì nạp thật, hoặc ngược lại). Clear cờ này ở đây, đồng bộ
+        // với plugin/GuiSession.clear().
+        s.testMode = false;
     }
 
     public static void remove(UUID uuid) { SESSIONS.remove(uuid); }

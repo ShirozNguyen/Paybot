@@ -260,14 +260,28 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
             PayBotDebug.logSwallowed("ForgeVersionAdapterModern.setLoreModern: thiếu component type/method — bỏ qua.", null);
             return;
         }
-        if (attemptLoreValue(stack, componentList, "List<Component> trực tiếp")) return;
-
+        // [FIX — audit v5.5.5 Part 53, xác minh mappings.dev CHÍNH THỨC 1.20.6→1.21.11] Đã xoá
+        // "Phương án 1: List<Component> trực tiếp" — LUÔN false-positive do generics Java bị
+        // erase qua reflection (set()/get() không kiểm tra kiểu T thật), trong khi
+        // DataComponentTypes.LORE có kiểu THẬT DataComponentType<ItemLore> (record 2 field),
+        // KHÔNG PHẢI DataComponentType<List<Component>> — xem chi tiết đầy đủ trong
+        // FabricVersionAdapterModern.java (cùng bug, cùng fix, đã audit trước). Luôn dựng đúng
+        // wrapper ItemLore rồi mới set — không còn đường lưu sai kiểu.
         Class<?> itemLoreClass = classForNameOrNull("net.minecraft.world.item.component.ItemLore");
-        if (itemLoreClass != null) {
-            Object wrapper = buildListWrapperInstance(itemLoreClass, componentList);
-            if (wrapper != null && attemptLoreValue(stack, wrapper, "wrapper " + itemLoreClass.getName())) return;
+        if (itemLoreClass == null) {
+            LOGGER.error("[ForgeModern] Không tìm thấy class ItemLore trên runtime này — không thể set lore đúng kiểu.");
+            PayBotDebug.logSwallowed("ForgeVersionAdapterModern.setLoreModern: thiếu class ItemLore", null);
+            return;
         }
-        LOGGER.warn("[ForgeModern] KHÔNG set được lore bằng bất kỳ cách nào đã thử.");
+        Object wrapper = buildListWrapperInstance(itemLoreClass, componentList);
+        if (wrapper == null) {
+            LOGGER.error("[ForgeModern] Có class ItemLore nhưng KHÔNG dựng được instance qua constructor/factory.");
+            PayBotDebug.logSwallowed("ForgeVersionAdapterModern.setLoreModern: buildListWrapperInstance trả về null", null);
+            return;
+        }
+        if (!attemptLoreValue(stack, wrapper, "wrapper " + itemLoreClass.getName())) {
+            LOGGER.warn("[ForgeModern] KHÔNG set được lore bằng wrapper ItemLore — xem log debug-mode phía trên.");
+        }
     }
 
     private boolean attemptLoreValue(ItemStack stack, Object value, String description) {
@@ -298,11 +312,12 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
         }
     }
 
-    /** v5.5.5 Part 44b: đã xác minh qua Javadoc chính thức (NeoForge 1.21.1-21.1.216 + CraftTweaker
-     *  docs) — net.minecraft.world.item.component.ItemLore là RECORD 2 field (lines, styledLines),
-     *  CÓ static factory ItemLore.of(List)/ItemLore.of(List,List). Ưu tiên static factory trước
-     *  (khả năng tự suy ra styledLines đúng cách hơn truyền cùng 1 list 2 lần cho constructor),
-     *  constructor record chỉ còn là dự phòng. */
+    /** [FIX comment — audit v5.5.5 Part 53] ItemLore KHÔNG có static factory "of" — đã tra lại
+     *  qua mappings.dev (Mojang mapping chính thức) 1.20.6→1.21.11: chỉ có đúng 2 constructor
+     *  record {@code ItemLore(List<Component>)} và {@code ItemLore(List<Component>, List
+     *  <Component>)}. Comment cũ ở đây ghi sai (khẳng định có of()) nhưng KHÔNG gây lỗi chức
+     *  năng vì vòng lặp static factory vốn luôn không tìm thấy gì rồi rơi xuống constructor —
+     *  sửa lại comment cho đúng, giữ nguyên logic (vô hại, phòng hờ version tương lai). */
     private Object buildListWrapperInstance(Class<?> wrapperClass, List<Component> componentList) {
         try {
             for (Method m : wrapperClass.getDeclaredMethods()) {
@@ -365,14 +380,25 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
         if (existingTag != null) newTag = existingTag.copy();
         newTag.putString("paybot_invoice_id", invoiceId);
 
-        if (attemptCustomDataValue(stack, newTag, "CompoundTag trực tiếp")) return;
-
+        // [FIX — audit v5.5.5 Part 53] Cùng bug/cùng fix với setLoreModern(): DataComponentTypes.
+        // CUSTOM_DATA có kiểu thật DataComponentType<CustomData> (final class bọc CompoundTag),
+        // KHÔNG PHẢI DataComponentType<CompoundTag> trực tiếp — đã xoá "Phương án 1: CompoundTag
+        // trực tiếp" (luôn false-positive), luôn dựng wrapper CustomData thật trước khi set.
         Class<?> customDataClass = classForNameOrNull("net.minecraft.world.item.component.CustomData");
-        if (customDataClass != null) {
-            Object wrapper = buildTagWrapperInstance(customDataClass, newTag);
-            if (wrapper != null && attemptCustomDataValue(stack, wrapper, "wrapper " + customDataClass.getName())) return;
+        if (customDataClass == null) {
+            LOGGER.error("[ForgeModern] Không tìm thấy class CustomData trên runtime này — không thể set invoice-id đúng kiểu.");
+            PayBotDebug.logSwallowed("ForgeVersionAdapterModern.setInvoiceId: thiếu class CustomData", null);
+            return;
         }
-        PayBotDebug.logSwallowed("ForgeVersionAdapterModern.setInvoiceId: không set được bằng bất kỳ cách nào", null);
+        Object wrapper = buildTagWrapperInstance(customDataClass, newTag);
+        if (wrapper == null) {
+            LOGGER.error("[ForgeModern] Có class CustomData nhưng KHÔNG dựng được instance qua factory/constructor.");
+            PayBotDebug.logSwallowed("ForgeVersionAdapterModern.setInvoiceId: buildTagWrapperInstance trả về null", null);
+            return;
+        }
+        if (!attemptCustomDataValue(stack, wrapper, "wrapper " + customDataClass.getName())) {
+            LOGGER.warn("[ForgeModern] KHÔNG set được invoice-id bằng wrapper CustomData — xem log debug-mode phía trên.");
+        }
     }
 
     private boolean attemptCustomDataValue(ItemStack stack, Object value, String description) {
@@ -389,22 +415,11 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
         return false;
     }
 
+    /** [FIX thứ tự — audit v5.5.5 Part 53] Ưu tiên static factory public {@code CustomData.of
+     *  (CompoundTag)} (đã xác nhận tồn tại thật qua mappings.dev) trước constructor private —
+     *  đúng ý đồ API công khai của Mojang hơn là lách qua constructor private (vẫn hoạt động
+     *  qua setAccessible nhưng không phải cách nên dùng khi factory public đã có sẵn). */
     private Object buildTagWrapperInstance(Class<?> wrapperClass, CompoundTag tag) {
-        try {
-            for (Constructor<?> ctor : wrapperClass.getDeclaredConstructors()) {
-                ctor.setAccessible(true);
-                Class<?>[] pTypes = ctor.getParameterTypes();
-                if (pTypes.length == 1 && pTypes[0].isAssignableFrom(CompoundTag.class)) {
-                    try {
-                        return ctor.newInstance(tag);
-                    } catch (Throwable ignored) {
-                        // thử tiếp
-                    }
-                }
-            }
-        } catch (Throwable ignored) {
-            // không có constructor phù hợp
-        }
         try {
             for (Method m : wrapperClass.getDeclaredMethods()) {
                 if (Modifier.isStatic(m.getModifiers())
@@ -420,6 +435,21 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
             }
         } catch (Throwable ignored) {
             // không có static factory phù hợp
+        }
+        try {
+            for (Constructor<?> ctor : wrapperClass.getDeclaredConstructors()) {
+                ctor.setAccessible(true);
+                Class<?>[] pTypes = ctor.getParameterTypes();
+                if (pTypes.length == 1 && pTypes[0].isAssignableFrom(CompoundTag.class)) {
+                    try {
+                        return ctor.newInstance(tag);
+                    } catch (Throwable ignored) {
+                        // thử tiếp
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+            // không có constructor phù hợp
         }
         return null;
     }

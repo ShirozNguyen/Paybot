@@ -66,6 +66,17 @@ public class PluginHttpServer extends NanoHTTPD {
             return err("Parse error");
         }
 
+        // [DEAD CODE — Bot-connected mode đã tắt] TOÀN BỘ endpoint dưới đây (reward-push/
+        // execute-reward, bank-paid, card-result, receive-config) chỉ tồn tại để phục vụ
+        // Discord bot — KHÔNG còn cơ chế cấp thưởng/điều khiển/báo kết quả thanh toán từ bên
+        // ngoài nữa (xem PayBotMod.isStandaloneMode()). Chặn NGAY TỪ ĐÂY, TRƯỚC CẢ bước kiểm
+        // tra X-API-Key. "/api/sepay-ipn" KHÔNG bị đụng — không liên quan Discord bot, vẫn là
+        // đường xác nhận thanh toán CHÍNH của standalone mode. Toàn bộ handler xử lý của các
+        // endpoint trên GIỮ NGUYÊN bên dưới, chỉ không còn route nào gọi tới.
+        if (!uri.equals("/api/sepay-ipn") && mod.isStandaloneMode()) {
+            return err("disabled");
+        }
+
         // v5.0.5: TRƯỚC ĐÂY chiều bot → mod CHỈ xác thực bằng server_id khớp
         // (verifyServerId) — ai biết được server_id đều giả mạo được request từ
         // "bot". Thêm check X-API-Key — cùng hằng số 2 chiều (chiều mod→bot vốn đã
@@ -186,7 +197,13 @@ public class PluginHttpServer extends NanoHTTPD {
         try {
             if (data.has("reward_amount"))
                 amount = (int) Double.parseDouble(data.get("reward_amount").getAsString());
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            // v5.5.5 Part 53 [BUG NHỎ — audit]: TRƯỚC ĐÂY im lặng. amount ở đây chỉ dùng để
+            // log/hiển thị (lệnh thưởng thật nằm trong rawCmd, không phụ thuộc amount) nên KHÔNG
+            // gây mất thưởng — nhưng log "amount=0" sai lệch có thể gây hiểu nhầm khi tra cứu.
+            PayBotMod.LOGGER.warn("[RewardPush] reward_amount không parse được (raw=\"{}\") — dùng tạm 0 (chỉ ảnh hưởng hiển thị, không ảnh hưởng lệnh thưởng thật).",
+                    data.has("reward_amount") ? data.get("reward_amount").getAsString() : "null");
+        }
 
         if (playerName.isEmpty() || rawCmd.isEmpty()) return err("Missing fields");
 

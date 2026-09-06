@@ -116,6 +116,13 @@ public class StandaloneBankPoller {
     // ─── Bot push + polling fallback ─────────────────────────────────────────
 
     public void pollPendingOrders() {
+        // [DEAD CODE — Bot-connected mode đã tắt] TRƯỚC ĐÂY chỉ kiểm tra "bot-url" rỗng hay
+        // không — KHÔNG qua isStandaloneMode() — nếu server nào đó còn sót "bot-url" cũ trong
+        // config (từ trước khi tắt tính năng) thì hàm này VẪN sẽ bắn request tới bot mỗi 10
+        // phút dù server đã ở standalone. Thêm gate isStandaloneMode() tường minh để đóng dứt
+        // điểm, nhất quán "không còn cơ chế reward/điều khiển từ bên ngoài" — giữ nguyên phần
+        // code polling bên dưới để khôi phục dễ dàng nếu cần dùng lại.
+        if (mod.isStandaloneMode()) return;
         String botUrl = mod.getConfig().getString("bot-url", "").trim();
         if (botUrl.isEmpty()) return;
         List<LocalOrderManager.BankOrder> pending = mod.getLocalOrderManager().getPendingBankOrders();
