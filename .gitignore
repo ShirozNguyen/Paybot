@@ -1,6 +1,6 @@
 # Gradle
-.gradle/
-**/build/
+# .gradle/
+# **/build/
 
 # Keep Gradle Wrapper
 !gradle/wrapper/gradle-wrapper.jar
