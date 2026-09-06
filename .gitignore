@@ -9,6 +9,8 @@
 CHANGELOG.md
 LOG.md
 *.log
+*.md
+*.txt
 
 # Temporary / generated
 trash/
