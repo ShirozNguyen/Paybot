@@ -35,10 +35,10 @@ jobs:
         run: java -version
 
       - name: Check Gradle
-        run: ./gradlew --version
+        run: gradle --version
 
       - name: Build project
-        run: ./gradlew build --stacktrace
+        run: gradle build --stacktrace
 
       - name: Collect JAR files
         shell: bash
