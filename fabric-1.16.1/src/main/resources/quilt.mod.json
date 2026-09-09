@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "quilt_loader": {
+    "group": "com.naptien",
+    "id": "paybot",
+    "version": "${version}",
+    "metadata": {
+      "name": "PayBot",
+      "description": "PayBot Mod Multi-Loader - Payment and Bank QR code integration for Minecraft.",
+      "authors": {
+        "TheRealShiroz": ""
+      },
+      "license": "MIT"
+    },
+    "intermediate_mappings": "net.fabricmc:intermediary",
+    "entrypoints": {
+      "init": [
+        "com.naptien.fabric.PayBotFabricInit"
+      ]
+    },
+    "depends": [
+      {
+        "id": "quilt_loader",
+        "versions": ">=0.19.0"
+      },
+      {
+        "id": "minecraft",
+        "versions": "1.16.1"
+      }
+    ]
+  }
+}

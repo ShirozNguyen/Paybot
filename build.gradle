@@ -1,0 +1,174 @@
+plugins {
+    id 'dev.architectury.loom' version '1.7.435' apply false
+    id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
+}
+
+subprojects {
+    // v5.5.5 Part 48: loại trừ thêm module có "-26." trong tên (fabric-26.1, neoforge-26.1, ...).
+    // Lý do: dev.architectury.loom 1.7.435 (khai báo ở trên) xác nhận KHÔNG chạy được với MC 26.1+
+    // (GitHub issue architectury-loom#328 — crash vì cố tìm mapping trong khi 26.1+ không obfuscation
+    // nên không còn mapping nào để tìm). Các module 26.x tự áp dụng plugin Loom/ModDev/ForgeGradle
+    // riêng ngay trong build.gradle của chính module đó — xem fabric-26.1/build.gradle.
+    //
+    // v5.5.5 Part 57: loại trừ thêm fabric-1.21.10 và fabric-1.21.11 (cùng cơ chế như dải 26.x
+    // ở trên — 2 module này tự áp 'dev.architectury.loom' phiên bản MỚI HƠN ngay trong chính
+    // build.gradle của module đó). Lý do: lỗi build GitHub Actions thật do Shiroz gửi —
+    // "Mod was built with a newer version of Loom (1.11.7), you are using Loom (1.7.435)" khi
+    // cấu hình project ':fabric-1.21.10'. Xác nhận qua nghiên cứu: Fabric Loader artifact cho
+    // MC 1.21.10/1.21.11 được publish bằng công cụ dùng Architectury Loom nhánh 1.11+/1.13+, bản
+    // 1.7.435 (khai báo ở trên, dùng chung cho MỌI module khác) quá cũ để đọc metadata đó — xác
+    // nhận thêm bằng mod thật (sgui) port sang 1.21.10 dùng đúng "Architectury Loom 1.13-SNAPSHOT"
+    // (GitHub release jblemee/sgui v1.21.10) + GitHub discussion architectury-loom#329 (người khác
+    // hỏi bản 1.21.11 cũng cần Loom 1.13+/1.14+). KHÔNG nâng Loom DÙNG CHUNG ở trên (root) lên
+    // thẳng 1.13.x cho TOÀN BỘ 99 module, vì Loom 1.13 còn dán nhãn "beta" (tự in cảnh báo khi
+    // chạy) và có bug ĐÃ XÁC NHẬN còn mở (GitHub issue architectury-loom#320, do chính tác giả
+    // chính "Juuxel" báo cáo 07/12/2025, tiêu đề "[1.13] Forge 1.16.5 crashes with a NSME for an
+    // SRG-mapped method") — ảnh hưởng ĐÚNG module forge-1.16.5 đang có trong project này. Tách
+    // riêng 2 module Fabric mới nhất là cách AN TOÀN NHẤT: forge-1.16.5 và toàn bộ ~60 module còn
+    // lại giữ nguyên 1.7.435 (rủi ro NSME = 0), chỉ 2 module thật sự cần mới đổi. Xem
+    // fabric-1.21.10/build.gradle và fabric-1.21.11/build.gradle cho phiên bản Loom cụ thể dùng
+    // (1.13.469 — bản patch mới nhất trong nhánh 1.13 tính tới thời điểm sửa, phát hành sau ngày
+    // bug #320 được báo nên có khả năng cao đã được vá âm thầm dù issue GitHub chưa đóng chính
+    // thức — CHƯA build/test thật được để xác nhận 100%, cùng giới hạn sandbox không có mạng Maven
+    // như các Part trước).
+    if (project.name != 'plugin' && !project.name.contains('-26.') &&
+        project.name != 'fabric-1.21.10' && project.name != 'fabric-1.21.11') {
+        apply plugin: 'dev.architectury.loom'
+
+        // v5.5.5 Part 44: mỗi module version-tách riêng tự khai báo minecraft_version của Nó
+        // trong gradle.properties riêng (không dùng chung rootProject.minecraft_version nữa) —
+        // đây chính là thay đổi cốt lõi để mỗi jar biên dịch/remap đúng 1 bản MC thật, không
+        // còn tình trạng "biên dịch nhắm 1.20.1 nhưng chạy trên 1.21.1" như trước Part 44.
+        dependencies {
+            minecraft "com.mojang:minecraft:${project.minecraft_version}"
+            mappings loom.officialMojangMappings()
+        }
+    }
+}
+
+allprojects {
+    apply plugin: 'java'
+
+    version = rootProject.mod_version
+    group = rootProject.mod_group
+
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.architectury.dev/' }
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.quiltmc.org/repository/release/' }
+        maven { url = 'https://maven.minecraftforge.net/' }
+        maven { url = 'https://maven.neoforged.net/releases/' }
+        maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
+        def mc = project.hasProperty('minecraft_version') ? project.property('minecraft_version').toString() : '1.20.1'
+
+        // v5.5.5 Part 48: thêm nhánh 26.x — trước đây chuỗi "26.1" không khớp bất kỳ điều kiện
+        // nào bên dưới nên sẽ rơi xuống else -> release 17, sai hoàn toàn.
+        if (mc.startsWith('26.')) {
+            options.release = 25
+        } else if (mc.startsWith('1.20.5') || mc.startsWith('1.20.6') || mc.startsWith('1.21')) {
+            options.release = 21
+        } else {
+            options.release = 17
+        }
+    }
+}
+
+// v5.5.5 Part 44b: forge-legacy tách thành 22 module riêng, liệt kê danh sách 1 lần,
+ // dùng vòng lặp thay vì lặp lại 22 dòng gần giống hệt nhau.
+def fabricLegacyVersions = [
+    "1.14.4", "1.15", "1.15.1", "1.15.2",
+    "1.16.1", "1.16.2", "1.16.3", "1.16.4", "1.16.5", "1.17.1",
+    "1.18", "1.18.1", "1.18.2", "1.19", "1.19.1", "1.19.2", "1.19.3", "1.19.4",
+    "1.20", "1.20.1", "1.20.2", "1.20.3", "1.20.4"
+]
+
+def fabricModernVersions = [
+    "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5",
+    "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11"
+]
+
+def forgeLegacyVersions = [
+    "1.14.4", "1.15", "1.15.1", "1.15.2",
+    "1.16.1", "1.16.2", "1.16.3", "1.16.4", "1.16.5", "1.17.1",
+    "1.18", "1.18.1", "1.18.2", "1.19", "1.19.1", "1.19.2", "1.19.3", "1.19.4",
+    "1.20", "1.20.1"
+]
+
+def forgeModernVersions = [
+    "1.20.2", "1.20.3", "1.20.4", "1.20.6", "1.21", "1.21.1",
+    "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8",
+    "1.21.9", "1.21.10", "1.21.11"
+]
+
+def neoforgeVersions = [
+    "1.20.2", "1.20.3", "1.20.4", "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2",
+    "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11"
+]
+
+task copyToDone {
+    subprojects.each { sp ->
+        afterEvaluate {
+            if (sp.tasks.findByName('remapJar')) {
+                dependsOn "${sp.path}:remapJar"
+            } else if (sp.tasks.findByName('jar')) {
+                dependsOn "${sp.path}:jar"
+            }
+        }
+    }
+
+    // Dùng đường dẫn tương đối để hoạt động trên cả Windows lẫn GitHub Actions/Linux.
+    def doneDir = file("$rootDir/done")
+
+    doLast {
+        delete doneDir
+
+        def fabricDir = new File(doneDir, "Fabric_Quilt")
+        def forgeDir = new File(doneDir, "Forge")
+        def neoForgeDir = new File(doneDir, "NeoForge")
+        def pluginsDir = new File(doneDir, "Plugins")
+
+        fabricDir.mkdirs()
+        forgeDir.mkdirs()
+        neoForgeDir.mkdirs()
+        pluginsDir.mkdirs()
+
+        subprojects.each { sp ->
+            def libsDir = sp.layout.buildDirectory.dir("libs").get().asFile
+
+            if (libsDir.exists()) {
+                libsDir.listFiles().each { file ->
+                    if (
+                        file.name.endsWith('.jar') &&
+                        !file.name.endsWith('-dev.jar') &&
+                        !file.name.endsWith('-shadow.jar') &&
+                        !file.name.endsWith('-sources.jar')
+                    ) {
+                        if (sp.name.startsWith('fabric-')) {
+                            copy { from file; into fabricDir }
+                        } else if (sp.name.startsWith('forge-')) {
+                            copy { from file; into forgeDir }
+                        } else if (sp.name.startsWith('neoforge-')) {
+                            copy { from file; into neoForgeDir }
+                        } else if (sp.name == 'plugin') {
+                            copy { from file; into pluginsDir }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Không ép build phải chạy copyToDone.
+// GitHub Actions sẽ lấy JAR từ build/libs.

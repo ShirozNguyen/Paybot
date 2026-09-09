@@ -1,0 +1,93 @@
+// multiversion/versions/1.20.1-fabric/build.gradle — v5.5.5 [KHUNG STONECUTTER — GIAI ĐOẠN 1]
+//
+// ⚠️ File này PHỎNG THEO fabric/build.gradle + phần dùng chung trong build.gradle gốc của
+// project chính (đã chứng minh hoạt động — cùng version plugin, cùng danh sách thư viện
+// shade) nhưng phải tự khai báo toolchain đầy đủ vì đây là project Gradle ĐỘC LẬP (không
+// còn khối "subprojects{}" ở root lo phần này như project chính). Phần khai báo
+// "dev.kikugie.stonecutter" ở node-level là suy luận hợp lý dựa trên cấu trúc chung của
+// các template Stonecutter đã xem qua GitHub thật (rotgruengelb/stonecutter-mod-template,
+// stonecutter-versioning/stonecutter-template-fabric) — CHƯA build-test.
+
+plugins {
+    id 'dev.kikugie.stonecutter'
+    id 'dev.architectury.loom' version '1.7.435'
+    id 'architectury-plugin' version '3.4-SNAPSHOT'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+architectury {
+    // [v5.5.5] Dùng property "minecraft_version" đọc trực tiếp từ gradle.properties của
+    // chính node này (versions/1.20.1-fabric/gradle.properties), THAY VÌ "stonecutter.current.version"
+    // — vì tôi không chắc chắn 100% API đó trả về đúng "1.20.1" hay cả chuỗi "1.20.1-fabric".
+    // Cách này mượn lại đúng pattern đã CHỨNG MINH hoạt động trong fabric/build.gradle của
+    // project chính (rootProject.minecraft_version), giảm số lượng giả định chưa kiểm chứng.
+    minecraft = property('minecraft_version')
+}
+
+base {
+    archivesName = "PayBot-Mod-Fabric-Quilt"
+    version = property('mod_version')
+    group = property('mod_group')
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+loom {
+    silentMojangMappingsLicense()
+}
+
+repositories {
+    maven { url = 'https://maven.fabricmc.net/' }
+    maven { url = 'https://maven.architectury.dev/' }
+}
+
+configurations {
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = true
+    }
+    compileClasspath.extendsFrom shadowBundle
+    runtimeClasspath.extendsFrom shadowBundle
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${property('minecraft_version')}"
+    mappings loom.officialMojangMappings()
+
+    modImplementation "net.fabricmc:fabric-loader:${property('fabric_loader_version')}"
+    modApi "net.fabricmc.fabric-api:fabric-api:${property('fabric_version')}"
+
+    // Cùng danh sách thư viện shade như fabric/build.gradle project chính (đã chứng minh hoạt động)
+    shadowBundle 'org.xerial:sqlite-jdbc:3.45.3.0'
+    shadowBundle 'com.mysql:mysql-connector-j:8.4.0'
+    shadowBundle 'com.zaxxer:HikariCP:5.1.0'
+    shadowBundle 'org.yaml:snakeyaml:2.2'
+    shadowBundle 'com.google.zxing:core:3.5.3'
+    shadowBundle 'com.google.zxing:javase:3.5.3'
+    shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching(["fabric.mod.json"]) {
+        expand "version": project.version
+    }
+}
+
+shadowJar {
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = "dev-shadow"
+}
+
+remapJar {
+    input.set shadowJar.archiveFile
+    dependsOn shadowJar
+    archiveClassifier = null
+}
+
+jar {
+    archiveClassifier = "dev"
+}

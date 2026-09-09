@@ -1,0 +1,90 @@
+// v5.5.5 Part 50: forge-26.1 — CẢNH BÁO ĐỘ TIN CẬY (đọc trước khi dùng):
+//
+// Đây là module 26.x ÍT được xác minh NHẤT trong 3 loader đã làm (fabric-26.1, neoforge-26.1,
+// forge-26.1). Khác 2 module kia có tài liệu migrate CHÍNH THỨC với ví dụ build.gradle rõ ràng
+// (Fabric: docs.fabricmc.net/26.1/develop/porting; NeoForge: gradle.properties gốc của chính
+// repo NeoForge) — ForgeGradle 7.0 (nhánh FG_7.0, bản 7.0.25) KHÔNG tìm được bất kỳ ví dụ
+// build.gradle đầy đủ nào đã build thành công thật cho MC 26.1 lúc research (nhánh này mới cập
+// nhật 9/8/2026, cộng đồng chưa kịp viết hướng dẫn/tutorial nào được index bởi search).
+//
+// PHẦN CHẮC CHẮN (xác nhận qua files.minecraftforge.net + GitHub MinecraftForge/ForgeGradle):
+//   - Forge 26.1.2 THẬT SỰ tồn tại, bản khuyến nghị 64.1.0.
+//   - Plugin id 'net.minecraftforge.gradle' version '7.0.25' THẬT SỰ tồn tại (kế thừa cùng id,
+//     chỉ đổi version so với FG 6.x thời obfuscated).
+//
+// PHẦN SUY LUẬN (KHÔNG xác nhận được, viết dựa theo pattern FG3-FG6 kế thừa + logic no-remap
+// giống Fabric/NeoForge — Shiroz BẮT BUỘC đối chiếu với MDK thật tải từ
+// files.minecraftforge.net/net/minecraftforge/forge/index_26.1.2.html trước khi tin dùng):
+//   - Cú pháp khai báo plugin trong khối plugins{} bên dưới.
+//   - Coordinate dependency 'minecraft "net.minecraftforge:forge:..."' — GIỮ NGUYÊN pattern
+//     FG3-FG6 vì đây là DSL riêng ForgeGradle tự định nghĩa (không phải tên lớp Minecraft/Mojang
+//     nên không chắc đã đổi theo làn sóng bỏ obfuscation) — nhưng CHƯA xác nhận.
+//   - KHÔNG có khối mappings/channel nào — suy luận theo đúng logic no-remap (giống Fabric xoá
+//     dòng mappings, NeoForge xoá Parchment) vì FG7 là thế hệ "hậu obfuscation" giống 2 loader kia.
+//   - KHÔNG có khối runs{} — forge-1.20.2 cũ (qua Architectury Loom) cũng không có, nhưng FG
+//     nguyên bản (không qua Architectury) theo truyền thống THƯỜNG cần khai báo runs{} rõ ràng
+//     hơn ModDevGradle — đây là điểm nhiều khả năng cần Shiroz tự thêm nếu build lỗi thiếu runs.
+plugins {
+    id 'net.minecraftforge.gradle' version '7.0.25'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+base {
+    archivesName = "PayBot-Mod-Forge-26.1"
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+configurations {
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = true
+    }
+    compileClasspath.extendsFrom shadowBundle
+    runtimeClasspath.extendsFrom shadowBundle
+}
+
+dependencies {
+    // v5.5.5 Part 50: coordinate 'minecraft "net.minecraftforge:forge:..."' — pattern FG kế
+    // thừa từ FG3-FG6, CHƯA xác nhận còn đúng ở FG7. Nếu build lỗi ngay ở dòng này, khả năng
+    // cao cú pháp FG7 đổi khác — đối chiếu MDK thật.
+    minecraft "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}"
+
+    // Cùng danh sách thư viện shade như forge-1.20.2, không đổi gì ở phần này (phần chắc chắn)
+    shadowBundle 'org.xerial:sqlite-jdbc:3.45.3.0'
+    shadowBundle 'com.mysql:mysql-connector-j:8.4.0'
+    shadowBundle 'com.zaxxer:HikariCP:5.1.0'
+    shadowBundle 'org.yaml:snakeyaml:2.2'
+    shadowBundle 'com.google.zxing:core:3.5.3'
+    shadowBundle 'com.google.zxing:javase:3.5.3'
+    shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching(["META-INF/mods.toml"]) {
+        expand "version": project.version
+    }
+}
+
+shadowJar {
+    exclude "architectury.common.json"
+    exclude "org/slf4j/**"
+
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = "dev-shadow"
+}
+
+// v5.5.5 Part 50: KHÔNG remapJar — theo đúng logic no-remap chung của cả 3 loader ở 26.x.
+jar {
+    archiveClassifier = "dev"
+}
+
+tasks.named("assemble") {
+    dependsOn shadowJar
+}

@@ -1,0 +1,176 @@
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.architectury.dev/' }
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.minecraftforge.net/' }
+        // v5.5.5 Part 49: thêm cho module 26.x dùng ModDevGradle (net.neoforged.moddev) —
+        // xác nhận qua chính settings.gradle gốc của NeoForge (github.com/neoforged/NeoForge)
+        // dùng đúng URL này. Plugin có trên Gradle Plugin Portal (gradlePluginPortal() bên dưới
+        // đã đủ resolve) nhưng thêm trực tiếp để an toàn/nhất quán với template chính thức.
+        maven { url = 'https://maven.neoforged.net/releases' }
+        gradlePluginPortal()
+    }
+}
+
+// v5.5.5 Part 49: foojay-resolver-convention — tự động tải/cấp JDK 25 nếu máy Shiroz chưa có
+// sẵn (module 26.x bắt buộc Java 25). Chỉ ảnh hưởng module nào thật sự cần toolchain 25;
+// module cũ (Java 17/21) không bị đụng vì Gradle chỉ dùng plugin này khi có toolchain
+// request không khớp JDK đang chạy.
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
+rootProject.name = 'PayBot'
+
+// v5.5.5 Part 44: TÁCH module theo đúng ranh giới kỹ thuật thật (xem LOG.md Part 44) thay vì
+// 1 module "đa năng" cho mỗi loader cố tự thích nghi mọi MC version qua reflection — cách đó
+// KHÔNG đảm bảo được (đã confirm bằng crash log Fabric 1.21.1 thật + tài liệu Forge/NeoForge).
+// fabric/, forge/, neoforge/ (module cũ) VẪN CÒN TRÊN ĐĨA làm tham chiếu/rollback, nhưng
+// KHÔNG include vào build nữa — thay bằng 5 module con dưới đây, mỗi module biên dịch đúng
+// 1 "kỷ nguyên" phiên bản của đúng 1 loader:
+// v5.5.5 Part 44d: fabric-legacy + fabric-modern TÁCH thành 39 module riêng, mỗi
+// module = ĐÚNG 1 bản MC. Số hiệu fabric-api tra từ fabricapi.org (bảng chính thức)
+// + GitHub releases — 9 bản 1.21.x (1.21, 1.21.2-1.21.7, 1.21.9-1.21.10) là ƯỚC TÍNH
+// nội suy (không tìm được số chính xác), xem ghi chú trong gradle.properties từng module đó.
+// v5.5.5 Part 52: fabric-1.14.2, fabric-1.14.3 — phát hiện bị bỏ sót như forge ở trên, đã bật
+// active theo quyết định của Shiroz lúc đó.
+// v5.5.5 Part 59 [REVERT — lỗi build thật trên GitHub Actions do Shiroz gửi]: Mojang KHÔNG
+// phát hành official mappings cho 1.14.2/1.14.3 — CHỈ có từ 1.14.4 trở đi (xác nhận qua
+// piston-meta.mojang.com: file 1.14.4.json có field "client_mappings", và qua nguồn kỹ thuật
+// độc lập jank.systems/writing/guide-to-mappings: "mojang mappings work for 1.14.4+, use
+// community mappings for older versions"). Vì root build.gradle dùng officialMojangMappings()
+// TẬP TRUNG cho MỌI subproject (không có ngoại lệ riêng), 1.14.2/1.14.3 KHÔNG THỂ build được
+// dưới bất kỳ hình thức nào với kiến trúc hiện tại — đây là giới hạn kỹ thuật cứng từ Mojang,
+// không phải vấn đề ưu tiên/code. Comment lại vĩnh viễn trừ khi kiến trúc mapping đổi hẳn.
+// include('fabric-1.14.2')
+// include('fabric-1.14.3')
+// include('fabric-1.14.4')
+// include('fabric-1.15')
+// include('fabric-1.15.1')
+// include('fabric-1.15.2')
+// include('fabric-1.16.1')
+// include('fabric-1.16.2')
+// include('fabric-1.16.3')
+// include('fabric-1.16.4')
+include('fabric-1.16.5')
+include('fabric-1.17.1')
+include('fabric-1.18')
+include('fabric-1.18.1')
+include('fabric-1.18.2')
+include('fabric-1.19')
+include('fabric-1.19.1')
+include('fabric-1.19.2')
+include('fabric-1.19.3')
+include('fabric-1.19.4')
+include('fabric-1.20')
+include('fabric-1.20.1')
+include('fabric-1.20.2')
+include('fabric-1.20.3')
+include('fabric-1.20.4')
+include('fabric-1.20.5')
+include('fabric-1.20.6')
+include('fabric-1.21')
+include('fabric-1.21.1')
+include('fabric-1.21.2')
+include('fabric-1.21.3')
+include('fabric-1.21.4')
+// v5.5.5 [audit]: 1.21.5-1.21.11 ĐÃ RELEASE CHÍNH THỨC từ lâu (xác nhận qua Fabric API
+// CurseForge/Modrinth — vd 1.21.11 release "R" từ tháng 1/2026), comment cũ "unreleased/
+// snapshots" đã lỗi thời tại thời điểm audit này (05/09/2026). Bật lại theo yêu cầu.
+include('fabric-1.21.5')
+include('fabric-1.21.6')
+include('fabric-1.21.7')
+include('fabric-1.21.8')
+include('fabric-1.21.9')
+include('fabric-1.21.10')
+include('fabric-1.21.11')
+// v5.5.5 Part 44b: forge-legacy TÁCH thành 22 module riêng, mỗi module = ĐÚNG 1 bản MC
+// (theo yêu cầu Shiroz — không có ranh giới version nào còn sót lại trong 1 module)
+// v5.5.5 Part 52: forge-1.14.2, forge-1.14.3 — phát hiện tồn tại đầy đủ trên đĩa nhưng CHƯA
+// từng được nhắc tới trong settings.gradle (không active, không cả bị comment) — bị bỏ sót
+// khi tách module ở Part 44b. Đã verify code bên trong đã có đầy đủ các fix đồng bộ (chat
+// interception, BanManager/PayBotConfig...). Bật active theo quyết định của Shiroz lúc đó.
+// v5.5.5 Part 59 [REVERT — lỗi build thật trên GitHub Actions do Shiroz gửi]: Mojang KHÔNG
+// phát hành official mappings cho 1.14.2/1.14.3 — CHỈ có từ 1.14.4 trở đi (xem giải thích đầy
+// đủ ở đoạn fabric-1.14.2/1.14.3 phía trên — cùng nguyên nhân, root build.gradle dùng
+// officialMojangMappings() tập trung cho mọi subproject kể cả forge-legacy). Comment lại
+// vĩnh viễn — giới hạn kỹ thuật cứng từ Mojang, không phải vấn đề ưu tiên/code.
+// include('forge-1.14.2')
+// include('forge-1.14.3')
+include('forge-1.14.4')
+include('forge-1.15')
+include('forge-1.15.1')
+include('forge-1.15.2')
+// include('forge-1.16.1')
+include('forge-1.16.2')
+include('forge-1.16.3')
+include('forge-1.16.4')
+include('forge-1.16.5')
+include('forge-1.17.1')
+include('forge-1.18')
+include('forge-1.18.1')
+include('forge-1.18.2')
+include('forge-1.19')
+include('forge-1.19.1')
+include('forge-1.19.2')
+include('forge-1.19.3')
+include('forge-1.19.4')
+include('forge-1.20')
+include('forge-1.20.1')
+include('forge-1.20.2')
+// Forge 1.20.3+ split/deprecated in favor of NeoForge for 1.20.2 - 1.21.4
+// include('forge-1.20.3')
+// include('forge-1.20.4')
+// include('forge-1.20.6')
+// include('forge-1.21')
+// include('forge-1.21.1')
+// include('forge-1.21.3')
+// include('forge-1.21.4')
+// include('forge-1.21.5')
+// include('forge-1.21.6')
+// include('forge-1.21.7')
+// include('forge-1.21.8')
+// include('forge-1.21.9')
+// include('forge-1.21.10')
+// include('forge-1.21.11')
+// v5.5.5 Part 44e: neoforge-modern TÁCH thành 17 module riêng, mỗi module = ĐÚNG 1 bản MC.
+// NeoForge CÓ hỗ trợ 1.20.5 và 1.21.2 (khác Forge — không bỏ qua như bên Forge).
+include('neoforge-1.20.2')
+include('neoforge-1.20.3')
+include('neoforge-1.20.4')
+include('neoforge-1.20.5')
+include('neoforge-1.20.6')
+include('neoforge-1.21')
+include('neoforge-1.21.1')
+include('neoforge-1.21.2')
+include('neoforge-1.21.3')
+include('neoforge-1.21.4')
+// v5.5.5 [audit]: 1.21.5-1.21.11 ĐÃ RELEASE CHÍNH THỨC (xác nhận qua blog neoforged.net —
+// "NeoForge 21.11 for Minecraft 1.21.11", "NeoForge 21.9 for Minecraft 1.21.9", "NeoForge
+// 21.6 for Minecraft 1.21.6"). Bật lại theo yêu cầu.
+include('neoforge-1.21.5')
+include('neoforge-1.21.6')
+include('neoforge-1.21.7')
+include('neoforge-1.21.8')
+include('neoforge-1.21.9')
+include('neoforge-1.21.10')
+include('neoforge-1.21.11')
+include('plugin')
+
+// v5.5.5 Part 48: bắt đầu dải 26.x (xem LOG.md Part 44 cho bối cảnh gốc + Part 48 cho research
+// đầy đủ). Toolchain hoàn toàn khác các module 1.x ở trên — Java 25, không remap, mỗi module 26.x
+// tự áp plugin riêng (xem root build.gradle + ghi chú trong từng build.gradle module).
+include('fabric-26.1')
+include('neoforge-26.1')
+include('forge-26.1')
+include('fabric-26.2')
+include('neoforge-26.2')
+include('forge-26.2')
+
+// CHƯA LÀM — kế hoạch tiếp theo (Part 52+):
+// 26.3: CHƯA release chính thức — tính tới 07/09/2026 đã tới Pre-Release 2 (Fabric API đã có
+// build 26.3-pre-2, nhưng NeoForge/Forge cổ điển vẫn chưa có build nào). Quyết định của
+// Shiroz: KHÔNG dựng module nào (kể cả fabric-26.3) cho tới khi MC 26.3 ra bản chính thức —
+// dựng sớm dựa trên pre-release rủi ro phải làm lại nếu có breaking change trước RC/release,
+// coi như ngang với việc chờ. Xem 26.3-KHUNG-CHUAN-BI.md (mục "Cập nhật research — Part 52")
+// cho chi tiết đầy đủ.

@@ -1,0 +1,41 @@
+# Gradle
+# .gradle/
+# **/build/
+
+# Keep Gradle Wrapper
+!gradle/wrapper/gradle-wrapper.jar
+
+# Documentation / logs
+!README.md
+CHANGELOG.md
+LOG.md
+*.log
+26.3-KHUNG-CHUAN-BI.md
+*.txt
+
+# Temporary / generated
+trash/
+done/
+*.class
+*.zip
+*.tar.gz
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compiled files
+*.class
+*.jar
+
+# Archives
+*.zip
+*.tar.gz
+
+# Temp files
+croc-stdin-*

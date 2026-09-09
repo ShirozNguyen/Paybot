@@ -1,0 +1,471 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# PayBot Plugin Configuration  v5.0.0
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Debug Mode ─────────────────────────────────────────────────────────────
+# Khi bật (true): in TOÀN BỘ log lỗi/warning chi tiết (bao gồm nguyên nhân cụ thể
+# của các lỗi trước đây bị bỏ qua âm thầm — ví dụ lỗi kết nối tới web thứ 3/SePay,
+# lỗi phân tích cấu hình...) thay vì im lặng bỏ qua như mặc định.
+# Mặc định: false (TẮT). Khuyến nghị chỉ bật khi đang tự debug/tìm lỗi — bật liên
+# tục trên server production có thể làm log phình to nhanh nếu mạng hay chập chờn.
+# Đổi runtime không cần restart: dùng lệnh /paybot reload sau khi sửa giá trị này.
+debug-mode: false
+
+# ── Loại Database ─────────────────────────────────────────────────────────────
+# Chọn loại database: "SQLite" hoặc "MySQL" (hoa thường đều được).
+# Mặc định: SQLite (chỉ dùng file local, không kết nối mạng).
+# Khi dùng MySQL: Cấu hình thông tin kết nối MySQL ngay bên dưới tại phần "mysql:".
+# QUAN TRỌNG: Nếu chọn "MySQL" mà không kết nối được → plugin tự tắt ngay lập tức.
+database-type: SQLite
+
+# ── Cấu hình MySQL (Chỉ được kích hoạt khi database-type là "MySQL") ──────────
+mysql:
+  host: "localhost"
+  port: 3306
+  database: "paybot"
+  username: "root"
+  password: ""
+  useSSL: false
+  pool-size: 10
+
+# ── Connection ────────────────────────────────────────────────────────────────
+# server-id và guild-id được tự động điền khi kết nối bot
+# không được tự set nếu k bt gì, cần thì ib admin
+# https://guns.lol/therealshiroz
+
+server-id: ''
+guild-id: ''
+bot-url: ''
+
+
+# v5.0.3: bỏ ngrok — plugin tự dò IP thật của server này (PublicIpResolver) nếu để trống.
+# Chỉ set thủ công nếu server này ở sau NAT/router cần port-forward riêng.
+plugin-callback-url: ''
+
+# v5.0.3: tự đồng bộ config.yml mỗi 10s — tự thêm key/comment thiếu, tự xoá key thừa
+# không còn tác dụng (từ bản cũ để lại), tự reload khi có gì thay đổi (do bot push
+# bot-url mới, do admin tự sửa tay, hay do upgrade version). Tắt nếu đang tự debug
+# config thủ công và không muốn bị tự động ghi đè.
+auto-config-sync: true
+
+# Fingerprint cert HTTPS của bot (TOFU — tự lưu lần đầu kết nối, đừng tự sửa tay trừ
+# khi biết chắc đang làm gì). Xem BotHttpClient.java để hiểu cơ chế.
+bot-cert-fingerprint: ''
+# true = từ chối thẳng nếu cert bot đổi mà không khớp fingerprint đã lưu (an toàn hơn,
+# phòng MITM, nhưng phải tự xoá bot-cert-fingerprint ở trên nếu đổi VPS thật).
+# false (mặc định) = chỉ cảnh báo, vẫn cho qua và tự cập nhật fingerprint mới.
+bot-cert-strict-pin: false
+
+# Port HTTP server của plugin nhận SePay webhook và lệnh từ bot.
+# v5.0.0 FIX: đổi default 25565 → 25580 (25565 TRÙNG port chơi Minecraft mặc định,
+# khiến HTTP server của plugin bind thất bại ngay từ đầu trên mọi server chưa từng
+# tự đổi port này — SePay IPN/push reward/push config từ bot ĐỀU không hoạt động được
+# mà không có cảnh báo rõ ràng). Đổi nếu có xung đột hoặc host yêu cầu port khác.
+plugin-port: 25580
+
+# ── Mẫu ảnh VietQR ─────────────────────────────────────────────────────────────
+# Tùy chọn kiểu dáng ảnh QR VietQR khi nạp ngân hàng.
+# Mặc định: "qr_only" (chỉ QR thuần, nét nhất, không có khung viền).
+# Các lựa chọn khác của VietQR.io: "compact" (QR + STK thu nhỏ), "compact2" (QR + STK + Logo), "print" (khung in đầy đủ).
+vietqr-template: qr_only
+
+# ── Nội dung chuyển khoản (mã đơn nạp bank) ───────────────────────────────────
+# Tùy biến định dạng mã chuyển khoản (ví dụ "NT123456789012" hoặc "NAP_123456789012").
+# Hệ thống tự động kiểm tra chống trùng đơn vĩnh viễn (đối chiếu cả cache và CSDL) —
+# nếu mã ngẫu nhiên vừa tạo đã từng xuất hiện trong quá khứ, plugin tự tạo lại mã mới.
+transfer-content:
+  # Tiền tố mã nạp (2-5 chữ cái, tự viết HOA khi tạo, vd "NT" hoặc "NAP").
+  prefix: NT
+  # true = có dấu "_" nối giữa tiền tố và số (vd "NT_123456789012"). false = nối liền (vd "NT123456789012").
+  require-underscore: false
+  # true = tự động chèn ngày hiện tại (dMyyyy, vd 2272026 ngày 22/7/2026) vào ngay sau tiền tố (vd "NT2272026123456789012").
+  # false = không chèn ngày (MẶC ĐỊNH).
+  include-date-prefix: false
+  # true = (MẶC ĐỊNH - An toàn tuyệt đối) Kiểm tra đối chiếu CSDL & cache bộ nhớ trước khi cấp mã nạp.
+  #        Nếu ngẫu nhiên vấp mã nạp đã tồn tại trong lịch sử, hệ thống tự động sinh lại mã mới (đảm bảo 100% không trùng đơn).
+  # false = Bỏ qua kiểm tra đơn cũ, sinh mã random trực tiếp và trả về ngay.
+  # ⚠ LƯU Ý KHI TẮT (false):
+  #   - Tốc độ sinh mã sẽ NHANH HƠN NHIỀU (tối ưu hiệu năng tối đa do không cần truy vấn CSDL).
+  #   - Kém an toàn hơn (có nguy cơ trùng đơn nếu số đơn ngâm quá lớn). Tuy nhiên với cấu hình mặc định
+  #     (code-length: 12, code-mode: 0), không gian mã là 1.000 tỷ (10^12) khả năng ngẫu nhiên — tỉ lệ trùng
+  #     khi có sẵn 100.000 đơn trong hệ thống chỉ khoảng 1 / 10.000.000 (0.00001%), cực kỳ nhỏ.
+  #   - Mốc khuyến cáo: Dưới 50.000 đơn trong CSDL bạn có thể an tâm bật cả 2; Nếu trên 50.000 đơn
+  #     mà đã bật include-date-prefix, nên đặt check-duplicate-orders: false để tránh gây giật lag server.
+  check-duplicate-orders: true
+  # Độ dài phần mã RANDOM phía sau (từ 1 đến 70). Khuyến nghị 12 để tránh trùng đơn.
+  code-length: 12
+  # Kiểu ký tự ngẫu nhiên: 0 = chỉ số (MẶC ĐỊNH - an toàn nhất cho SePay webhook) | 1 = chỉ chữ | -1 = cả số và chữ.
+  code-mode: 0
+
+# ── Lưu trữ đơn nạp cũ (bank-orders.yml / card-orders.yml) ─────────────────────
+# v5.0.0: số ngày giữ lại đơn ĐÃ XỬ LÝ XONG (hết hạn/đã duyệt) trước khi tự xoá khỏi
+# bộ nhớ + file lưu trữ. Đơn ĐANG CHỜ xử lý KHÔNG BAO GIỜ bị xoá dù giá trị là gì.
+#   -1 = giữ VĨNH VIỄN, không bao giờ tự xoá (MẶC ĐỊNH — an toàn nhất cho việc tra soát).
+#    0 = xoá NGAY (trong vòng tối đa 1 giờ — chu kỳ dọn dẹp định kỳ), không lưu lâu dài.
+#   >0 = xoá sau đúng số ngày đó (vd 7 = giữ 7 ngày rồi xoá).
+# Có 2 mục riêng — bank và card đặt số ngày khác nhau cũng được, không bắt buộc giống nhau.
+order-retention:
+  bank-days: -1
+  card-days: -1
+
+# Hiện 6 dòng thông tin (ngân hàng/STK/tên/tiền/nội dung CK/hết hạn) dưới ảnh QR hay
+# chỉ hiện QR thuần (không chữ). Mặc định false = chỉ QR (full 128x128, nét hơn).
+qr-show-info-overlay: false
+
+# ── SePay API (v5.0.0 Phase B) ─────────────────────────────────────────────────
+# Cách nạp bank MỚI, đơn giản hơn nhiều so với /sepaysetup cũ (chỉ cần dán 1 API
+# Token — không cần webhook, không cần bot.py/ngrok, không cần biết merchant-id/
+# secret-key). Plugin tự POLL trực tiếp API của SePay (my.sepay.vn) theo chu kỳ.
+# Cấu hình qua lệnh trong-game: /sepaysetup (đã viết lại hoàn toàn ở v5.0.0).
+# Admin KHÔNG cần tự sửa tay các dòng dưới — wizard /sepaysetup tự điền sau khi
+# admin dán API token (tên ngân hàng/số TK/tên TK được lấy thẳng từ SePay).
+sepay-api:
+  enabled: false
+  # true = dùng môi trường test my.dev.sepay.vn (không đụng tới giao dịch ngân hàng
+  # thật — để bạn thử nghiệm/test plugin trước). false = dùng my.sepay.vn (thật).
+  sandbox: false
+  api-token: ''
+  bank-account-number: ''
+  bank-short-name: ''
+  bank-full-name: ''
+  bank-bin: ''
+  account-holder-name: ''
+  # Con trỏ phân trang khi poll giao dịch mới — KHÔNG tự sửa tay.
+  last-transaction-id: 0
+  # Số giây giữa mỗi lần poll giao dịch mới (mặc định 10s — đủ nhanh cho VietQR).
+  poll-interval-seconds: 10
+
+# ── SePay (Legacy Config) ──────────────────────────────────────────────────────
+sepay:
+  secret-key: ''
+  merchant-id: ''
+  bank-account: ''
+  bank-name: ''
+  account-name: ''
+  configured: false
+
+# ── Card API (Legacy Config) ───────────────────────────────────────────────────
+card-api:
+  site: ''
+  partner-id: ''
+  partner-key: ''
+  configured: false
+
+# ── Quick bank amounts ────────────────────────────────────────────────────────
+# Các mệnh giá nhanh hiển thị trong UI nạp ngân hàng
+quick-amounts:
+- 10000
+- 20000
+- 50000
+- 100000
+- 200000
+- 500000
+- 1000000
+
+# ── Reward Multiplier ─────────────────────────────────────────────────────────
+# Hệ số nhân số lần thực thi bộ lệnh thưởng khi nạp thành công:
+#   1 = mặc định (gửi 1 lần bộ lệnh thưởng)
+#   2 = nhân đôi (gửi 2 lần bộ lệnh thưởng đã cấu hình), 3 = nhân ba, v.v.
+# Chỉ nhập số nguyên >= 1 (vd: 1, 2, 3... hoặc 2x). Nếu nhập số lẻ (vd 2.2) sẽ tự làm tròn thành số nguyên gần nhất (2).
+Rewards_Card_Mode: 1
+Rewards_Bank_Mode: 1
+
+# ── Reward Effects ────────────────────────────────────────────────────────────
+# Hiệu ứng khi player nạp thành công
+Reward_Firework: true # Bắn 2 quả pháo hoa (cách nhau 2s)
+Reward_Sound: true # Sound level-up (<100k) hoặc Epic Achievement (>=100k)
+Reward_Notification: true # Hiện dòng chữ xanh in đậm italic
+
+# ── Card API Sites ────────────────────────────────────────────────────────────
+# Cấu hình tự động qua lệnh /cardsetup trong game
+# Cấu trúc: card-api-sites.<domain>.partner-id / partner-key / channel-id
+card-api-sites:
+  thesieure:
+    com:
+      partner-id: ''
+      partner-key: ''
+      channel-id: ''
+  gachthepro:
+    com:
+      partner-id: ''
+      partner-key: ''
+      channel-id: ''
+  gachthefast:
+    com:
+      partner-id: ''
+      partner-key: ''
+      channel-id: ''
+  gachthe1s:
+    com:
+      partner-id: ''
+      partner-key: ''
+      channel-id: ''
+  card2k:
+    net:
+      partner-id: ''
+      partner-key: ''
+      channel-id: ''
+
+# ── Denom Rewards (Card) ──────────────────────────────────────────────────────
+# Cấu hình qua /chinhsuamenhgianap trong game
+# amt: số lượng thưởng
+# cmd: lệnh thực thi — biến dùng được: [playername] (tên người chơi), [amount] (số lượng thưởng)
+# Ví dụ cmd: "eco give [playername] [amount]" hoặc "give [playername] diamond [amount]"
+denom-rewards-card:
+  '10000':
+    amt: ''
+    cmd: ''
+  '20000':
+    amt: ''
+    cmd: ''
+  '30000':
+    amt: ''
+    cmd: ''
+  '50000':
+    amt: ''
+    cmd: ''
+  '100000':
+    amt: ''
+    cmd: ''
+  '200000':
+    amt: ''
+    cmd: ''
+  '300000':
+    amt: ''
+    cmd: ''
+  '500000':
+    amt: ''
+    cmd: ''
+  '1000000':
+    amt: ''
+    cmd: ''
+
+# ── Denom Rewards (Bank) ──────────────────────────────────────────────────────
+denom-rewards-bank:
+  '10000':
+    amt: ''
+    cmd: ''
+  '20000':
+    amt: ''
+    cmd: ''
+  '50000':
+    amt: ''
+    cmd: ''
+  '100000':
+    amt: ''
+    cmd: ''
+  '200000':
+    amt: ''
+    cmd: ''
+  '500000':
+    amt: ''
+    cmd: ''
+  '1000000':
+    amt: ''
+    cmd: ''
+
+# ── Fallback reward command ───────────────────────────────────────────────────
+# Dùng khi mệnh giá cụ thể chưa được cấu hình
+reward-command: ''
+reward-command-card: ''
+reward-command-bank: ''
+
+# Giới hạn số thông báo CÙNG LOẠI tối đa trong 1 phút (chống spam khi 1 lỗi lặp liên
+# tục, vd SePay timeout liên tục). Điền 1 số nguyên bất kỳ (vd 10, 50), hoặc "false"
+# để TẮT hẳn giới hạn này (hiện toàn bộ thông báo, không chặn gì cả).
+# Mặc định: 20 (tức tối đa 20 thông báo/loại mỗi 60 giây — vượt mức sẽ bị chặn, không
+# thông báo nữa cho tới khi qua phút kế tiếp).
+Max_Notifications: 20
+
+# ══════════════════════════════════════════════════════════════════════════════
+# NOTIFICATION CONFIGS — bật/tắt từng loại thông báo/log riêng lẻ
+# ══════════════════════════════════════════════════════════════════════════════
+# Mỗi dòng dưới đây = 1 loại thông báo (console log và/hoặc nhắn admin online có
+# quyền naptien.admin). Mặc định TẤT CẢ đều "true" (bật). Set "false" để tắt loại
+# tương ứng — KHÔNG ảnh hưởng tin nhắn trực tiếp gửi cho player đang dùng lệnh
+# (vd "Đơn này đã được duyệt rồi") vì đó là phản hồi thao tác, không phải log/cảnh báo.
+#
+# CHỐNG SPAM: dù bật, mỗi loại tối đa chỉ bắn theo giới hạn "Max_Notifications" ở trên
+# (mặc định 20 lần / 60 giây) — vượt quá sẽ tự
+# động im lặng bỏ qua cho tới khi qua cửa sổ 60s kế tiếp (xem NotificationManager).
+notifications:
+  # Player vừa được give 1 cái map QR (nạp bank) thành công
+  qr-created: true
+  # Tạo/tải ảnh QR thất bại (lỗi mạng, ảnh hỏng,...)
+  qr-create-fail: true
+  # Player vừa gửi thẻ cào (nạp thẻ) lên hệ thống (qua bot hoặc standalone)
+  card-submitted: true
+  # Gửi thẻ lên bot Discord thất bại (server đang ở chế độ kết nối bot)
+  card-submit-fail: true
+  # Lỗi giao tiếp với web gạch thẻ (site cấu hình ở /cardsetup) — log có ghi rõ tên web
+  card-api-error: true
+  # Lỗi giao tiếp với SePay/bot khi đăng ký hoặc poll đơn nạp bank (standalone mode)
+  sepay-error: true
+  # Nhận được thanh toán bank (chưa duyệt) — thông báo admin online vào duyệt
+  bank-payment-received: true
+  # Duyệt đơn (card/bank) thất bại — vd lệnh thưởng dispatch lỗi ngay lúc duyệt
+  approve-fail: true
+  # Lệnh thưởng (reward command) chạy thất bại hoặc chưa được cấu hình cho mệnh giá
+  reward-invalid: true
+  # Log mỗi lần 1 lệnh thưởng được dispatch (console only — khá nhiều, có thể tắt nếu ồn)
+  reward-dispatch: true
+  # Đơn được duyệt nhưng player offline → lưu vào hàng chờ (console only, không spam chat)
+  reward-queued-offline: true
+  # Bắn pháo hoa / âm thanh thành tựu epic thất bại (lỗi tạo Firework, sound,...)
+  firework-fail: true
+  # Đơn QR nạp bank hết hạn (quá 30 phút chưa thanh toán, standalone mode)
+  order-expired: true
+  # Bot Discord tự ngắt kết nối với server (mất kết nối, bot restart,...)
+  bot-disconnect: true
+  # Lỗi xử lý webhook HTTP (SePay IPN, lệnh thưởng đẩy từ bot,...)
+  http-error: true
+  # Phát hiện có bản plugin mới trên Modrinth (cũng dùng cho thông báo "đang ở bản mới nhất")
+  update-available: true
+_migrated-prefix-5-0-2: true
+
+# ── Custom Lore GUI (v5.4.3 / v5.4.4) ──────────────────────────────────────────
+# Hiển thị lore custom khi di chuột vào các icon/cục len mệnh giá nạp trong GUI.
+# Mặc định: false (TẮT). Đổi thành true để BẬT lore custom.
+custom-lore:
+  enabled: false
+
+  # Lore custom cho từng mệnh giá NẠP BANK (/napbank)
+  # Hỗ trợ PlaceholderAPI (%player_name%, %paybot_total_topup%...), Hex (&#RRGGBB hoặc #RRGGBB), Gradient (<gradient:#ff0000:#00ff00>text</gradient>)
+  # Các biến nội bộ: %amount% (10000), %amount_formatted% (10.000), %amount_k% (10k), %coin% (số coin/điểm thưởng), %player_name% (tên người chơi)
+  bank:
+    '10000':
+      - "&e&lMỆNH GIÁ: &f10.000 VNĐ"
+      - "&7Nạp 10k vào server qua Ngân Hàng"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&7Tỷ lệ quy đổi: &b100%"
+      - "&eClick để chọn và tạo mã VietQR!"
+    '20000':
+      - "&e&lMỆNH GIÁ: &f20.000 VNĐ"
+      - "&7Nạp 20k vào server qua Ngân Hàng"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&7Tỷ lệ quy đổi: &b100%"
+      - "&eClick để chọn và tạo mã VietQR!"
+    '50000':
+      - "&e&lMỆNH GIÁ: &f50.000 VNĐ"
+      - "&7Nạp 50k vào server qua Ngân Hàng"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&c&lKM: &aThưởng thêm 10% Point"
+      - "&eClick để chọn và tạo mã VietQR!"
+    '100000':
+      - "&#FF8C00&lMỆNH GIÁ VIP: &#FFD700100.000 VNĐ"
+      - "&7Nạp 100k vào server qua Ngân Hàng"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&6&lQUÀ VIP: &fNhận Cánh Phượng Hoàng"
+      - "&eClick để chọn và tạo mã VietQR!"
+    '200000':
+      - "&#FF8C00&lMỆNH GIÁ VIP: &#FFD700200.000 VNĐ"
+      - "&7Nạp 200k vào server qua Ngân Hàng"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&eClick để chọn và tạo mã VietQR!"
+    '500000':
+      - "<gradient:#FF007F:#7F00FF>&lMỆNH GIÁ SIÊU CẤP: 500.000 VNĐ</gradient>"
+      - "&7Nạp 500k vào server qua Ngân Hàng"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&eClick để chọn và tạo mã VietQR!"
+    '1000000':
+      - "<gradient:#FFD700:#FF4500>&lMỆNH GIÁ THẦN THOẠI: 1.000.000 VNĐ</gradient>"
+      - "&7Nạp 1M vào server qua Ngân Hàng"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&eClick để chọn và tạo mã VietQR!"
+
+  # Lore custom cho từng mệnh giá NẠP THẺ (/napthe)
+  card:
+    '10000':
+      - "&e&lMỆNH GIÁ: &f10.000 VNĐ"
+      - "&7Nạp 10k vào server bằng thẻ cào"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&eClick để chọn mệnh giá này!"
+    '20000':
+      - "&e&lMỆNH GIÁ: &f20.000 VNĐ"
+      - "&7Nạp 20k vào server bằng thẻ cào"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&eClick để chọn mệnh giá này!"
+    '30000':
+      - "&e&lMỆNH GIÁ: &f30.000 VNĐ"
+      - "&7Nạp 30k vào server bằng thẻ cào"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&eClick để chọn mệnh giá này!"
+    '50000':
+      - "&e&lMỆNH GIÁ: &f50.000 VNĐ"
+      - "&7Nạp 50k vào server bằng thẻ cào"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&eClick để chọn mệnh giá này!"
+    '100000':
+      - "&#FF8C00&lMỆNH GIÁ: &#FFD700100.000 VNĐ"
+      - "&7Nạp 100k vào server bằng thẻ cào"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&eClick để chọn mệnh giá này!"
+    '200000':
+      - "&#FF8C00&lMỆNH GIÁ: &#FFD700200.000 VNĐ"
+      - "&7Nạp 200k vào server bằng thẻ cào"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&eClick để chọn mệnh giá này!"
+    '300000':
+      - "&#FF8C00&lMỆNH GIÁ: &#FFD700300.000 VNĐ"
+      - "&7Nạp 300k vào server bằng thẻ cào"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&eClick để chọn mệnh giá này!"
+    '500000':
+      - "<gradient:#FF007F:#7F00FF>&lMỆNH GIÁ SIÊU CẤP: 500.000 VNĐ</gradient>"
+      - "&7Nạp 500k vào server bằng thẻ cào"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&eClick để chọn mệnh giá này!"
+    '1000000':
+      - "<gradient:#FFD700:#FF4500>&lMỆNH GIÁ THẦN THOẠI: 1.000.000 VNĐ</gradient>"
+      - "&7Nạp 1M vào server bằng thẻ cào"
+      - "&aKhi nạp sẽ nhận %coin% Coins"
+      - "&eClick để chọn mệnh giá này!"
+
+  # Lore custom cho các CỤC LEN NHÀ MẠNG (Telco Wool Items) trong /napthe
+  telco:
+    'Viettel':
+      - "&c&lNHÀ MẠNG VIETTEL"
+      - "&7Nạp thẻ Viettel chiết khấu cực tốt"
+      - "&aMệnh giá: &f10k - 1000k"
+      - "&eClick để chọn nhà mạng Viettel!"
+    'Vinaphone':
+      - "&9&lNHÀ MẠNG VINAPHONE"
+      - "&7Nạp thẻ Vinaphone tốc độ gạch nhanh"
+      - "&aMệnh giá: &f10k - 500k"
+      - "&eClick để chọn nhà mạng Vinaphone!"
+    'Mobifone':
+      - "&a&lNHÀ MẠNG MOBIFONE"
+      - "&7Nạp thẻ Mobifone tự động 24/7"
+      - "&aMệnh giá: &f10k - 500k"
+      - "&eClick để chọn nhà mạng Mobifone!"
+    'Zing':
+      - "&e&lTHẺ ZING"
+      - "&7Nạp thẻ Zing nhận quà ưu đãi"
+      - "&aMệnh giá: &f10k - 1000k"
+      - "&eClick để chọn thẻ Zing!"
+    'Gate':
+      - "&b&lTHẺ GATE"
+      - "&7Nạp thẻ Gate gạch tự động 100%"
+      - "&aMệnh giá: &f10k - 500k"
+      - "&eClick để chọn thẻ Gate!"
+    'Garena':
+      - "&6&lTHẺ GARENA"
+      - "&7Nạp thẻ Garena siêu tốc"
+      - "&aMệnh giá: &f20k - 500k"
+      - "&eClick để chọn thẻ Garena!"
+    'Vcoin':
+      - "&5&lTHẺ VCOIN"
+      - "&7Nạp thẻ Vcoin nhanh chóng"
+      - "&aMệnh giá: &f10k - 1000k"
+      - "&eClick để chọn thẻ Vcoin!"
+    'Appota':
+      - "&d&lTHẺ APPOTA"
+      - "&7Nạp thẻ Appota tiện lợi"
+      - "&aMệnh giá: &f10k - 500k"
+      - "&eClick để chọn thẻ Appota!"
+    'Vietnamobile':
+      - "&3&lNHÀ MẠNG VIETNAMOBILE"
+      - "&7Nạp thẻ Vietnamobile dễ dàng"
+      - "&aMệnh giá: &f10k - 500k"
+      - "&eClick để chọn nhà mạng Vietnamobile!"
+

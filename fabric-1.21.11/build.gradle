@@ -1,0 +1,68 @@
+// v5.5.5 Part 57: module này TỰ áp dụng 'dev.architectury.loom' phiên bản 1.13.469 (KHÔNG dùng
+// 1.7.435 mà root build.gradle áp cho mọi subproject khác). Lý do đầy đủ: xem comment trong
+// subprojects{} ở root build.gradle. Tóm tắt: Fabric Loader artifact cho MC 1.21.11 cần Loom
+// nhánh 1.11+/1.13+ để đọc được ("Mod was built with a newer version of Loom" nếu dùng 1.7.435).
+plugins {
+    id 'dev.architectury.loom' version '1.13.469'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+base {
+    archivesName = "PayBot-Mod-Fabric-1.21.11"
+}
+
+configurations {
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = true
+    }
+    compileClasspath.extendsFrom shadowBundle
+    runtimeClasspath.extendsFrom shadowBundle
+}
+
+dependencies {
+    // v5.5.5 Part 57: root build.gradle không còn tự làm hộ phần minecraft/mappings cho module
+    // này nữa (bị loại trừ khỏi vòng lặp subprojects{} ở root) — tự khai lại y hệt logic root
+    // vẫn dùng cho module khác.
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+
+    modImplementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
+    modApi "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // Direct shaded libraries for Fabric & Quilt
+    shadowBundle 'org.xerial:sqlite-jdbc:3.45.3.0'
+    shadowBundle 'com.mysql:mysql-connector-j:8.4.0'
+    shadowBundle 'com.zaxxer:HikariCP:5.1.0'
+    shadowBundle 'org.yaml:snakeyaml:2.2'
+    shadowBundle 'com.google.zxing:core:3.5.3'
+    shadowBundle 'com.google.zxing:javase:3.5.3'
+    shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching(["fabric.mod.json", "quilt.mod.json"]) {
+        expand "version": project.version
+    }
+}
+
+shadowJar {
+    exclude "architectury.common.json"
+    // v5.5.5 Part 44: loại trừ slf4j đóng gói theo HikariCP (xem giải thích ở fabric-legacy)
+    exclude "org/slf4j/**"
+
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = "dev-shadow"
+}
+
+remapJar {
+    input.set shadowJar.archiveFile
+    dependsOn shadowJar
+    archiveClassifier = null
+}
+
+jar {
+    archiveClassifier = "dev"
+}

@@ -1,0 +1,59 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+base {
+    archivesName = "PayBot-Mod-Fabric-1.18.2"
+}
+
+configurations {
+    shadowBundle {
+        canBeResolved = true
+        canBeConsumed = true
+    }
+    compileClasspath.extendsFrom shadowBundle
+    runtimeClasspath.extendsFrom shadowBundle
+}
+
+dependencies {
+    modImplementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
+    modApi "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // Direct shaded libraries for Fabric & Quilt
+    shadowBundle 'org.xerial:sqlite-jdbc:3.45.3.0'
+    shadowBundle 'com.mysql:mysql-connector-j:8.4.0'
+    shadowBundle 'com.zaxxer:HikariCP:5.1.0'
+    shadowBundle 'org.yaml:snakeyaml:2.2'
+    shadowBundle 'com.google.zxing:core:3.5.3'
+    shadowBundle 'com.google.zxing:javase:3.5.3'
+    shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching(["fabric.mod.json", "quilt.mod.json"]) {
+        expand "version": project.version
+    }
+}
+
+shadowJar {
+    exclude "architectury.common.json"
+    // v5.5.5 Part 44: HikariCP kéo theo slf4j-api transitive — game đã có sẵn slf4j riêng,
+    // đóng gói thêm bản của mình gây trùng lặp classloading (Fabric không dùng JPMS chặt như
+    // Forge nên không crash, nhưng vẫn nên loại trừ cho sạch/nhất quán với forge-legacy/forge-modern).
+    exclude "org/slf4j/**"
+
+    configurations = [project.configurations.shadowBundle]
+    archiveClassifier = "dev-shadow"
+}
+
+remapJar {
+    input.set shadowJar.archiveFile
+    dependsOn shadowJar
+    archiveClassifier = null
+}
+
+jar {
+    archiveClassifier = "dev"
+}

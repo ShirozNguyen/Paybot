@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "paybot",
+  "version": "${version}",
+  "name": "PayBot",
+  "description": "PayBot Mod Multi-Loader - Payment and Bank QR code integration for Minecraft. [Stonecutter multi-version pilot build]",
+  "authors": [
+    "TheRealShiroz"
+  ],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.naptien.multiversion.PayBotMultiVersionMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.11",
+    "minecraft": ">=1.14.4"
+  }
+}

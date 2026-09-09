@@ -1,0 +1,29 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+
+[[mods]]
+modId="paybot"
+version="${version}"
+displayName="PayBot"
+authors="TheRealShiroz"
+description="PayBot Mod Multi-Loader - Payment and Bank QR code integration for Minecraft."
+
+[[dependencies.paybot]]
+modId="neoforge"
+mandatory=true
+# v5.5.5 Part 49: siết theo NeoForge 26.1.x thật (xác nhận version 26.1.2.97 tồn tại lúc
+# research) — để ",)" mở (chấp nhận mọi build 26.1.x trở lên) vì build number NeoForge tăng
+# thường xuyên (~hàng tuần), không siết cứng 1 build cụ thể như minecraft version bên dưới.
+versionRange="[26.2,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.paybot]]
+modId="minecraft"
+mandatory=true
+# v5.5.5 Part 49: module neoforge-26.1 nhắm ĐÚNG 26.1.2 (bản vá mới nhất dải 26.1 tính tới
+# 22/8/2026) — cùng lý do chọn patch cụ thể như fabric-26.1 (xem LOG.md Part 48).
+versionRange="[26.2]"
+ordering="NONE"
+side="BOTH"

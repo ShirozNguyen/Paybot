@@ -1,0 +1,30 @@
+modLoader="javafml"
+# v5.5.5 Part 51: loaderVersion ƯỚC TÍNH (chưa xác nhận số thật) — theo cùng logic Part 50,
+# suy từ dải build Forge 26.2 (65.1.0/65.1.2). Shiroz cần đối chiếu số thật trong MDK tải về.
+loaderVersion="[65,)"
+license="MIT"
+
+[[mods]]
+modId="paybot"
+version="${version}"
+displayName="PayBot"
+authors="TheRealShiroz"
+description="PayBot Mod Multi-Loader - Payment and Bank QR code integration for Minecraft."
+
+[[dependencies.paybot]]
+modId="forge"
+mandatory=true
+# v5.5.5 Part 50: siết theo dải build Forge 26.1.2 thật (64.x) — để mở ",)" vì Forge ra build
+# thường xuyên trong cùng 1 patch MC (64.0.0 -> 64.1.2 chỉ trong ~4.5 tháng).
+versionRange="[65,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.paybot]]
+modId="minecraft"
+mandatory=true
+# v5.5.5 Part 50: module forge-26.1 nhắm ĐÚNG 26.1.2 — cùng lý do chọn patch cụ thể như
+# fabric-26.1/neoforge-26.1 (xem LOG.md Part 48).
+versionRange="[26.2]"
+ordering="NONE"
+side="BOTH"
