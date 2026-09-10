@@ -10,27 +10,26 @@ subprojects {
     // nên không còn mapping nào để tìm). Các module 26.x tự áp dụng plugin Loom/ModDev/ForgeGradle
     // riêng ngay trong build.gradle của chính module đó — xem fabric-26.1/build.gradle.
     //
-    // v5.5.5 Part 57: loại trừ thêm fabric-1.21.10 và fabric-1.21.11 (cùng cơ chế như dải 26.x
-    // ở trên — 2 module này tự áp 'dev.architectury.loom' phiên bản MỚI HƠN ngay trong chính
-    // build.gradle của module đó). Lý do: lỗi build GitHub Actions thật do Shiroz gửi —
-    // "Mod was built with a newer version of Loom (1.11.7), you are using Loom (1.7.435)" khi
-    // cấu hình project ':fabric-1.21.10'. Xác nhận qua nghiên cứu: Fabric Loader artifact cho
-    // MC 1.21.10/1.21.11 được publish bằng công cụ dùng Architectury Loom nhánh 1.11+/1.13+, bản
-    // 1.7.435 (khai báo ở trên, dùng chung cho MỌI module khác) quá cũ để đọc metadata đó — xác
-    // nhận thêm bằng mod thật (sgui) port sang 1.21.10 dùng đúng "Architectury Loom 1.13-SNAPSHOT"
-    // (GitHub release jblemee/sgui v1.21.10) + GitHub discussion architectury-loom#329 (người khác
-    // hỏi bản 1.21.11 cũng cần Loom 1.13+/1.14+). KHÔNG nâng Loom DÙNG CHUNG ở trên (root) lên
-    // thẳng 1.13.x cho TOÀN BỘ 99 module, vì Loom 1.13 còn dán nhãn "beta" (tự in cảnh báo khi
-    // chạy) và có bug ĐÃ XÁC NHẬN còn mở (GitHub issue architectury-loom#320, do chính tác giả
-    // chính "Juuxel" báo cáo 07/12/2025, tiêu đề "[1.13] Forge 1.16.5 crashes with a NSME for an
-    // SRG-mapped method") — ảnh hưởng ĐÚNG module forge-1.16.5 đang có trong project này. Tách
-    // riêng 2 module Fabric mới nhất là cách AN TOÀN NHẤT: forge-1.16.5 và toàn bộ ~60 module còn
-    // lại giữ nguyên 1.7.435 (rủi ro NSME = 0), chỉ 2 module thật sự cần mới đổi. Xem
-    // fabric-1.21.10/build.gradle và fabric-1.21.11/build.gradle cho phiên bản Loom cụ thể dùng
-    // (1.13.469 — bản patch mới nhất trong nhánh 1.13 tính tới thời điểm sửa, phát hành sau ngày
-    // bug #320 được báo nên có khả năng cao đã được vá âm thầm dù issue GitHub chưa đóng chính
-    // thức — CHƯA build/test thật được để xác nhận 100%, cùng giới hạn sandbox không có mạng Maven
-    // như các Part trước).
+    // v5.5.5 Part 61 (SỬA LẠI Part 57/60): loại trừ thêm fabric-1.21.10 và fabric-1.21.11.
+    // Lý do gốc: lỗi build GitHub Actions thật do Shiroz gửi — "Mod was built with a newer
+    // version of Loom (1.11.7), you are using Loom (1.7.435)" khi cấu hình project
+    // ':fabric-1.21.10'. THỬ Part 60 (khai 'dev.architectury.loom' version khác cho riêng 2
+    // module này) THẤT BẠI khi build thật — lỗi "plugin is already on the classpath with a
+    // different version" — vì đây là GIỚI HẠN CỐ HỮU của Gradle: 1 plugin ID chỉ tồn tại ĐÚNG 1
+    // version cho toàn bộ build, không có cách nào né được kể cả 'buildscript{}' cú pháp cũ.
+    // GIẢI PHÁP ĐÚNG (Part 61): 2 module này đổi hẳn sang plugin ID KHÁC —
+    // 'net.fabricmc.fabric-loom-remap' (Fabric Loom GỐC, chính chủ FabricMC, KHÔNG PHẢI fork
+    // Architectury) — xác nhận chính thức qua docs.fabricmc.net: "net.fabricmc.fabric-loom-remap,
+    // for obfuscated versions (Minecraft 1.21.11 or older)", tức MC 1.21.10/1.21.11 CHÍNH THỨC
+    // dùng plugin ID này. Khác plugin ID = không đụng độ classpath, giống hệt nguyên lý fabric-26.1
+    // (Part 48) dùng 'net.fabricmc.fabric-loom'. Xác nhận 2 module này KHÔNG phụ thuộc kiến trúc
+    // multi-loader Architectury (không 'common', không '@ExpectPlatform', không dependency
+    // 'dev.architectury:architectury-api') nên đổi AN TOÀN TUYỆT ĐỐI. Xem
+    // fabric-1.21.10/build.gradle (Part 61) cho lý do đầy đủ + version Loom cụ thể dùng
+    // ('1.17.20' — bản ổn định mới nhất của đúng dòng 'net.fabricmc.fabric-loom-remap', KHÔNG
+    // liên quan gì tới bug NSME #320 của Architectury Loom vì là 2 codebase khác nhau hoàn toàn).
+    // CHƯA build/test thật được lần sửa này để xác nhận 100% (cùng giới hạn sandbox không có mạng
+    // Maven như các Part trước) — cần Shiroz xác nhận khi chạy CI/máy thật.
     if (project.name != 'plugin' && !project.name.contains('-26.') &&
         project.name != 'fabric-1.21.10' && project.name != 'fabric-1.21.11') {
         apply plugin: 'dev.architectury.loom'

@@ -1,9 +1,27 @@
-// v5.5.5 Part 57: module này TỰ áp dụng 'dev.architectury.loom' phiên bản 1.13.469 (KHÔNG dùng
-// 1.7.435 mà root build.gradle áp cho mọi subproject khác). Lý do đầy đủ: xem comment trong
-// subprojects{} ở root build.gradle. Tóm tắt: Fabric Loader artifact cho MC 1.21.10 cần Loom
-// nhánh 1.11+/1.13+ để đọc được ("Mod was built with a newer version of Loom" nếu dùng 1.7.435).
+// v5.5.5 Part 61: SỬA LẠI Part 60 — cách cũ (khai 'dev.architectury.loom' version '1.13.469'
+// riêng cho module này trong khi root vẫn khai '1.7.435' cho module khác) THẤT BẠI khi build thật
+// (Shiroz gửi log GitHub Actions): "Error resolving plugin [id: 'dev.architectury.loom', version:
+// '1.13.469'] > The request for this plugin could not be satisfied because the plugin is already
+// on the classpath with a different version (1.7.435)." — xác nhận qua nghiên cứu: đây là GIỚI HẠN
+// CỐ HỮU của Gradle, không phải lỗi cú pháp — 1 plugin ID chỉ tồn tại ĐÚNG 1 version cho toàn bộ
+// build (dù đã loại trừ project khỏi subprojects{} ở root); không có cách nào dùng 'buildscript{}'
+// cú pháp cũ để né được (đã xác nhận qua tài liệu Gradle chính thức).
+//
+// GIẢI PHÁP ĐÚNG: đổi hẳn sang plugin ID KHÁC — 'net.fabricmc.fabric-loom-remap' (Fabric Loom GỐC,
+// chính chủ FabricMC, KHÔNG PHẢI fork Architectury) — xác nhận chính thức qua docs.fabricmc.net:
+// "net.fabricmc.fabric-loom-remap, for obfuscated versions (Minecraft 1.21.11 or older)" — tức MC
+// 1.21.10/1.21.11 CHÍNH THỨC dùng plugin ID này, khác hẳn 'dev.architectury.loom' ở root nên KHÔNG
+// đụng độ classpath (giống hệt nguyên lý fabric-26.1 dùng 'net.fabricmc.fabric-loom' — xem Part 48).
+// Xác nhận thêm module này KHÔNG phụ thuộc kiến trúc multi-loader Architectury (không có project
+// 'common', không '@ExpectPlatform', không dependency 'dev.architectury:architectury-api') nên đổi
+// plugin AN TOÀN TUYỆT ĐỐI, không mất tính năng gì. Bài viết chính thức fabricmc.net (23/09/2025,
+// "Fabric for Minecraft 1.21.9 & 1.21.10") khuyến nghị Loom 1.11 tại thời điểm MC 1.21.9 ra mắt;
+// chọn bản '1.17.20' (ổn định mới nhất trong đúng dòng 'net.fabricmc.fabric-loom-remap' tính tới
+// thời điểm sửa, 25/08/2026) vì Loom vốn thiết kế tương thích ngược tốt ("supports all versions of
+// Minecraft... version-independent" — docs.fabricmc.net) và đây là dòng version RIÊNG, không liên
+// quan gì tới bug NSME của Architectury Loom (#320) đã lo ngại trước đó.
 plugins {
-    id 'dev.architectury.loom' version '1.13.469'
+    id 'net.fabricmc.fabric-loom-remap' version '1.17.20'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 

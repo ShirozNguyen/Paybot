@@ -1,9 +1,13 @@
-// v5.5.5 Part 57: module này TỰ áp dụng 'dev.architectury.loom' phiên bản 1.13.469 (KHÔNG dùng
-// 1.7.435 mà root build.gradle áp cho mọi subproject khác). Lý do đầy đủ: xem comment trong
-// subprojects{} ở root build.gradle. Tóm tắt: Fabric Loader artifact cho MC 1.21.11 cần Loom
-// nhánh 1.11+/1.13+ để đọc được ("Mod was built with a newer version of Loom" nếu dùng 1.7.435).
+// v5.5.5 Part 61: SỬA LẠI Part 60 — cách cũ (khai 'dev.architectury.loom' version '1.13.469'
+// riêng cho module này) THẤT BẠI khi build thật (lỗi tương tự fabric-1.21.10, cùng nguyên nhân:
+// giới hạn cố hữu Gradle — 1 plugin ID chỉ tồn tại 1 version cho toàn build). Xem comment đầy đủ
+// trong fabric-1.21.10/build.gradle (Part 61) để đọc toàn bộ lý do và nguồn xác nhận. Tóm tắt:
+// đổi sang 'net.fabricmc.fabric-loom-remap' (Fabric Loom GỐC, plugin ID KHÁC hẳn nên không đụng
+// độ classpath với 'dev.architectury.loom' ở root) — xác nhận chính thức MC 1.21.11 dùng đúng
+// plugin ID này (docs.fabricmc.net). Module này cũng KHÔNG phụ thuộc kiến trúc Architectury nên
+// đổi an toàn tuyệt đối.
 plugins {
-    id 'dev.architectury.loom' version '1.13.469'
+    id 'net.fabricmc.fabric-loom-remap' version '1.17.20'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
