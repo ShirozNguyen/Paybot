@@ -71,19 +71,21 @@ include('fabric-1.20.5')
 include('fabric-1.20.6')
 include('fabric-1.21')
 include('fabric-1.21.1')
-include('fabric-1.21.2')
-include('fabric-1.21.3')
-include('fabric-1.21.4')
-// v5.5.5 [audit]: 1.21.5-1.21.11 ĐÃ RELEASE CHÍNH THỨC từ lâu (xác nhận qua Fabric API
-// CurseForge/Modrinth — vd 1.21.11 release "R" từ tháng 1/2026), comment cũ "unreleased/
-// snapshots" đã lỗi thời tại thời điểm audit này (05/09/2026). Bật lại theo yêu cầu.
-include('fabric-1.21.5')
-include('fabric-1.21.6')
-include('fabric-1.21.7')
-include('fabric-1.21.8')
-include('fabric-1.21.9')
-include('fabric-1.21.10')
-include('fabric-1.21.11')
+// v5.5.5 Part 64: fabric-1.21.2 đến fabric-1.21.9 KHÔNG được include() ở đây nữa. Đã audit toàn
+// bộ dải 1.21.x và xác nhận qua fabricmc.net blog chính thức: dev.architectury.loom 1.7.435 dùng
+// chung ở root CHỈ đủ chuẩn cho MC 1.21/1.21.1 (cần Loom ≥1.6) — từ 1.21.2 trở đi cần Loom cao
+// hơn (1.21.2/3→1.8, 1.21.4→1.9, 1.21.5-8→1.10, 1.21.9→1.11), 1.7.435 KHÔNG đủ. Lỗi thật đã xảy
+// ra ở fabric-1.21.5 (Part 63 báo cáo): "Mod was built with a newer version of Loom (1.10.1),
+// you are using Loom (1.7.435)". 8 module này giờ là project Gradle HOÀN TOÀN ĐỘC LẬP (cùng mô
+// hình Part 63/64 — mỗi cái tự khai dev.architectury.loom version riêng khớp đúng MC của nó).
+// Xem LOG.md Part 64.
+// v5.5.5 Part 63: SỬA LẠI Part 62 — fabric-1.21.10, fabric-1.21.11 KHÔNG được include() hay
+// includeBuild() ở đây nữa. Chúng là 2 project Gradle HOÀN TOÀN ĐỘC LẬP (thư mục riêng, gradlew
+// riêng, Gradle 9.2 riêng) — build.yml gọi trực tiếp `cd fabric-1.21.10 && ./gradlew build`.
+// Lý do: includeBuild() vẫn khiến Gradle root (8.8) tự cấu hình composite build bằng CHÍNH
+// engine 8.8 của root khi resolve dependency substitution — gradle-wrapper.properties riêng
+// (9.2) của composite build KHÔNG có tác dụng gì trong tình huống đó (chỉ có tác dụng khi tự
+// gọi trực tiếp ./gradlew từ đúng thư mục). Xem LOG.md Part 63 để biết đầy đủ.
 // v5.5.5 Part 44b: forge-legacy TÁCH thành 22 module riêng, mỗi module = ĐÚNG 1 bản MC
 // (theo yêu cầu Shiroz — không có ranh giới version nào còn sót lại trong 1 module)
 // v5.5.5 Part 52: forge-1.14.2, forge-1.14.3 — phát hiện tồn tại đầy đủ trên đĩa nhưng CHƯA
@@ -142,30 +144,31 @@ include('neoforge-1.20.5')
 include('neoforge-1.20.6')
 include('neoforge-1.21')
 include('neoforge-1.21.1')
-include('neoforge-1.21.2')
-include('neoforge-1.21.3')
-include('neoforge-1.21.4')
-// v5.5.5 [audit]: 1.21.5-1.21.11 ĐÃ RELEASE CHÍNH THỨC (xác nhận qua blog neoforged.net —
-// "NeoForge 21.11 for Minecraft 1.21.11", "NeoForge 21.9 for Minecraft 1.21.9", "NeoForge
-// 21.6 for Minecraft 1.21.6"). Bật lại theo yêu cầu.
-include('neoforge-1.21.5')
-include('neoforge-1.21.6')
-include('neoforge-1.21.7')
-include('neoforge-1.21.8')
-include('neoforge-1.21.9')
-include('neoforge-1.21.10')
-include('neoforge-1.21.11')
+// v5.5.5 Part 64: neoforge-1.21.2 đến neoforge-1.21.9 KHÔNG được include() ở đây nữa — cùng lý
+// do với fabric-1.21.2-1.21.9 (xem comment phía trên): dùng chung dev.architectury.loom 1.7.435
+// ở root (áp qua cùng điều kiện trong build.gradle cho cả Fabric lẫn NeoForge), CHỈ đủ chuẩn cho
+// MC 1.21/1.21.1. 8 module này giờ là project Gradle HOÀN TOÀN ĐỘC LẬP. Xem LOG.md Part 64.
+// v5.5.5 Part 66: neoforge-1.21.10, neoforge-1.21.11 KHÔNG được include() ở đây nữa — lỗi build
+// thật xác nhận "Unfixable conflicts" khi remap qua dev.architectury.loom 1.7.435 (quá cũ cho
+// NeoForge ở MC 1.21.10+). 2 module này giờ là project Gradle HOÀN TOÀN ĐỘC LẬP. Xem LOG.md Part 66.
 include('plugin')
 
 // v5.5.5 Part 48: bắt đầu dải 26.x (xem LOG.md Part 44 cho bối cảnh gốc + Part 48 cho research
 // đầy đủ). Toolchain hoàn toàn khác các module 1.x ở trên — Java 25, không remap, mỗi module 26.x
 // tự áp plugin riêng (xem root build.gradle + ghi chú trong từng build.gradle module).
-include('fabric-26.1')
-include('neoforge-26.1')
-include('forge-26.1')
-include('fabric-26.2')
-include('neoforge-26.2')
-include('forge-26.2')
+// v5.5.5 Part 65: forge-26.1/26.2 KHÔNG còn include() nữa (đã tách khỏi Part 62 — lỗi build thật
+// xác nhận "ForgeGradle 7 requires Gradle 9.3.0 or later. You are currently using Gradle 8.8.").
+// Giờ là 2 project Gradle HOÀN TOÀN ĐỘC LẬP (Gradle 9.3 riêng), cùng mô hình các module 26.x
+// khác — xem LOG.md Part 65.
+
+// v5.5.5 Part 63: fabric-1.21.10, fabric-1.21.11, fabric-26.1, fabric-26.2, neoforge-26.1,
+// neoforge-26.2 CỐ TÌNH KHÔNG xuất hiện ở file này dưới bất kỳ hình thức nào (không include(),
+// không includeBuild()) — đây là 6 project Gradle HOÀN TOÀN ĐỘC LẬP, mỗi cái có gradlew/
+// gradle-wrapper.properties/settings.gradle riêng, không có quan hệ Gradle nào với root. CI
+// (.github/workflows/build.yml) build từng cái bằng `cd <module> && ./gradlew build` — chạy
+// độc lập, không đi qua engine Gradle 8.8 của root. Xem LOG.md Part 63 để biết đầy đủ lý do
+// (Part 62 dùng includeBuild() nhưng THẤT BẠI: includeBuild() vẫn khiến root dùng CHÍNH engine
+// 8.8 của root để cấu hình composite build, bỏ qua hoàn toàn gradle-wrapper.properties riêng).
 
 // CHƯA LÀM — kế hoạch tiếp theo (Part 52+):
 // 26.3: CHƯA release chính thức — tính tới 07/09/2026 đã tới Pre-Release 2 (Fabric API đã có

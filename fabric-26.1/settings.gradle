@@ -1,0 +1,20 @@
+// PayBot v5.5.5 Part 63 — project Gradle HOÀN TOÀN ĐỘC LẬP cho fabric-26.1 (KHÔNG phải
+// composite build — Part 62 dùng includeBuild() nhưng THẤT BẠI, xem LOG.md Part 63).
+// Lý do tách: net.fabricmc.fabric-loom (dòng 26.x, hiện khai 1.15.+) bắt buộc Gradle 9.4+, không tương thích Gradle 8.8 dùng chung ở root PayBot
+// (dev.architectury.loom 1.7.435 cho ~97 module khác). File này KHÔNG được
+// include()/includeBuild() từ root — chỉ build bằng cách tự chạy './gradlew build'
+// TỪ ĐÚNG THƯ MỤC NÀY (CI gọi 'cd fabric-26.1 && ./gradlew build').
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        gradlePluginPortal()
+    }
+}
+
+// foojay-resolver-convention: tự động tải/cấp JDK 25 nếu máy Shiroz chưa có sẵn
+// (module này bắt buộc Java 25 theo blog chính thức fabricmc.net / neoforged.net).
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
+rootProject.name = 'fabric-26.1'

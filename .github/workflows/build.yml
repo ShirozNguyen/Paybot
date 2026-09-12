@@ -42,6 +42,73 @@ jobs:
       - name: Build project
         run: gradle build --stacktrace
 
+      # v5.5.5 Part 63 (sửa lại Part 62): 6 module dưới đây là 6 project Gradle HOÀN TOÀN ĐỘC
+      # LẬP (không include(), không includeBuild() trong settings.gradle root) — mỗi cái có
+      # gradlew + gradle-wrapper.properties riêng (9.2/9.4, khác bản 8.8 của root). 'gradle
+      # build' ở root (bước "Build project" phía trên) HOÀN TOÀN KHÔNG đụng tới 6 module này
+      # (root không hề biết chúng tồn tại) — phải gọi ./gradlew build TỪ BÊN TRONG từng thư mục
+      # để dùng đúng engine Gradle riêng của nó. foojay-resolver-convention (đã khai trong
+      # settings.gradle của 4 module 26.x) sẽ tự tải JDK 25 nếu runner GitHub Actions chưa có sẵn.
+      - name: Build independent modules (fabric-1.21.10, fabric-1.21.11)
+        shell: bash
+        run: |
+          for mod in fabric-1.21.10 fabric-1.21.11; do
+            echo "=== Building $mod (Gradle 9.2, project độc lập) ==="
+            chmod +x "$mod/gradlew"
+            (cd "$mod" && ./gradlew build --stacktrace)
+          done
+
+      - name: Build independent modules (fabric-26.x, neoforge-26.x)
+        shell: bash
+        run: |
+          for mod in fabric-26.1 fabric-26.2 neoforge-26.1 neoforge-26.2; do
+            echo "=== Building $mod (Gradle 9.4, project độc lập) ==="
+            chmod +x "$mod/gradlew"
+            (cd "$mod" && ./gradlew build --stacktrace)
+          done
+
+      # v5.5.5 Part 65: forge-26.1/26.2 tách khỏi Part 62 sau khi lỗi build thật xác nhận
+      # "ForgeGradle 7 requires Gradle 9.3.0 or later. You are currently using Gradle 8.8."
+      # foojay-resolver-convention (đã khai trong settings.gradle) tự tải JDK 25 nếu cần.
+      - name: Build independent modules (forge-26.x)
+        shell: bash
+        run: |
+          for mod in forge-26.1 forge-26.2; do
+            echo "=== Building $mod (Gradle 9.3, project độc lập) ==="
+            chmod +x "$mod/gradlew"
+            (cd "$mod" && ./gradlew build --stacktrace)
+          done
+
+      # v5.5.5 Part 66: neoforge-1.21.10/11 tách sau khi lỗi build thật xác nhận "Unfixable
+      # conflicts" khi remap qua dev.architectury.loom 1.7.435 (quá cũ cho NeoForge 1.21.10+).
+      - name: Build independent modules (neoforge-1.21.10, neoforge-1.21.11)
+        shell: bash
+        run: |
+          for mod in neoforge-1.21.10 neoforge-1.21.11; do
+            echo "=== Building $mod (Gradle 9.2, project độc lập) ==="
+            chmod +x "$mod/gradlew"
+            (cd "$mod" && ./gradlew build --stacktrace)
+          done
+
+      # v5.5.5 Part 64: 16 module dưới đây (fabric-1.21.2 đến fabric-1.21.9, neoforge-1.21.2 đến
+      # neoforge-1.21.9) là project Gradle HOÀN TOÀN ĐỘC LẬP, cùng mô hình Part 63 — tách vì
+      # dev.architectury.loom 1.7.435 dùng chung ở root CHỈ đủ chuẩn cho MC 1.21/1.21.1 (Loom
+      # ≥1.6), không đủ cho MC 1.21.2 trở đi (cần Loom 1.8/1.9/1.10/1.11 tùy mốc — xác nhận qua
+      # fabricmc.net blog chính thức + lỗi build thật ở fabric-1.21.5: "Mod was built with a
+      # newer version of Loom (1.10.1), you are using Loom (1.7.435)"). Chỉ cần JDK 21 (đã setup
+      # ở bước "Setup Java 21" phía trên) — không cần foojay-resolver-convention.
+      - name: Build independent modules (fabric/neoforge 1.21.2-1.21.9)
+        shell: bash
+        run: |
+          for mod in fabric-1.21.2 fabric-1.21.3 fabric-1.21.4 fabric-1.21.5 fabric-1.21.6 \
+                     fabric-1.21.7 fabric-1.21.8 fabric-1.21.9 \
+                     neoforge-1.21.2 neoforge-1.21.3 neoforge-1.21.4 neoforge-1.21.5 \
+                     neoforge-1.21.6 neoforge-1.21.7 neoforge-1.21.8 neoforge-1.21.9; do
+            echo "=== Building $mod (project độc lập, dev.architectury.loom riêng) ==="
+            chmod +x "$mod/gradlew"
+            (cd "$mod" && ./gradlew build --stacktrace)
+          done
+
       - name: Collect JAR files
         shell: bash
         run: |
@@ -49,6 +116,39 @@ jobs:
 
           find . -type f -path '*/build/libs/*.jar' \
             -exec cp {} artifacts/ \;
+
+      # v5.5.5 Part 62: gom jar (kể cả 6 module độc lập ở trên) vào thư mục "Done" theo yêu cầu
+      # Shiroz — thay cho Gradle task copyToDone (không còn bao quát được 6 module này vì chúng
+      # không phải subprojects, xem comment trong root build.gradle). Phân loại theo tên thư mục
+      # module, giống logic copyToDone cũ (loại trừ -dev/-shadow/-sources.jar).
+      - name: Organize jars into Done folder
+        shell: bash
+        run: |
+          mkdir -p Done/Fabric_Quilt Done/Forge Done/NeoForge Done/Plugins
+
+          find . -type f -path '*/build/libs/*.jar' | while read -r f; do
+            fname=$(basename "$f")
+            case "$fname" in
+              *-dev.jar|*-shadow.jar|*-sources.jar) continue ;;
+            esac
+
+            # Lấy tên thư mục module (component ngay dưới thư mục gốc repo)
+            moddir=$(echo "$f" | sed -E 's#^\./([^/]+)/.*#\1#')
+
+            case "$moddir" in
+              fabric-*) cp "$f" Done/Fabric_Quilt/ ;;
+              forge-*) cp "$f" Done/Forge/ ;;
+              neoforge-*) cp "$f" Done/NeoForge/ ;;
+              plugin) cp "$f" Done/Plugins/ ;;
+            esac
+          done
+
+      - name: Upload Done folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: PayBot-Done
+          path: Done/
+          if-no-files-found: error
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

@@ -11,6 +11,25 @@
 plugins {
     id 'net.fabricmc.fabric-loom' version '1.15.+'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'java'
+}
+
+// v5.5.5 Part 62: module này giờ là COMPOSITE BUILD riêng (xem settings.gradle cùng thư mục +
+// root settings.gradle 'includeBuild') — KHÔNG còn nằm trong allprojects{}/subprojects{} của
+// root build.gradle nữa, nên PHẢI tự khai lại version/group/repositories y hệt logic root
+// (trước đây thừa hưởng tự động qua allprojects{} — xem LOG.md Part 62 để biết đầy đủ). Khối
+// java.toolchain{} bên dưới GIỮ NGUYÊN từ Part 48 (đã tự ghi đè Java 25 từ trước).
+version = '5.5.5'
+group = 'com.naptien'
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.fabricmc.net/' }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
 }
 
 base {

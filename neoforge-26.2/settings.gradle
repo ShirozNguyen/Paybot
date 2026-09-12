@@ -1,0 +1,20 @@
+// PayBot v5.5.5 Part 63 — project Gradle HOÀN TOÀN ĐỘC LẬP cho neoforge-26.2 (KHÔNG phải
+// composite build — Part 62 dùng includeBuild() nhưng THẤT BẠI, xem LOG.md Part 63).
+// Lý do tách: net.neoforged.moddev 2.0.141 (ModDevGradle) bắt buộc Gradle 9.1 (dùng chung 9.4 với nhóm 26.x cho nhất quán)+, không tương thích Gradle 8.8 dùng chung ở root PayBot
+// (dev.architectury.loom 1.7.435 cho ~97 module khác). File này KHÔNG được
+// include()/includeBuild() từ root — chỉ build bằng cách tự chạy './gradlew build'
+// TỪ ĐÚNG THƯ MỤC NÀY (CI gọi 'cd neoforge-26.2 && ./gradlew build').
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.neoforged.net/releases' }
+        gradlePluginPortal()
+    }
+}
+
+// foojay-resolver-convention: tự động tải/cấp JDK 25 nếu máy Shiroz chưa có sẵn
+// (module này bắt buộc Java 25 theo blog chính thức fabricmc.net / neoforged.net).
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
+rootProject.name = 'neoforge-26.2'

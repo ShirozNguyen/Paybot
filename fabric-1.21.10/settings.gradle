@@ -1,0 +1,14 @@
+// PayBot v5.5.5 Part 63 — project Gradle HOÀN TOÀN ĐỘC LẬP cho fabric-1.21.10 (KHÔNG phải
+// composite build — Part 62 dùng includeBuild() nhưng THẤT BẠI, xem LOG.md Part 63).
+// Lý do tách: net.fabricmc.fabric-loom-remap (Loom 1.14+) bắt buộc Gradle 9.2+, không tương
+// thích Gradle 8.8 dùng chung ở root PayBot (dev.architectury.loom 1.7.435 cho ~97 module
+// khác). File này KHÔNG được include()/includeBuild() từ root — chỉ build bằng cách tự chạy
+// './gradlew build' TỪ ĐÚNG THƯ MỤC NÀY (CI gọi 'cd fabric-1.21.10 && ./gradlew build').
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'fabric-1.21.10'

@@ -1,0 +1,21 @@
+// PayBot v5.5.5 Part 65 — project Gradle HOÀN TOÀN ĐỘC LẬP cho forge-26.1 (cùng mô hình Part 63/64).
+// Lý do tách: lỗi build thật xác nhận "ForgeGradle 7 requires Gradle 9.3.0 or later to run. You
+// are currently using Gradle 8.8." — root PayBot dùng Gradle 8.8 (dev.architectury.loom 1.7.435
+// cho ~80 module khác), không đủ cho ForgeGradle 7.0.25 (net.minecraftforge.gradle) mà module
+// này cần cho MC 26.x. Xác nhận Gradle 9.3.0 tương thích JDK 25 (Gradle Compatibility Matrix
+// chính thức: JDK 25 cần Gradle >=9.1.0) — không xung đột. File này KHÔNG được include()/
+// includeBuild() từ root — chỉ build bằng cách tự chạy './gradlew build' TỪ ĐÚNG THƯ MỤC NÀY
+// (CI gọi 'cd forge-26.1 && ./gradlew build'). Xem LOG.md Part 65.
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven { url = 'https://maven.minecraftforge.net/' }
+    }
+}
+
+// foojay-resolver-convention: tự động tải/cấp JDK 25 nếu máy Shiroz chưa có sẵn.
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
+rootProject.name = 'forge-26.1'
