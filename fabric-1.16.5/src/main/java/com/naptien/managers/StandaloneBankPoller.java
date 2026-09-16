@@ -4,6 +4,8 @@ import com.google.gson.*;
 import com.naptien.PayBotMod;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 import java.io.*;
 import java.net.*;
@@ -55,10 +57,10 @@ public class StandaloneBankPoller {
 
         mod.runOnMainThread(() -> mod.getQRMapManager().generateQRMap(player, amount, invoiceId));
 
-        player.sendSystemMessage(Component.literal("§a[PayBot] §fĐang tạo QR chuyển khoản..."));
-        player.sendSystemMessage(Component.literal("§7Số tiền: §f" + PayBotMod.formatVnd(amount) + " VND"));
-        player.sendSystemMessage(Component.literal("§7Nội dung CK: §e" + invoiceId));
-        player.sendSystemMessage(Component.literal("§7QR hết hạn sau §e30 phút§7."));
+        player.sendMessage(new TextComponent("§a[PayBot] §fĐang tạo QR chuyển khoản..."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Số tiền: §f" + PayBotMod.formatVnd(amount) + " VND"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Nội dung CK: §e" + invoiceId), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7QR hết hạn sau §e30 phút§7."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
 
         mod.getScheduler().schedule(() -> expireOrder(invoiceId, playerName), ORDER_TTL_MS, TimeUnit.MILLISECONDS);
 
@@ -195,8 +197,8 @@ public class StandaloneBankPoller {
             mod.runOnMainThread(() -> {
                 ServerPlayer p = mod.getServer().getPlayerList().getPlayerByName(order.playerName);
                 if (p != null) {
-                    p.sendSystemMessage(Component.literal("§a§l[PayBot] §r§aĐã nhận thanh toán "
-                            + PayBotMod.formatVnd(order.amount) + " VND! Đang chờ admin cấu hình thưởng..."));
+                    p.sendMessage(new TextComponent("§a§l[PayBot] §r§aĐã nhận thanh toán "
+                            + PayBotMod.formatVnd(order.amount) + " VND! Đang chờ admin cấu hình thưởng..."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                     mod.runRewardEffect(p, order.amount);
                 }
             });
@@ -265,7 +267,7 @@ public class StandaloneBankPoller {
             mod.runAsync(() -> mod.getBotHttpClient().notifyNapBankExpired(invoiceId));
         }
         ServerPlayer p = mod.getServer().getPlayerList().getPlayerByName(playerName);
-        if (p != null) p.sendSystemMessage(Component.literal("§c[PayBot] §fQR chuyển khoản đã hết hạn!"));
+        if (p != null) p.sendMessage(new TextComponent("§c[PayBot] §fQR chuyển khoản đã hết hạn!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
     }
 
     // ─── postJson ────────────────────────────────────────────────────────────

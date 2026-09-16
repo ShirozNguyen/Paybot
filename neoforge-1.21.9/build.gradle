@@ -12,7 +12,38 @@
 // — đây chính là lỗi Part 44 sửa.
 
 plugins {
+    id 'dev.architectury.loom' version '1.11.458'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'java'
+}
+
+// PayBot v5.5.5 Part 64: module này giờ là project Gradle HOÀN TOÀN ĐỘC LẬP (xem
+// settings.gradle cùng thư mục) — KHÔNG còn nằm trong allprojects{} của root build.gradle
+// nữa, nên PHẢI tự khai lại version/group/repositories/toolchain/dependencies{minecraft}
+// y hệt logic root (trước đây thừa hưởng tự động qua allprojects{}). Xem LOG.md Part 64.
+version = '5.5.5'
+group = 'com.naptien'
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.architectury.dev/' }
+    maven { url = 'https://maven.neoforged.net/releases/' }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
 }
 
 base {

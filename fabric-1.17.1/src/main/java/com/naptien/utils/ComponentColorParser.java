@@ -5,6 +5,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.network.chat.TextComponent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +45,7 @@ public class ComponentColorParser {
      */
     public static Component parse(String text) {
         if (text == null || text.isEmpty()) {
-            return Component.empty();
+            return new TextComponent("");
         }
 
         // Standardize & to §, rồi chuẩn hoá Hex thô (&#RRGGBB / #RRGGBB) về cùng định dạng
@@ -53,10 +54,10 @@ public class ComponentColorParser {
         formatted = normalizeRawHexToSpigotHex(formatted);
 
         if (!formatted.contains("§")) {
-            return Component.literal(formatted);
+            return new TextComponent(formatted);
         }
 
-        MutableComponent root = Component.empty();
+        MutableComponent root = new TextComponent("");
         StringBuilder currentText = new StringBuilder();
         Style currentStyle = Style.EMPTY;
 
@@ -71,7 +72,7 @@ public class ComponentColorParser {
                     String hex = tryParseSpigotHex(formatted, i);
                     if (hex != null) {
                         if (currentText.length() > 0) {
-                            root.append(Component.literal(currentText.toString()).withStyle(currentStyle));
+                            root.append(new TextComponent(currentText.toString()).withStyle(currentStyle));
                             currentText.setLength(0);
                         }
                         // Dùng TextColor.fromRgb(int) thay vì parseColor(String) — signature đơn giản
@@ -94,7 +95,7 @@ public class ComponentColorParser {
                 ChatFormatting format = getByCode(code);
                 if (format != null) {
                     if (currentText.length() > 0) {
-                        root.append(Component.literal(currentText.toString()).withStyle(currentStyle));
+                        root.append(new TextComponent(currentText.toString()).withStyle(currentStyle));
                         currentText.setLength(0);
                     }
                     if (format.isFormat()) {
@@ -113,7 +114,7 @@ public class ComponentColorParser {
         }
 
         if (currentText.length() > 0) {
-            root.append(Component.literal(currentText.toString()).withStyle(currentStyle));
+            root.append(new TextComponent(currentText.toString()).withStyle(currentStyle));
         }
 
         return root;

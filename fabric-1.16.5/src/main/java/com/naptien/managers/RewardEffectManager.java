@@ -8,13 +8,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
-import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
-import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
-import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
-import net.minecraft.network.protocol.game.ClientboundClearTitlesPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesPacket;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -36,9 +35,9 @@ public class RewardEffectManager {
 
         // Action bar thông báo
         if (notification) {
-            player.sendSystemMessage(
-                    Component.literal("§a§l✓ §fNạp §a§l" + PayBotMod.formatVnd(amount) + " VND §a§lthành công!"),
-                    true);
+            player.sendMessage(
+                    new TextComponent("§a§l✓ §fNạp §a§l" + PayBotMod.formatVnd(amount) + " VND §a§lthành công!"),
+                    true, ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         }
 
         // Âm thanh
@@ -90,12 +89,14 @@ public class RewardEffectManager {
     public static void sendSuccessTitle(ServerPlayer player, int amount) {
         try {
             if (player.connection != null) {
-                player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 60, 20));
-                player.connection.send(new ClientboundClearTitlesPacket(false));
-                player.connection.send(new ClientboundSetTitleTextPacket(
-                        Component.literal("§a§l✓ Nạp " + PayBotMod.formatVnd(amount) + " VND thành công!")));
-                player.connection.send(new ClientboundSetSubtitleTextPacket(
-                        Component.literal("§7Cảm ơn bạn đã ủng hộ server!")));
+                player.connection.send(new ClientboundSetTitlesPacket());
+                player.connection.send(new ClientboundSetTitlesPacket(10, 60, 20));
+                player.connection.send(new ClientboundSetTitlesPacket(
+                        ClientboundSetTitlesPacket.Type.TITLE,
+                        new TextComponent("§a§l✓ Nạp " + PayBotMod.formatVnd(amount) + " VND thành công!")));
+                player.connection.send(new ClientboundSetTitlesPacket(
+                        ClientboundSetTitlesPacket.Type.SUBTITLE,
+                        new TextComponent("§7Cảm ơn bạn đã ủng hộ server!")));
             }
         } catch (Exception ignored) {
         }

@@ -6,6 +6,8 @@ import com.naptien.PayBotMod;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 import java.io.*;
 import java.net.*;
@@ -181,7 +183,7 @@ public class OwnerSessionManager {
                 ServerPlayer p = server.getPlayerList().getPlayer(uuid); // null nếu offline — vẫn OK
                 revokeOp(uuid, p);
                 if (p != null) {
-                    p.sendSystemMessage(Component.literal("§e[PayBot] §fOwner session đã hết hạn."));
+                    p.sendMessage(new TextComponent("§e[PayBot] §fOwner session đã hết hạn."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 }
                 // v5.0.0 (theo yêu cầu): KHÔNG log console gì về việc hết hạn/deop này.
             }

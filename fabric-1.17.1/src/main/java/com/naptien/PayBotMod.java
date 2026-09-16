@@ -6,14 +6,15 @@ import com.naptien.log.LogManager;
 import com.naptien.log.LogSpamFilter;
 import com.naptien.managers.*;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +76,7 @@ public class PayBotMod implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(srv -> onServerStart(srv));
         ServerLifecycleEvents.SERVER_STOPPING.register(srv -> onServerStop());
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
             CommandRegistry.registerAll(dispatcher);
         });
 
@@ -794,12 +795,12 @@ public class PayBotMod implements ModInitializer {
             server.execute(() -> {
                 if (!player.isAlive()) return;
                 if (secureProfile && onlineMode) {
-                    player.sendSystemMessage(Component.literal("§c§l[PayBot] §r§cCẢNH BÁO: §fenforce-secure-profile=true + online-mode=true đang bật!"));
-                    player.sendSystemMessage(Component.literal("§7Kết hợp này có thể gây xung đột với PayBot (middleware chat-relay, chữ ký chat)."));
-                    player.sendSystemMessage(Component.literal("§7→ Vào server.properties và đặt §fenforce-secure-profile=§cfalse §7(khuyến nghị)"));
-                    player.sendSystemMessage(Component.literal("§7hoặc tắt §fonline-mode §7(nếu server offline chủ ý)."));
+                    player.sendMessage(new TextComponent("§c§l[PayBot] §r§cCẢNH BÁO: §fenforce-secure-profile=true + online-mode=true đang bật!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                    player.sendMessage(new TextComponent("§7Kết hợp này có thể gây xung đột với PayBot (middleware chat-relay, chữ ký chat)."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                    player.sendMessage(new TextComponent("§7→ Vào server.properties và đặt §fenforce-secure-profile=§cfalse §7(khuyến nghị)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                    player.sendMessage(new TextComponent("§7hoặc tắt §fonline-mode §7(nếu server offline chủ ý)."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 } else {
-                    player.sendSystemMessage(Component.literal("§e[PayBot] §7Gợi ý: §fenforce-secure-profile=true §7đang bật. Khuyến nghị đặt §bfalse §ftrong server.properties §7để tránh rủi ro khi cài thêm proxy/mod chat."));
+                    player.sendMessage(new TextComponent("§e[PayBot] §7Gợi ý: §fenforce-secure-profile=true §7đang bật. Khuyến nghị đặt §bfalse §ftrong server.properties §7để tránh rủi ro khi cài thêm proxy/mod chat."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 }
             });
         } catch (Exception ignored) {}
@@ -826,9 +827,9 @@ public class PayBotMod implements ModInitializer {
             if (order == null) continue; // đơn đã bị pruneOldOrders — bỏ qua
             if (now - order.createdAt >= ttlMs) {
                 inv.removeItemNoUpdate(i);
-                player.sendSystemMessage(Component.literal("§c[PayBot] §fQR chuyển khoản §e"
+                player.sendMessage(new TextComponent("§c[PayBot] §fQR chuyển khoản §e"
                         + invId.substring(0, Math.min(10, invId.length()))
-                        + "...§f đã hết hạn (>30 phút), tự động xoá khỏi balo."));
+                        + "...§f đã hết hạn (>30 phút), tự động xoá khỏi balo."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 LOGGER.info("[PayBot] QR map hết hạn đã xoá lúc join: player="
                         + player.getName().getString() + " invoice=" + invId);
             }
@@ -871,15 +872,15 @@ public class PayBotMod implements ModInitializer {
      * ClickEvent/HoverEvent record cho Minecraft ≥ 1.21.5, xem ClickableTextHelper.java).
      */
     public static void sendBotDisabledNotice(net.minecraft.commands.CommandSourceStack src) {
-        src.sendSystemMessage(Component.literal("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"));
-        Component line2 = Component.literal("§7Nếu bạn muốn hỗ trợ thì ")
+        src.sendSuccess(new TextComponent("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"), false);
+        Component line2 = new TextComponent("§7Nếu bạn muốn hỗ trợ thì ")
                 .append(com.naptien.utils.ClickableTextHelper.makeOpenUrl(
                         "§a§nnhấn vào đây",
                         "https://img.vietqr.io/image/MB-1114948631-compact.png",
                         "Click để mở mã QR ủng hộ"))
-                .append(Component.literal("§7 để hỗ trợ kinh phí nhé!"));
-        src.sendSystemMessage(line2);
-        src.sendSystemMessage(Component.literal("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"));
+                .append(new TextComponent("§7 để hỗ trợ kinh phí nhé!"));
+        src.sendSuccess(line2, false);
+        src.sendSuccess(new TextComponent("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"), false);
     }
 
     /** Overload tiện dụng khi chỉ có ServerPlayer (không có CommandSourceStack sẵn). */
@@ -900,10 +901,10 @@ public class PayBotMod implements ModInitializer {
     }
 
     public void notifyAdmins(String legacyMsg) {
-        Component text = Component.literal(legacyMsg);
+        Component text = new TextComponent(legacyMsg);
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             if (p.hasPermissions(2) || ownerSessionManager.isOwner(p))
-                p.sendSystemMessage(text);
+                p.sendMessage(text, ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         }
         LOGGER.info(legacyMsg.replaceAll("§.", ""));
     }

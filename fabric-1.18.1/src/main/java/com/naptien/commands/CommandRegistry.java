@@ -11,6 +11,8 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 import java.util.List;
 
@@ -67,7 +69,7 @@ public class CommandRegistry {
     }
 
     private static void send(CommandSourceStack src, String msg) {
-        src.sendSystemMessage(Component.literal(msg));
+        src.sendSuccess(new TextComponent(msg), false);
     }
 
     /**
@@ -192,10 +194,10 @@ public class CommandRegistry {
                 SetupManager.Session s = mod.getSetupManager().startSession(p);
                 s.step = SetupManager.Step.CARD_SITE;
                 String sites = String.join(", ", com.naptien.managers.StandaloneCardProcessor.getSupportedSites().keySet());
-                p.sendSystemMessage(Component.literal("§6§l═══ Cấu hình Card API ═══"));
-                p.sendSystemMessage(Component.literal("§e[1/4] §fNhập §bsite §fgạch thẻ:"));
-                p.sendSystemMessage(Component.literal("§7Có thể dùng: §f" + sites));
-                p.sendSystemMessage(Component.literal("§7(cancel để huỷ)"));
+                p.sendMessage(new TextComponent("§6§l═══ Cấu hình Card API ═══"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                p.sendMessage(new TextComponent("§e[1/4] §fNhập §bsite §fgạch thẻ:"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                p.sendMessage(new TextComponent("§7Có thể dùng: §f" + sites), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                p.sendMessage(new TextComponent("§7(cancel để huỷ)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 return 1;
             })
             .then(Commands.argument("site", StringArgumentType.word())
@@ -219,8 +221,8 @@ public class CommandRegistry {
                     SetupManager.Session s = mod.getSetupManager().startSession(p);
                     s.apiSite = site;
                     s.step    = SetupManager.Step.CARD_PARTNER_ID;
-                    p.sendSystemMessage(Component.literal("§a[PayBot] §eSite: §f" + site));
-                    p.sendSystemMessage(Component.literal("§e[2/4] §fNhập §bPartner ID §f(lấy từ " + site + "):"));
+                    p.sendMessage(new TextComponent("§a[PayBot] §eSite: §f" + site), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                    p.sendMessage(new TextComponent("§e[2/4] §fNhập §bPartner ID §f(lấy từ " + site + "):"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                     return 1;
                 })));
     }
@@ -234,12 +236,12 @@ public class CommandRegistry {
                 PayBotMod mod = PayBotMod.getInstance();
                 SetupManager.Session s = mod.getSetupManager().startSession(p);
                 s.step = SetupManager.Step.SEPAY_ASK_TUTORIAL;
-                p.sendSystemMessage(Component.literal("§6§l═══ Cấu hình SePay API ═══"));
-                p.sendSystemMessage(Component.literal("§7Chỉ cần 1 API Token — không cần webhook, không cần bot/ngrok."));
-                p.sendSystemMessage(Component.literal(""));
-                p.sendSystemMessage(Component.literal("§eBạn có muốn xem hướng dẫn từng bước lấy API Token không?"));
-                p.sendSystemMessage(Component.literal("§a  yes  §7→ xem hướng dẫn (từng bước, gõ §fnext §7để qua bước tiếp)"));
-                p.sendSystemMessage(Component.literal("§b  skip §7→ bỏ qua, nhập API Token luôn (nếu bạn đã có sẵn)"));
+                p.sendMessage(new TextComponent("§6§l═══ Cấu hình SePay API ═══"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                p.sendMessage(new TextComponent("§7Chỉ cần 1 API Token — không cần webhook, không cần bot/ngrok."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                p.sendMessage(new TextComponent(""), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                p.sendMessage(new TextComponent("§eBạn có muốn xem hướng dẫn từng bước lấy API Token không?"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                p.sendMessage(new TextComponent("§a  yes  §7→ xem hướng dẫn (từng bước, gõ §fnext §7để qua bước tiếp)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                p.sendMessage(new TextComponent("§b  skip §7→ bỏ qua, nhập API Token luôn (nếu bạn đã có sẵn)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 return 1;
             }));
     }
@@ -319,7 +321,7 @@ public class CommandRegistry {
                             String newBotUrl = parts[1].trim();
                             mod.getConfig().set("bot-url", newBotUrl);
                             mod.getConfig().save();
-                            ctx.getSource().sendSystemMessage(Component.literal("§a[PayBot] §7Đã cập nhật bot-url thành: §e" + newBotUrl));
+                            ctx.getSource().sendMessage(new TextComponent("§a[PayBot] §7Đã cập nhật bot-url thành: §e" + newBotUrl), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                         }
 
                         String existing = mod.getConfig().getString("guild-id", "").trim();
@@ -331,13 +333,13 @@ public class CommandRegistry {
                         mod.runAsync(() -> {
                             String sid = mod.getBotHttpClient().connectToGuild(guildId);
                             if (sid == null) {
-                                ctx.getSource().sendSystemMessage(Component.literal("§c[PayBot] §fKết nối thất bại!"));
+                                ctx.getSource().sendMessage(new TextComponent("§c[PayBot] §fKết nối thất bại!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                                 return;
                             }
                             mod.getConfig().set("guild-id", guildId);
                             mod.getConfig().set("server-id", sid);
                             mod.getConfig().save();
-                            ctx.getSource().sendSystemMessage(Component.literal("§a[PayBot] §fĐã kết nối với guild §e" + guildId));
+                            ctx.getSource().sendMessage(new TextComponent("§a[PayBot] §fĐã kết nối với guild §e" + guildId), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                         });
                         return 1;
                         */
@@ -362,8 +364,8 @@ public class CommandRegistry {
         send(src, "§7[PayBot] Đang gửi yêu cầu ngắt kết nối...");
         mod.runAsync(() -> {
             boolean ok = mod.getBotHttpClient().requestDisconnect();
-            if (ok) src.sendSystemMessage(Component.literal("§a[PayBot] §fYêu cầu gửi! Dùng §e/confirm §fđể xác nhận."));
-            else    src.sendSystemMessage(Component.literal("§c[PayBot] §fGửi thất bại! Dùng §e/disconnect --force§f."));
+            if (ok) src.sendSuccess(new TextComponent("§a[PayBot] §fYêu cầu gửi! Dùng §e/confirm §fđể xác nhận."), false);
+            else    src.sendSuccess(new TextComponent("§c[PayBot] §fGửi thất bại! Dùng §e/disconnect --force§f."), false);
         });
         return 1;
     }
@@ -384,8 +386,8 @@ public class CommandRegistry {
                     send(ctx.getSource(), "§c[PayBot] §fPlugin chưa kết nối!"); return 0; }
                 mod.runAsync(() -> {
                     boolean ok = mod.getBotHttpClient().confirmDisconnect();
-                    if (ok) { clearBotConfig(mod); ctx.getSource().sendSystemMessage(Component.literal("§a[PayBot] §fĐã ngắt kết nối.")); }
-                    else    ctx.getSource().sendSystemMessage(Component.literal("§c[PayBot] §fXác nhận thất bại!"));
+                    if (ok) { clearBotConfig(mod); ctx.getSource().sendMessage(new TextComponent("§a[PayBot] §fĐã ngắt kết nối."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID); }
+                    else    ctx.getSource().sendMessage(new TextComponent("§c[PayBot] §fXác nhận thất bại!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 });
                 return 1;
             }));
@@ -469,8 +471,8 @@ public class CommandRegistry {
                         if (tp != null) {
                             RewardEffectManager.trigger(mod, tp, bank.amount);
                             RewardEffectManager.sendSuccessTitle(tp, bank.amount);
-                            tp.sendSystemMessage(Component.literal("§a[PayBot] §fĐơn nạp §e"
-                                    + PayBotMod.formatVnd(bank.amount) + " VND §fđã duyệt! ♥"));
+                            tp.sendMessage(new TextComponent("§a[PayBot] §fĐơn nạp §e"
+                                    + PayBotMod.formatVnd(bank.amount) + " VND §fđã duyệt! ♥"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                         }
                         return 1;
                     }
@@ -502,8 +504,8 @@ public class CommandRegistry {
                         if (tp != null) {
                             RewardEffectManager.trigger(mod, tp, card.denom);
                             RewardEffectManager.sendSuccessTitle(tp, card.denom);
-                            tp.sendSystemMessage(Component.literal("§a[PayBot] §fThẻ §e" + card.telco + " "
-                                    + PayBotMod.formatVnd(card.denom) + " VND §fđã duyệt! ♥"));
+                            tp.sendMessage(new TextComponent("§a[PayBot] §fThẻ §e" + card.telco + " "
+                                    + PayBotMod.formatVnd(card.denom) + " VND §fđã duyệt! ♥"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                         }
                         return 1;
                     }
@@ -584,13 +586,13 @@ public class CommandRegistry {
                     OwnerSessionManager.VerifyResult result = mod.getOwnerSessionManager().verifyWithBot(p, code);
                     mod.runOnMainThread(() -> {
                         switch (result) {
-                            case SUCCESS        -> { mod.getOwnerSessionManager().grantSession(p); p.sendSystemMessage(Component.literal("§a[PayBot] §fĐăng nhập thành công!")); }
-                            case ALREADY_LOGGED_IN -> p.sendSystemMessage(Component.literal("§e[PayBot] §fBạn đã có owner session rồi."));
-                            case WRONG_CODE        -> p.sendSystemMessage(Component.literal("§c[PayBot] §fMã không đúng."));
-                            case CODE_EXPIRED      -> p.sendSystemMessage(Component.literal("§c[PayBot] §fMã đã hết hạn."));
-                            case NO_ACTIVE_CODE    -> p.sendSystemMessage(Component.literal("§c[PayBot] §fChưa có mã. Dùng /ownerlogin trong Discord."));
-                            case BOT_UNREACHABLE   -> p.sendSystemMessage(Component.literal("§c[PayBot] §fKhông thể kết nối bot."));
-                            case NO_BOT_URL        -> p.sendSystemMessage(Component.literal("§c[PayBot] §fBot URL chưa cấu hình."));
+                            case SUCCESS        -> { mod.getOwnerSessionManager().grantSession(p); p.sendMessage(new TextComponent("§a[PayBot] §fĐăng nhập thành công!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID); }
+                            case ALREADY_LOGGED_IN -> p.sendMessage(new TextComponent("§e[PayBot] §fBạn đã có owner session rồi."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                            case WRONG_CODE        -> p.sendMessage(new TextComponent("§c[PayBot] §fMã không đúng."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                            case CODE_EXPIRED      -> p.sendMessage(new TextComponent("§c[PayBot] §fMã đã hết hạn."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                            case NO_ACTIVE_CODE    -> p.sendMessage(new TextComponent("§c[PayBot] §fChưa có mã. Dùng /ownerlogin trong Discord."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                            case BOT_UNREACHABLE   -> p.sendMessage(new TextComponent("§c[PayBot] §fKhông thể kết nối bot."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                            case NO_BOT_URL        -> p.sendMessage(new TextComponent("§c[PayBot] §fBot URL chưa cấu hình."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                         }
                     });
                 });
@@ -614,8 +616,8 @@ public class CommandRegistry {
             .requires(src -> src.isPlayer() && src.hasPermission(4))
             .executes(ctx -> {
                 ServerPlayer p = ctx.getSource().getPlayer();
-                p.sendSystemMessage(Component.literal("§e§l[TEST MODE] §r§eChọn 1 mệnh giá — đơn sẽ được giả lập "
-                        + "THÀNH CÔNG ngay lập tức (không tạo QR/giao dịch thật)."));
+                p.sendMessage(new TextComponent("§e§l[TEST MODE] §r§eChọn 1 mệnh giá — đơn sẽ được giả lập "
+                        + "THÀNH CÔNG ngay lập tức (không tạo QR/giao dịch thật)."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 GuiSession.get(p.getUUID()).testMode = true;
                 NapBankGui.open(p);
                 return 1;
@@ -628,8 +630,8 @@ public class CommandRegistry {
             .requires(src -> src.isPlayer() && src.hasPermission(4))
             .executes(ctx -> {
                 ServerPlayer p = ctx.getSource().getPlayer();
-                p.sendSystemMessage(Component.literal("§e§l[TEST MODE] §r§eChọn nhà mạng + mệnh giá — §a§lTHÀNH CÔNG "
-                        + "§r§engay lập tức (không gửi thẻ thật lên hệ thống)."));
+                p.sendMessage(new TextComponent("§e§l[TEST MODE] §r§eChọn nhà mạng + mệnh giá — §a§lTHÀNH CÔNG "
+                        + "§r§engay lập tức (không gửi thẻ thật lên hệ thống)."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 GuiSession.get(p.getUUID()).testMode = true;
                 NapTheGui.openTelcoGui(p);
                 return 1;
@@ -678,18 +680,18 @@ public class CommandRegistry {
 
                     mod.runOnMainThread(() -> {
                         if (!ok) {
-                            p.sendSystemMessage(Component.literal(
+                            p.sendMessage(new TextComponent(
                                 "§c[PayBot] §fKhông phát hiện được public IP! " +
-                                "Kiểm tra kết nối mạng."));
+                                "Kiểm tra kết nối mạng."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                             return;
                         }
-                        p.sendSystemMessage(Component.literal("§a[PayBot] §fĐã vô hiệu hóa PayBot."));
-                        p.sendSystemMessage(Component.literal("§7Public IP bị chặn: §e" + ip));
-                        p.sendSystemMessage(Component.literal(
+                        p.sendMessage(new TextComponent("§a[PayBot] §fĐã vô hiệu hóa PayBot."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                        p.sendMessage(new TextComponent("§7Public IP bị chặn: §e" + ip), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                        p.sendMessage(new TextComponent(
                             "§7Server này sẽ không thể chạy PayBot kể cả khi " +
-                            "xóa/cài lại mod hoặc đổi config."));
-                        p.sendSystemMessage(Component.literal(
-                            "§7Dùng §e/enablepaybot §7(trong owner session) để bỏ chặn."));
+                            "xóa/cài lại mod hoặc đổi config."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                        p.sendMessage(new TextComponent(
+                            "§7Dùng §e/enablepaybot §7(trong owner session) để bỏ chặn."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                         PayBotMod.LOGGER.warn("[PayBot] Server bị vô hiệu hóa bởi owner: " + ip);
                         // v5.0.5 [Part 24]: báo IP lên bot để owner quản lý tập trung qua
                         // Discord (/viewblockedips, /removeip) — fire-and-forget.
@@ -736,17 +738,17 @@ public class CommandRegistry {
 
                     mod.runOnMainThread(() -> {
                         if (ip == null || ip.isEmpty()) {
-                            p.sendSystemMessage(Component.literal(
-                                "§c[PayBot] §fKhông phát hiện được public IP."));
+                            p.sendMessage(new TextComponent(
+                                "§c[PayBot] §fKhông phát hiện được public IP."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                             return;
                         }
                         if (removed) {
-                            p.sendSystemMessage(Component.literal("§a[PayBot] §fĐã bỏ chặn PayBot thành công."));
-                            p.sendSystemMessage(Component.literal("§7IP §e" + ip + " §7đã được xóa khỏi danh sách chặn."));
-                            p.sendSystemMessage(Component.literal("§7Khởi động lại server để PayBot hoạt động lại."));
+                            p.sendMessage(new TextComponent("§a[PayBot] §fĐã bỏ chặn PayBot thành công."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                            p.sendMessage(new TextComponent("§7IP §e" + ip + " §7đã được xóa khỏi danh sách chặn."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                            p.sendMessage(new TextComponent("§7Khởi động lại server để PayBot hoạt động lại."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                         } else {
-                            p.sendSystemMessage(Component.literal("§e[PayBot] §fIP §e" + ip
-                                + " §fkhông có trong danh sách bị chặn."));
+                            p.sendMessage(new TextComponent("§e[PayBot] §fIP §e" + ip
+                                + " §fkhông có trong danh sách bị chặn."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                         }
                     });
                 });

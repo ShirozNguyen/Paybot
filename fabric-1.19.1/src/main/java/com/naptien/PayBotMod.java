@@ -10,7 +10,6 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
-import net.minecraft.network.chat.PlayerChatMessage;
 import net.minecraft.network.chat.ChatType;
 import net.minecraft.server.network.FilteredText;
 import net.fabricmc.loader.api.FabricLoader;
@@ -85,14 +84,14 @@ public class PayBotMod implements ModInitializer {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> onPlayerJoin(handler.getPlayer()));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> onPlayerQuit(handler.getPlayer()));
 
-        // v5.5.5 [audit - BUG FIX]: giong het van de da fix o fabric-1.20.x/1.21.x -
-        // ALLOW_CHAT_MESSAGE chua bao gio duoc dang ky. Ban 1.19.x nay tham so message
-        // la FilteredText<PlayerChatMessage> (khac 1.20+ dung PlayerChatMessage truc
-        // tiep khong qua wrapper) - xac nhan qua mappings.dev: FilteredMessage (Yarn)
-        // = FilteredText (Mojang), method raw() tra ve T ben trong. Dung message.raw()
-        // de lay PlayerChatMessage that su truoc khi goi decoratedContent().
-        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((FilteredText<PlayerChatMessage> message, ServerPlayer sender, ChatType.Bound boundChatType) -> {
-            String text = message.raw().decoratedContent().getString();
+        // v5.5.5 Part 67: SỬA LẠI comment cũ — FilteredText (MC 1.19.x, Mojang mappings) KHÔNG
+        // generic (khác giả định trước đây "FilteredText<PlayerChatMessage>"), method raw() trả
+        // về String trực tiếp (không phải PlayerChatMessage) — xác nhận qua mappings.dev 1.19.4:
+        // "public record FilteredText" không có type parameter, field "raw: String". Cấu trúc
+        // PlayerChatMessage phức tạp (kèm signature) chỉ xuất hiện từ MC 1.20+. Dùng message.raw()
+        // trực tiếp làm String, bỏ .decoratedContent().getString() (String không có method đó).
+        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((FilteredText message, ServerPlayer sender, ChatType.Bound boundChatType) -> {
+            String text = message.raw();
             if (com.naptien.gui.GuiSession.isAnyoneWaiting(sender.getUUID())
                     && com.naptien.gui.GuiChatHandler.handle(sender, text)) {
                 return false;

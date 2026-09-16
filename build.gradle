@@ -30,6 +30,11 @@ subprojects {
     // liên quan gì tới bug NSME #320 của Architectury Loom vì là 2 codebase khác nhau hoàn toàn).
     // CHƯA build/test thật được lần sửa này để xác nhận 100% (cùng giới hạn sandbox không có mạng
     // Maven như các Part trước) — cần Shiroz xác nhận khi chạy CI/máy thật.
+    // v5.5.5 Part 64: fabric-1.21.2 đến fabric-1.21.9 và neoforge-1.21.2 đến neoforge-1.21.9 (16
+    // module) KHÔNG còn là subprojects nữa (đã bỏ include() ở settings.gradle — xem comment ở đó
+    // + LOG.md Part 64), nên điều kiện if() dưới đây KHÔNG cần liệt kê thêm chúng — Gradle sẽ tự
+    // động không lặp qua project không tồn tại trong subprojects{}. Ghi chú lại để tránh hiểu lầm
+    // rằng if() này vẫn "bảo vệ" 16 module đó — sự bảo vệ thật nằm ở tầng settings.gradle.
     if (project.name != 'plugin' && !project.name.contains('-26.') &&
         project.name != 'fabric-1.21.10' && project.name != 'fabric-1.21.11') {
         apply plugin: 'dev.architectury.loom'
@@ -116,6 +121,14 @@ def neoforgeVersions = [
 ]
 
 task copyToDone {
+    // v5.5.5 Part 66 (mở rộng Part 65): LƯU Ý — tổng 26 module (fabric-1.21.10/11, fabric-26.1/26.2,
+    // neoforge-26.1/26.2, forge-26.1/26.2, fabric-1.21.2 đến fabric-1.21.9, neoforge-1.21.2 đến
+    // neoforge-1.21.11) là project Gradle HOÀN TOÀN ĐỘC LẬP (không include(), không includeBuild()
+    // trong settings.gradle root — xem LOG.md Part 63/64/65/66 để biết lý do đầy đủ từng đợt), chúng
+    // KHÔNG nằm trong 'subprojects' của root — task này SẼ KHÔNG gom được jar của các module đó
+    // (chỉ dùng được cho local dev khi Shiroz tự 'gradle copyToDone' ở ĐÚNG thư mục root và chấp
+    // nhận thiếu các module trên). Việc gom ĐẦY ĐỦ được xử lý riêng ở tầng CI bằng bash script
+    // trong .github/workflows/build.yml.
     subprojects.each { sp ->
         afterEvaluate {
             if (sp.tasks.findByName('remapJar')) {
