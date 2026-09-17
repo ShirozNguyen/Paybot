@@ -1,13 +1,13 @@
+// v5.5.5 Part 84: Use ClientboundSetTitlesPacket for Forge 1.16.x in forge-1.16.3
 package com.naptien.gui;
 
 import com.naptien.PayBotMod;
 import com.naptien.managers.RewardEffectManager;
-import net.minecraft.network.protocol.game.ClientboundClearTitlesPacket;
-import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
-import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
-import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 /**
  * TestPaymentGui (Fabric) — Logic giả lập reward cho /testnapbank /testnapthe.
@@ -66,11 +66,11 @@ public class TestPaymentGui {
         }
 
         // Chat messages (giống screenshot)
-        player.sendSystemMessage(Component.literal("§e§l[TEST] §fĐã giả lập đơn nạp bank §a"
-                + PayBotMod.formatVnd(amount) + " VND §fthành công cho §e" + playerName + "§f!"));
-        player.sendSystemMessage(Component.literal("§7§o(Không tạo QR/đơn thật, không lưu vào /topuplist — chỉ test reward + hiệu ứng)"));
-        player.sendSystemMessage(Component.literal("§a§l[PayBot] §fThanh toán thành công!"));
-        player.sendSystemMessage(Component.literal("§7Số tiền: §e" + PayBotMod.formatVnd(amount) + " VND"));
+        player.sendMessage(new TextComponent("§e§l[TEST] §fĐã giả lập đơn nạp bank §a"
+                + PayBotMod.formatVnd(amount) + " VND §fthành công cho §e" + playerName + "§f!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7§o(Không tạo QR/đơn thật, không lưu vào /topuplist — chỉ test reward + hiệu ứng)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§a§l[PayBot] §fThanh toán thành công!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Số tiền: §e" + PayBotMod.formatVnd(amount) + " VND"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
 
         // Title lớn "✓ Nạp X VND thành công!" (giống screenshot)
         sendSuccessTitle(player, PayBotMod.formatVnd(amount) + " VND");
@@ -113,11 +113,11 @@ public class TestPaymentGui {
             }
         }
 
-        player.sendSystemMessage(Component.literal("§b§l[TEST] §fĐã giả lập nạp thẻ §e" + telco + " "
-                + PayBotMod.formatVnd(denom) + " VND §fthành công cho §e" + playerName + "§f!"));
-        player.sendSystemMessage(Component.literal("§7§o(Không gửi thẻ thật lên hệ thống — chỉ test reward + hiệu ứng)"));
-        player.sendSystemMessage(Component.literal("§a§l[PayBot] §fXử lý thẻ thành công!"));
-        player.sendSystemMessage(Component.literal("§7Nhà mạng: §e" + telco + " §7| §7Mệnh giá: §e" + PayBotMod.formatVnd(denom) + " VND"));
+        player.sendMessage(new TextComponent("§b§l[TEST] §fĐã giả lập nạp thẻ §e" + telco + " "
+                + PayBotMod.formatVnd(denom) + " VND §fthành công cho §e" + playerName + "§f!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7§o(Không gửi thẻ thật lên hệ thống — chỉ test reward + hiệu ứng)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§a§l[PayBot] §fXử lý thẻ thành công!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Nhà mạng: §e" + telco + " §7| §7Mệnh giá: §e" + PayBotMod.formatVnd(denom) + " VND"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
 
         sendSuccessTitle(player, PayBotMod.formatVnd(denom) + " VND");
         RewardEffectManager.trigger(mod, player, denom);
@@ -129,12 +129,14 @@ public class TestPaymentGui {
     private static void sendSuccessTitle(ServerPlayer player, String amountStr) {
         try {
             if (player.connection != null) {
-                player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 60, 20));
-                player.connection.send(new ClientboundClearTitlesPacket(false));
-                player.connection.send(new ClientboundSetTitleTextPacket(
-                        Component.literal("§a§l✓ Nạp " + amountStr + " thành công!")));
-                player.connection.send(new ClientboundSetSubtitleTextPacket(
-                        Component.literal("§7(chế độ test — không giao dịch thật)")));
+                player.connection.send(new ClientboundSetTitlesPacket());
+                player.connection.send(new ClientboundSetTitlesPacket(10, 60, 20));
+                player.connection.send(new ClientboundSetTitlesPacket(
+                        ClientboundSetTitlesPacket.Type.TITLE,
+                        new TextComponent("§a§l✓ Nạp " + amountStr + " thành công!")));
+                player.connection.send(new ClientboundSetTitlesPacket(
+                        ClientboundSetTitlesPacket.Type.SUBTITLE,
+                        new TextComponent("§7(chế độ test — không giao dịch thật)")));
             }
         } catch (Exception e) {
             // Title không critical — bỏ qua nếu lỗi

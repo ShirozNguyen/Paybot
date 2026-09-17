@@ -1,3 +1,6 @@
+// v5.5.5 Part 84: Use ClientboundSetTitlesPacket for Forge 1.16.x in forge-1.16.5
+// v5.5.5 Part 73: Fix actionbar displayClientMessage for 1.16.5
+// v5.5.5 Part 72: Fix player.getLevel() for 1.16.5
 package com.naptien.managers;
 
 import com.naptien.PayBotMod;
@@ -8,13 +11,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
-import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
-import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
-import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
-import net.minecraft.network.protocol.game.ClientboundClearTitlesPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesPacket;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -36,14 +38,13 @@ public class RewardEffectManager {
 
         // Action bar thông báo
         if (notification) {
-            player.sendSystemMessage(
-                    Component.literal("§a§l✓ §fNạp §a§l" + PayBotMod.formatVnd(amount) + " VND §a§lthành công!"),
-                    true);
+            player.displayClientMessage(
+                    new TextComponent("§a§l✓ §fNạp §a§l" + PayBotMod.formatVnd(amount) + " VND §a§lthành công!"), true);
         }
 
         // Âm thanh
         if (sound) {
-            ServerLevel world = (ServerLevel) player.level();
+            ServerLevel world = (ServerLevel) player.getLevel();
             world.playSound(null, player.getX(), player.getY(), player.getZ(),
                     SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS,
                     1f, amount >= 100_000 ? 0.85f : 1f);
@@ -52,7 +53,7 @@ public class RewardEffectManager {
                 mod.getScheduler().schedule(() -> mod.runOnMainThread(() -> {
                     if (mod.getServer().getPlayerList().getPlayer(player.getUUID()) == null) return;
                     try {
-                        ServerLevel w = (ServerLevel) player.level();
+                        ServerLevel w = (ServerLevel) player.getLevel();
                         w.playSound(null, player.getX(), player.getY(), player.getZ(),
                                 SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
                                 SoundSource.PLAYERS, 0.65f, 1.0f);
@@ -90,19 +91,21 @@ public class RewardEffectManager {
     public static void sendSuccessTitle(ServerPlayer player, int amount) {
         try {
             if (player.connection != null) {
-                player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 60, 20));
-                player.connection.send(new ClientboundClearTitlesPacket(false));
-                player.connection.send(new ClientboundSetTitleTextPacket(
-                        Component.literal("§a§l✓ Nạp " + PayBotMod.formatVnd(amount) + " VND thành công!")));
-                player.connection.send(new ClientboundSetSubtitleTextPacket(
-                        Component.literal("§7Cảm ơn bạn đã ủng hộ server!")));
+                player.connection.send(new ClientboundSetTitlesPacket());
+                player.connection.send(new ClientboundSetTitlesPacket(10, 60, 20));
+                player.connection.send(new ClientboundSetTitlesPacket(
+                        ClientboundSetTitlesPacket.Type.TITLE,
+                        new TextComponent("§a§l✓ Nạp " + PayBotMod.formatVnd(amount) + " VND thành công!")));
+                player.connection.send(new ClientboundSetTitlesPacket(
+                        ClientboundSetTitlesPacket.Type.SUBTITLE,
+                        new TextComponent("§7Cảm ơn bạn đã ủng hộ server!")));
             }
         } catch (Exception ignored) {
         }
     }
 
     private static void spawnFirework(ServerPlayer player, int amount) {
-        ServerLevel world = (ServerLevel) player.level();
+        ServerLevel world = (ServerLevel) player.getLevel();
 
         int[] colors;
         if (amount >= 1_000_000) {
