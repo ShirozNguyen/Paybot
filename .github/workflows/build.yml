@@ -45,6 +45,7 @@ jobs:
 
       # v5.5.5 Part 100: Thu hoạch ngay lập tức 75+ file JAR của đại module chính và plugin
       - name: Harvest Root Modules JARs
+        if: always()
         shell: bash
         run: |
           mkdir -p Done/Fabric_Quilt Done/Forge Done/NeoForge Done/Plugins
@@ -68,6 +69,7 @@ jobs:
           done
 
       - name: Ensure Gradle Wrapper in all submodules
+        if: always()
         shell: bash
         run: |
           for d in Fabric_Loader/* NeoForge_Loader/* Forge_Loader/*; do
@@ -84,6 +86,7 @@ jobs:
       # Giúp kiểm tra toàn bộ các submodule trong 1 lần chạy duy nhất, gom hết JAR thành công và
       # lưu lại toàn bộ log lỗi của các module chưa hoàn thiện mà không bị ngắt ngang.
       - name: Build independent modules (fabric-1.21.10, fabric-1.21.11)
+        if: always()
         shell: bash
         run: |
           mkdir -p build-diagnostics
@@ -107,6 +110,7 @@ jobs:
           done
 
       - name: Build independent modules (fabric-26.x, neoforge-26.x)
+        if: always()
         shell: bash
         run: |
           mkdir -p build-diagnostics
@@ -133,6 +137,7 @@ jobs:
           done
 
       - name: Build independent modules (forge-26.x)
+        if: always()
         shell: bash
         run: |
           mkdir -p build-diagnostics
@@ -156,6 +161,7 @@ jobs:
           done
 
       - name: Build independent modules (neoforge-1.21.10, neoforge-1.21.11)
+        if: always()
         shell: bash
         run: |
           mkdir -p build-diagnostics
@@ -179,6 +185,7 @@ jobs:
           done
 
       - name: Build independent modules (fabric/neoforge 1.21.2-1.21.9)
+        if: always()
         shell: bash
         run: |
           mkdir -p build-diagnostics
@@ -247,6 +254,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Check Overall Build Status
+        if: always()
         shell: bash
         run: |
           echo "========================================================"
