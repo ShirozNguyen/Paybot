@@ -1,3 +1,4 @@
+// v5.5.5 Part 82: Reflection fallback for setHoverName in fabric-1.20.6
 package com.naptien.fabric.v_modern;
 
 import com.naptien.compat.version.VersionAdapter;
@@ -270,7 +271,15 @@ public class FabricVersionAdapterModern implements VersionAdapter {
      *  nếu bytecode setHoverName() đổi giữa bản biên dịch (1.21.1) và bản đang chạy thật. */
     private void trySetHoverNameFallback(ItemStack stack, Component nameComp) {
         try {
-            stack.setHoverName(nameComp);
+            try {
+                java.lang.reflect.Method m = stack.getClass().getMethod("setHoverName", Component.class);
+                m.invoke(stack, nameComp);
+            } catch (NoSuchMethodException eNoMethod) {
+                Class<?> dc = Class.forName("net.minecraft.core.component.DataComponents");
+                Object compType = dc.getField("CUSTOM_NAME").get(null);
+                java.lang.reflect.Method mSet = stack.getClass().getMethod("set", Class.forName("net.minecraft.core.component.DataComponentType"), Object.class);
+                mSet.invoke(stack, compType, nameComp);
+            }
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("FabricVersionAdapterModern.trySetHoverNameFallback: setHoverName() trực tiếp cũng lỗi", t);
         }

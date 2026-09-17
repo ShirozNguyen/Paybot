@@ -1,3 +1,4 @@
+// v5.5.5 Part 82: Robust MapId extraction in fabric-1.20.5
 package com.naptien.managers;
 
 import com.naptien.PayBotMod;
@@ -98,13 +99,31 @@ public class QRMapManager {
         MapItemSavedData state = MapItemCompat.getSavedData(mapItem, world);
         int mapIdInt = 0;
         try {
-            Integer id = MapItem.getMapId(mapItem);
-            if (id != null) mapIdInt = id;
+            try {
+                java.lang.reflect.Method mId = MapItem.class.getMethod("getMapId", ItemStack.class);
+                Object res = mId.invoke(null, mapItem);
+                if (res instanceof Number n) {
+                    mapIdInt = n.intValue();
+                } else if (res != null) {
+                    try {
+                        mapIdInt = (Integer) res.getClass().getMethod("id").invoke(res);
+                    } catch (Throwable ignored) {
+                        mapIdInt = Integer.parseInt(res.toString());
+                    }
+                }
+            } catch (NoSuchMethodException eNoMethod) {
+                try {
+                    Class<?> dc = Class.forName("net.minecraft.core.component.DataComponents");
+                    Object mapIdComp = dc.getField("MAP_ID").get(null);
+                    java.lang.reflect.Method mGet = ItemStack.class.getMethod("get", Class.forName("net.minecraft.core.component.DataComponentType"));
+                    Object mapIdObj = mGet.invoke(mapItem, mapIdComp);
+                    if (mapIdObj != null) {
+                        mapIdInt = (Integer) mapIdObj.getClass().getMethod("id").invoke(mapIdObj);
+                    }
+                } catch (Throwable ignored) {}
+            }
         } catch (Throwable t) {
-            // v5.5.5 Part 53 [BUG NHỎ — audit]: TRƯỚC ĐÂY im lặng. mapIdInt=0 sai sẽ được dùng
-            // cho cơ chế tự xoá QR map sau 30 phút (deleteQRMap, xem dưới) — nếu sai, có thể
-            // không xoá đúng map, hoặc xoá nhầm map khác có id=0 nếu tồn tại.
-            PayBotDebug.logSwallowed("QRMapManager: MapItem.getMapId() thất bại, dùng tạm id=0", t);
+            PayBotDebug.logSwallowed("QRMapManager: trích xuất Map ID thất bại, dùng tạm id=0", t);
         }
 
         if (state != null && qrImg != null) {

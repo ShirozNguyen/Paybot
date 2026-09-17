@@ -59,4 +59,24 @@ public class ClickableTextHelper {
 
         return comp;
     }
+
+    /**
+     * Tạo Component có thể click bấm để mở URL trong trình duyệt.
+     */
+    public static Component makeOpenUrl(String text, String url, String hoverTooltip) {
+        MutableComponent comp = (MutableComponent) ComponentColorParser.parse(text);
+
+        ClickEvent clickEvent = new ClickEvent(ClickEvent.Action.OPEN_URL, url);
+        comp.withStyle(style -> style.withClickEvent(clickEvent));
+
+        if (hoverTooltip != null && !hoverTooltip.isEmpty()) {
+            HoverEvent hoverEvent = new HoverEvent(
+                    HoverEvent.Action.SHOW_TEXT,
+                    ComponentColorParser.parse(hoverTooltip)
+            );
+            comp.withStyle(style -> style.withHoverEvent(hoverEvent));
+        }
+
+        return comp;
+    }
 }
