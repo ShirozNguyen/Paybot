@@ -1,3 +1,4 @@
+// v5.5.5 Part 80: Return ItemStack in clicked() for MC 1.16.5
 // v5.5.5 Part 79: Remove sendAllDataToRemote in fabric-1.16.5 VanillaGuiBackend
 // v5.5.5 Part 74: Fix clicked return paths for 1.16.5
 // v5.5.5 Part 73: Fix clicked return type and container sync for 1.16.5
@@ -86,10 +87,11 @@ public class VanillaGuiBackend implements GuiBackend {
                             }
 
                             // Với slot túi đồ cá nhân bên dưới (slotId >= size), cho phép tương tác bình thường nhưng đồng bộ dữ liệu
-                            super.clicked(slotId, button, clickType, player);
+                            ItemStack res = super.clicked(slotId, button, clickType, player);
                             if (player instanceof ServerPlayer sp) {
                                 sp.containerMenu.broadcastChanges();
                             }
+                            return res != null ? res : net.minecraft.world.item.ItemStack.EMPTY;
                         }
                     };
                     return menu;
