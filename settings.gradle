@@ -123,21 +123,25 @@ include('Forge_Loader:forge-1.19.4')
 include('Forge_Loader:forge-1.20')
 include('Forge_Loader:forge-1.20.1')
 include('Forge_Loader:forge-1.20.2')
-// v5.5.5 Part 71: mở lồng toàn bộ Forge 1.20.3 - 1.21.11
-include('Forge_Loader:forge-1.20.3')
-include('Forge_Loader:forge-1.20.4')
-include('Forge_Loader:forge-1.20.6')
-include('Forge_Loader:forge-1.21')
-include('Forge_Loader:forge-1.21.1')
-include('Forge_Loader:forge-1.21.3')
-include('Forge_Loader:forge-1.21.4')
-include('Forge_Loader:forge-1.21.5')
-include('Forge_Loader:forge-1.21.6')
-include('Forge_Loader:forge-1.21.7')
-include('Forge_Loader:forge-1.21.8')
-include('Forge_Loader:forge-1.21.9')
-include('Forge_Loader:forge-1.21.10')
-include('Forge_Loader:forge-1.21.11')
+// v5.5.5 Part 71 [REVERT forge-1.20.3..1.21.11 — BẰNG CHỨNG LOG GitHub Actions Run #35191819378]:
+// Forge 1.20.3+ bị crash "ModuleVersionNotFoundException: Could not find net.minecraftforge:bootstrap-dev:2.0.0"
+// do Architectury Loom 1.7.435 không thể resolve bootstrap-dev:2.0.0 từ bất kỳ Maven server nào.
+// Dải bản MC 1.20.3 - 1.21.11 đã có NeoForge (neoforge-1.20.3..1.21.11) đảm nhiệm chính thức.
+// Comment lại vĩnh viễn theo đúng ghi chú gốc ở Part 44e.
+// include('Forge_Loader:forge-1.20.3')
+// include('Forge_Loader:forge-1.20.4')
+// include('Forge_Loader:forge-1.20.6')
+// include('Forge_Loader:forge-1.21')
+// include('Forge_Loader:forge-1.21.1')
+// include('Forge_Loader:forge-1.21.3')
+// include('Forge_Loader:forge-1.21.4')
+// include('Forge_Loader:forge-1.21.5')
+// include('Forge_Loader:forge-1.21.6')
+// include('Forge_Loader:forge-1.21.7')
+// include('Forge_Loader:forge-1.21.8')
+// include('Forge_Loader:forge-1.21.9')
+// include('Forge_Loader:forge-1.21.10')
+// include('Forge_Loader:forge-1.21.11')
 // v5.5.5 Part 44e: neoforge-modern TÁCH thành 17 module riêng, mỗi module = ĐÚNG 1 bản MC.
 // NeoForge CÓ hỗ trợ 1.20.5 và 1.21.2 (khác Forge — không bỏ qua như bên Forge).
 include('NeoForge_Loader:neoforge-1.20.2')
