@@ -345,7 +345,7 @@ public class PayBotPlaceholderGui {
 
     public static void openHistory(ServerPlayer player, int page) {
         PayBotMod mod = PayBotMod.getInstance();
-        boolean isAdmin = player.hasPermissions(2)
+        boolean isAdmin = com.paybot.compat.PermissionHelper.hasPermissions(player, 2)
                 || mod.getOwnerSessionManager().isOwner(player);
 
         List<Map<String, Object>> all = isAdmin

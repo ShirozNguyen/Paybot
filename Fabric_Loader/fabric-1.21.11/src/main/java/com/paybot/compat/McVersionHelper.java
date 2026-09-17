@@ -1,7 +1,7 @@
 package com.paybot.compat;
 
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.Optional;
 
@@ -32,19 +32,19 @@ public final class McVersionHelper {
     public static boolean is1_20() { return getVersionGroup().equals(GROUP_1_20); }
     public static boolean is1_21() { return getVersionGroup().equals(GROUP_1_21); }
 
-    public static ResourceLocation id(String namespace, String path) {
+    public static Identifier id(String namespace, String path) {
         try {
-            java.lang.reflect.Method m = ResourceLocation.class.getMethod("fromNamespaceAndPath", String.class, String.class);
-            return (ResourceLocation) m.invoke(null, namespace, path);
+            java.lang.reflect.Method m = Identifier.class.getMethod("fromNamespaceAndPath", String.class, String.class);
+            return (Identifier) m.invoke(null, namespace, path);
         } catch (Throwable ignored) {
             try {
-                java.lang.reflect.Constructor<ResourceLocation> c = ResourceLocation.class.getDeclaredConstructor(String.class, String.class);
+                java.lang.reflect.Constructor<Identifier> c = Identifier.class.getDeclaredConstructor(String.class, String.class);
                 c.setAccessible(true);
                 return c.newInstance(namespace, path);
             } catch (Throwable t) {
                 try {
-                    java.lang.reflect.Method parseM = ResourceLocation.class.getMethod("parse", String.class);
-                    return (ResourceLocation) parseM.invoke(null, namespace + ":" + path);
+                    java.lang.reflect.Method parseM = Identifier.class.getMethod("parse", String.class);
+                    return (Identifier) parseM.invoke(null, namespace + ":" + path);
                 } catch (Throwable t2) {
                     return null;
                 }
@@ -52,8 +52,8 @@ public final class McVersionHelper {
         }
     }
 
-    public static ResourceLocation paybot(String path) { return id("paybot", path); }
-    public static ResourceLocation mc(String path)     { return id("minecraft", path); }
+    public static Identifier paybot(String path) { return id("paybot", path); }
+    public static Identifier mc(String path)     { return id("minecraft", path); }
 
     private static String detectRawVersion() {
         try {

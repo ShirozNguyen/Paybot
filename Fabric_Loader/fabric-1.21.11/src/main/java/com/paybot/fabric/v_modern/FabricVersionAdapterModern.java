@@ -9,7 +9,7 @@ import net.fabricmc.loader.api.MappingResolver;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.MapItem;
@@ -58,7 +58,7 @@ import java.util.Optional;
  * quan trọng hơn: để 1 module vẫn dùng tốt cho nhiều bản DataComponents khác nhau, không riêng
  * 1.21.1). Chỉ dựa vào 3 thứ ổn định thật sự:
  *
- *  1. Class nền tảng tồn tại từ trước 1.20.1 (BuiltInRegistries, ResourceLocation, ItemStack,
+ *  1. Class nền tảng tồn tại từ trước 1.20.1 (BuiltInRegistries, Identifier, ItemStack,
  *     Component, CompoundTag...) — import trực tiếp, KHÔNG qua reflection tên chuỗi.
  *  2. Registry THẬT của game + khoá chuỗi ("minecraft:custom_name", "minecraft:lore",
  *     "minecraft:custom_data") — đây là DỮ LIỆU GAME do Mojang đảm bảo ổn định giữa các bản,
@@ -141,10 +141,10 @@ public class FabricVersionAdapterModern implements VersionAdapter {
             return;
         }
 
-        ResourceLocation testCustomName = createResourceLocation("minecraft", "custom_name");
-        ResourceLocation testLore = createResourceLocation("minecraft", "lore");
+        Identifier testCustomName = createResourceLocation("minecraft", "custom_name");
+        Identifier testLore = createResourceLocation("minecraft", "lore");
         if (testCustomName == null || testLore == null) {
-            LOGGER.error("[FabricModern] Không dựng được ResourceLocation để test registry.");
+            LOGGER.error("[FabricModern] Không dựng được Identifier để test registry.");
             return;
         }
 
@@ -186,13 +186,13 @@ public class FabricVersionAdapterModern implements VersionAdapter {
         PayBotDebug.logSwallowed("FabricVersionAdapterModern.resolveRegistry: quét " + checked + " ứng viên, không khớp", null);
     }
 
-    /** Tìm method "get theo ResourceLocation" trên 1 registry — so khớp cấu trúc, không so tên. */
+    /** Tìm method "get theo Identifier" trên 1 registry — so khớp cấu trúc, không so tên. */
     private Method findRegistryGetMethod(Class<?> registryClass) {
         Method fallbackOptional = null;
         for (Method m : registryClass.getMethods()) {
             if (m.getParameterCount() != 1) continue;
             Class<?> p0 = m.getParameterTypes()[0];
-            if (!p0.isAssignableFrom(ResourceLocation.class)) continue;
+            if (!p0.isAssignableFrom(Identifier.class)) continue;
             Class<?> ret = m.getReturnType();
             if (ret == void.class || ret == boolean.class || ret == Boolean.class) continue;
             if (ret == Optional.class) {
@@ -207,7 +207,7 @@ public class FabricVersionAdapterModern implements VersionAdapter {
     /** Lấy 1 DataComponentType thật từ registry đã xác định, theo đường dẫn "minecraft:<path>". */
     private Object getDataComponentType(String path) {
         if (dataComponentTypeRegistry == null || registryGetMethod == null) return null;
-        ResourceLocation rl = createResourceLocation("minecraft", path);
+        Identifier rl = createResourceLocation("minecraft", path);
         if (rl == null) return null;
         return unwrapOptional(invokeSilently(registryGetMethod, dataComponentTypeRegistry, rl));
     }
@@ -631,29 +631,29 @@ public class FabricVersionAdapterModern implements VersionAdapter {
         }
     }
 
-    private ResourceLocation createResourceLocation(String namespace, String path) {
+    private Identifier createResourceLocation(String namespace, String path) {
         try {
-            java.lang.reflect.Method mFrom = ResourceLocation.class.getMethod("fromNamespaceAndPath", String.class, String.class);
-            return (ResourceLocation) mFrom.invoke(null, namespace, path);
+            java.lang.reflect.Method mFrom = Identifier.class.getMethod("fromNamespaceAndPath", String.class, String.class);
+            return (Identifier) mFrom.invoke(null, namespace, path);
         } catch (Throwable ignored) {}
         try {
-            for (Constructor<?> ctor : ResourceLocation.class.getDeclaredConstructors()) {
+            for (Constructor<?> ctor : Identifier.class.getDeclaredConstructors()) {
                 Class<?>[] p = ctor.getParameterTypes();
                 if (p.length == 2 && p[0] == String.class && p[1] == String.class) {
                     ctor.setAccessible(true);
-                    return (ResourceLocation) ctor.newInstance(namespace, path);
+                    return (Identifier) ctor.newInstance(namespace, path);
                 }
             }
         } catch (Throwable t2) {
             PayBotDebug.logSwallowed("FabricVersionAdapterModern.createResourceLocation: fallback constructor reflection lỗi", t2);
         }
         try {
-            for (Method m : ResourceLocation.class.getMethods()) {
+            for (Method m : Identifier.class.getMethods()) {
                 if (Modifier.isStatic(m.getModifiers())
                         && m.getParameterCount() == 1 && m.getParameterTypes()[0] == String.class
-                        && ResourceLocation.class.isAssignableFrom(m.getReturnType())) {
+                        && Identifier.class.isAssignableFrom(m.getReturnType())) {
                     Object result = m.invoke(null, namespace + ":" + path);
-                    if (result != null) return (ResourceLocation) result;
+                    if (result != null) return (Identifier) result;
                 }
             }
         } catch (Throwable t3) {

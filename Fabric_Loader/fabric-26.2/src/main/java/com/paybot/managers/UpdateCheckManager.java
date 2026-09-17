@@ -98,7 +98,7 @@ public class UpdateCheckManager {
             if (updateAvailable) {
                 mod.runOnMainThread(() -> {
                     for (ServerPlayer p : mod.getServer().getPlayerList().getPlayers()) {
-                        if (p.hasPermissions(2) || mod.getOwnerSessionManager().isOwner(p)) {
+                        if (com.paybot.compat.PermissionHelper.hasPermissions(p, 2) || mod.getOwnerSessionManager().isOwner(p)) {
                             sendUpdateNotice(p);
                         }
                     }

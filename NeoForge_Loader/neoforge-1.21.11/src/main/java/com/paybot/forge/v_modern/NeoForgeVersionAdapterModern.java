@@ -1,4 +1,4 @@
-// v5.5.5 Part 91: Dung reflection getTag va ResourceLocation tranh compile error tren MC 1.20.5 - 1.21.1
+// v5.5.5 Part 91: Dung reflection getTag va Identifier tranh compile error tren MC 1.20.5 - 1.21.1
 // v5.5.5 Part 89: FIX cu phap NeoForgeVersionAdapterModern, xoa bo block code mo coi sau setLoreLegacyNbt
 package com.paybot.forge.v_modern;
 
@@ -14,7 +14,7 @@ import com.paybot.utils.PayBotDebug;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.MapItem;
@@ -129,10 +129,10 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
             return;
         }
 
-        ResourceLocation testCustomName = createResourceLocation("minecraft", "custom_name");
-        ResourceLocation testLore = createResourceLocation("minecraft", "lore");
+        Identifier testCustomName = createResourceLocation("minecraft", "custom_name");
+        Identifier testLore = createResourceLocation("minecraft", "lore");
         if (testCustomName == null || testLore == null) {
-            LOGGER.error("[NeoForgeModern] Không dựng được ResourceLocation để test registry.");
+            LOGGER.error("[NeoForgeModern] Không dựng được Identifier để test registry.");
             return;
         }
 
@@ -172,7 +172,7 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
         for (Method m : registryClass.getMethods()) {
             if (m.getParameterCount() != 1) continue;
             Class<?> p0 = m.getParameterTypes()[0];
-            if (!p0.isAssignableFrom(ResourceLocation.class)) continue;
+            if (!p0.isAssignableFrom(Identifier.class)) continue;
             Class<?> ret = m.getReturnType();
             if (ret == void.class || ret == boolean.class || ret == Boolean.class) continue;
             if (ret == Optional.class) {
@@ -186,7 +186,7 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
 
     private Object getDataComponentType(String path) {
         if (dataComponentTypeRegistry == null || registryGetMethod == null) return null;
-        ResourceLocation rl = createResourceLocation("minecraft", path);
+        Identifier rl = createResourceLocation("minecraft", path);
         if (rl == null) return null;
         return unwrapOptional(invokeSilently(registryGetMethod, dataComponentTypeRegistry, rl));
     }
@@ -598,44 +598,44 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
         }
     }
 
-    private ResourceLocation createResourceLocation(String namespace, String path) {
+    private Identifier createResourceLocation(String namespace, String path) {
         try {
-            Method m = ResourceLocation.class.getMethod("fromNamespaceAndPath", String.class, String.class);
-            return (ResourceLocation) m.invoke(null, namespace, path);
+            Method m = Identifier.class.getMethod("fromNamespaceAndPath", String.class, String.class);
+            return (Identifier) m.invoke(null, namespace, path);
         } catch (Throwable ignored) {}
         try {
-            Method m = ResourceLocation.class.getMethod("tryBuild", String.class, String.class);
-            return (ResourceLocation) m.invoke(null, namespace, path);
+            Method m = Identifier.class.getMethod("tryBuild", String.class, String.class);
+            return (Identifier) m.invoke(null, namespace, path);
         } catch (Throwable ignored) {}
         try {
-            for (Constructor<?> ctor : ResourceLocation.class.getDeclaredConstructors()) {
+            for (Constructor<?> ctor : Identifier.class.getDeclaredConstructors()) {
                 Class<?>[] p = ctor.getParameterTypes();
                 if (p.length == 2 && p[0] == String.class && p[1] == String.class) {
                     ctor.setAccessible(true);
-                    return (ResourceLocation) ctor.newInstance(namespace, path);
+                    return (Identifier) ctor.newInstance(namespace, path);
                 }
             }
         } catch (Throwable t1) {
             PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.createResourceLocation: constructor trực tiếp lỗi", t1);
         }
         try {
-            for (Constructor<?> ctor : ResourceLocation.class.getDeclaredConstructors()) {
+            for (Constructor<?> ctor : Identifier.class.getDeclaredConstructors()) {
                 Class<?>[] p = ctor.getParameterTypes();
                 if (p.length == 2 && p[0] == String.class && p[1] == String.class) {
                     ctor.setAccessible(true);
-                    return (ResourceLocation) ctor.newInstance(namespace, path);
+                    return (Identifier) ctor.newInstance(namespace, path);
                 }
             }
         } catch (Throwable t2) {
             PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.createResourceLocation: fallback constructor lỗi", t2);
         }
         try {
-            for (Method m : ResourceLocation.class.getMethods()) {
+            for (Method m : Identifier.class.getMethods()) {
                 if (Modifier.isStatic(m.getModifiers())
                         && m.getParameterCount() == 1 && m.getParameterTypes()[0] == String.class
-                        && ResourceLocation.class.isAssignableFrom(m.getReturnType())) {
+                        && Identifier.class.isAssignableFrom(m.getReturnType())) {
                     Object result = m.invoke(null, namespace + ":" + path);
-                    if (result != null) return (ResourceLocation) result;
+                    if (result != null) return (Identifier) result;
                 }
             }
         } catch (Throwable t3) {
