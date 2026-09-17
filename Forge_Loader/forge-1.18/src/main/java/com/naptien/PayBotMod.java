@@ -1,3 +1,4 @@
+// v5.5.5 Part 89: Sửa TextComponent, sendSuccess và sendMessage(..., NIL_UUID) trên Forge 1.18.x
 package com.naptien;
 
 import com.naptien.commands.CommandRegistry;
@@ -18,6 +19,7 @@ import net.minecraftforge.fml.ModList;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -895,9 +897,9 @@ public class PayBotMod {
             if (order == null) continue; // đơn đã bị pruneOldOrders — bỏ qua
             if (now - order.createdAt >= ttlMs) {
                 inv.removeItemNoUpdate(i);
-                player.sendSystemMessage(Component.literal("§c[PayBot] §fQR chuyển khoản §e"
+                player.sendMessage(new TextComponent("§c[PayBot] §fQR chuyển khoản §e"
                         + invId.substring(0, Math.min(10, invId.length()))
-                        + "...§f đã hết hạn (>30 phút), tự động xoá khỏi balo."));
+                        + "...§f đã hết hạn (>30 phút), tự động xoá khỏi balo."), net.minecraft.Util.NIL_UUID);
                 LOGGER.info("[PayBot] QR map hết hạn đã xoá lúc join: player="
                         + player.getName().getString() + " invoice=" + invId);
             }
@@ -935,15 +937,15 @@ public class PayBotMod {
      * bộ với bản Fabric/Plugin (cùng nội dung, khác API Component theo loader).
      */
     public static void sendBotDisabledNotice(net.minecraft.commands.CommandSourceStack src) {
-        src.sendSystemMessage(Component.literal("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"));
-        Component line2 = Component.literal("§7Nếu bạn muốn hỗ trợ thì ")
+        src.sendSuccess(new TextComponent("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"), false);
+        Component line2 = new TextComponent("§7Nếu bạn muốn hỗ trợ thì ")
                 .append(com.naptien.utils.ClickableTextHelper.makeOpenUrl(
                         "§a§nnhấn vào đây",
                         "https://img.vietqr.io/image/MB-1114948631-compact.png",
                         "Click để mở mã QR ủng hộ"))
-                .append(Component.literal("§7 để hỗ trợ kinh phí nhé!"));
-        src.sendSystemMessage(line2);
-        src.sendSystemMessage(Component.literal("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"));
+                .append(new TextComponent("§7 để hỗ trợ kinh phí nhé!"));
+        src.sendSuccess(line2, false);
+        src.sendSuccess(new TextComponent("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"), false);
     }
 
     public static void sendBotDisabledNotice(ServerPlayer player) {
@@ -963,10 +965,10 @@ public class PayBotMod {
     }
 
     public void notifyAdmins(String legacyMsg) {
-        Component text = Component.literal(legacyMsg);
+        Component text = new TextComponent(legacyMsg);
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             if (p.hasPermissions(2) || ownerSessionManager.isOwner(p))
-                p.sendSystemMessage(text);
+                p.sendMessage(text, net.minecraft.Util.NIL_UUID);
         }
         LOGGER.info(legacyMsg.replaceAll("§.", ""));
     }

@@ -1,6 +1,8 @@
+// v5.5.5 Part 89: Tuong thich Minecraft 1.17.1 cho Forge
 package com.naptien.compat;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.MenuType;
 import com.naptien.utils.ComponentColorParser;
@@ -21,7 +23,7 @@ public final class GuiFactory {
         else if (type == MenuType.GENERIC_9x4) slots = 36;
         else if (type == MenuType.GENERIC_9x5) slots = 45;
         
-        // Dùng ComponentColorParser.parse() để title GUI hiện màu đúng (Component.literal() không parse mã §)
+        // Dùng ComponentColorParser.parse() để title GUI hiện màu đúng (new TextComponent() không parse mã §)
         return new VanillaGuiBackend(player, ComponentColorParser.parse(title), slots);
     }
 }

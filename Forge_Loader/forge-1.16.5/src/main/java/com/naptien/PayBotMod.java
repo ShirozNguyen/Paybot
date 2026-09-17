@@ -1,3 +1,4 @@
+// v5.5.5 Part 89: Fix player.inventory va player.sendMessage(..., ChatType.SYSTEM, NIL_UUID) tren Forge 1.16.x
 // v5.5.5 Part 85: Fix 1.16 chat sendMessage & TextComponent in forge-1.16.5
 // v5.5.5 Part 84: Use FMLServerStartedEvent/FMLServerStoppingEvent for Forge < 1.18 in forge-1.16.5
 package com.naptien;
@@ -889,7 +890,7 @@ public class PayBotMod {
     private void cleanExpiredQRMapsOnJoin(ServerPlayer player) {
         long now   = System.currentTimeMillis();
         long ttlMs = 30 * 60 * 1000L;
-        var  inv   = player.getInventory();
+        var  inv   = player.inventory;
         for (int i = 0; i < inv.getContainerSize(); i++) {
             net.minecraft.world.item.ItemStack stack = inv.getItem(i);
             if (stack.isEmpty()) continue;
@@ -901,7 +902,9 @@ public class PayBotMod {
                 inv.removeItemNoUpdate(i);
                 player.sendMessage(new TextComponent("§c[PayBot] §fQR chuyển khoản §e"
                         + invId.substring(0, Math.min(10, invId.length()))
-                        + "...§f đã hết hạn (>30 phút), tự động xoá khỏi balo."));
+                        + "...§f đã hết hạn (>30 phút), tự động xoá khỏi balo."),
+                        net.minecraft.network.chat.ChatType.SYSTEM,
+                        net.minecraft.Util.NIL_UUID);
                 LOGGER.info("[PayBot] QR map hết hạn đã xoá lúc join: player="
                         + player.getName().getString() + " invoice=" + invId);
             }

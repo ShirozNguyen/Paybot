@@ -1,3 +1,4 @@
+// v5.5.5 Part 89: FIX cu phap NeoForgeVersionAdapterModern, xoa bo block code mo coi sau setLoreLegacyNbt
 package com.naptien.forge.v_modern;
 
 // v5.5.5 Part 44: NeoForge dùng CHUNG kiến trúc mapping với Forge (tên Mojang trực tiếp
@@ -305,11 +306,6 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
     /** Nhánh 1.20.2-1.20.4: lore vẫn là NBT List<String> JSON trong display.Lore, giống bản legacy. */
     private void setLoreLegacyNbt(ItemStack stack, List<Component> componentList) {
         // 1.20.5+ does not use legacy NBT lore
-    }
-            display.put("Lore", loreList);
-        } catch (Throwable t) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setLoreLegacyNbt", t);
-        }
     }
 
     /** [FIX comment — audit v5.5.5 Part 53] ItemLore KHÔNG có static factory "of" — đã tra lại

@@ -1,3 +1,4 @@
+// v5.5.5 Part 89: Tuong thich Minecraft 1.17.1 cho Forge
 package com.naptien.gui;
 
 import com.naptien.PayBotMod;
@@ -8,6 +9,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 import java.util.List;
 
@@ -81,8 +84,8 @@ public class NapBankGui {
 
             gui.setSlot(slot, new ItemStack(GuiUtil.getDenomItem(denom)), displayName, lore, () -> {
                 if (!enabled) {
-                    player.sendSystemMessage(Component.literal("§c[PayBot] §fMệnh giá §e"
-                            + GuiUtil.formatVnd(denom) + "§f chưa được cấu hình!"));
+                    player.sendMessage(new TextComponent("§c[PayBot] §fMệnh giá §e"
+                            + GuiUtil.formatVnd(denom) + "§f chưa được cấu hình!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                     return;
                 }
                 gui.close();

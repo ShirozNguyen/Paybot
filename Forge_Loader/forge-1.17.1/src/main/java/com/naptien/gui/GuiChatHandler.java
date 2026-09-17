@@ -1,9 +1,12 @@
+// v5.5.5 Part 89: Tuong thich Minecraft 1.17.1 cho Forge
 package com.naptien.gui;
 
 import com.naptien.PayBotMod;
 import com.naptien.managers.CardManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 /**
  * GuiChatHandler (Fabric) — xử lý chat input cho các GuiSession stage.
@@ -17,7 +20,7 @@ public class GuiChatHandler {
         if (!s.isWaitingForChat()) return false;
         if ("cancel".equalsIgnoreCase(input.trim())) {
             GuiSession.clear(player.getUUID());
-            player.sendSystemMessage(Component.literal("§7[PayBot] Đã huỷ."));
+            player.sendMessage(new TextComponent("§7[PayBot] Đã huỷ."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             return true;
         }
         PayBotMod mod = PayBotMod.getInstance();
@@ -27,19 +30,19 @@ public class GuiChatHandler {
             case CARD_WAIT_CODE -> {
                 s.code  = input.trim();
                 s.stage = GuiSession.Stage.CARD_WAIT_SERIAL;
-                player.sendSystemMessage(Component.literal("§a[PayBot] §fĐã nhận mã thẻ: §e[" + s.code.length() + " ký tự — ẩn]"));
-                player.sendSystemMessage(Component.literal("§6[PayBot] §fNhập §bserial thẻ §fvào chat:  §7§o(cancel để huỷ)"));
+                player.sendMessage(new TextComponent("§a[PayBot] §fĐã nhận mã thẻ: §e[" + s.code.length() + " ký tự — ẩn]"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                player.sendMessage(new TextComponent("§6[PayBot] §fNhập §bserial thẻ §fvào chat:  §7§o(cancel để huỷ)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             }
             case CARD_WAIT_SERIAL -> {
                 String serial = input.trim();
                 String telco = s.telco; int denom = s.denom; String code = s.code;
                 GuiSession.clear(player.getUUID());
-                player.sendSystemMessage(Component.literal("§7[PayBot] Đã nhận serial: §e[" + serial.length() + " ký tự — ẩn]"));
-                player.sendSystemMessage(Component.literal("§e[PayBot] §fXem lại trước khi xác nhận:"));
-                player.sendSystemMessage(Component.literal("§7Nhà mạng: §f" + telco + "  §7Mệnh giá: §f" + PayBotMod.formatVnd(denom) + " VND"));
-                player.sendSystemMessage(Component.literal("§7Mã thẻ  : §f" + code));
-                player.sendSystemMessage(Component.literal("§7Serial  : §f" + serial));
-                player.sendSystemMessage(Component.literal("§aDùng §e/ok §ađể xác nhận. §7§o(Chỉ bạn mới thấy thông tin này)"));
+                player.sendMessage(new TextComponent("§7[PayBot] Đã nhận serial: §e[" + serial.length() + " ký tự — ẩn]"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                player.sendMessage(new TextComponent("§e[PayBot] §fXem lại trước khi xác nhận:"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                player.sendMessage(new TextComponent("§7Nhà mạng: §f" + telco + "  §7Mệnh giá: §f" + PayBotMod.formatVnd(denom) + " VND"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                player.sendMessage(new TextComponent("§7Mã thẻ  : §f" + code), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                player.sendMessage(new TextComponent("§7Serial  : §f" + serial), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                player.sendMessage(new TextComponent("§aDùng §e/ok §ađể xác nhận. §7§o(Chỉ bạn mới thấy thông tin này)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 mod.getCardManager().setPending(player.getName().getString(),
                         new CardManager.PendingCard(player.getName().getString(), telco, denom, code, serial));
             }
@@ -49,12 +52,12 @@ public class GuiChatHandler {
                 s.stage   = s.stage == GuiSession.Stage.EDIT_WAIT_CMD_CARD
                         ? GuiSession.Stage.EDIT_WAIT_AMT_CARD
                         : GuiSession.Stage.EDIT_WAIT_AMT_BANK;
-                player.sendSystemMessage(Component.literal("§7[PayBot] Lệnh đã nhận: §a" + s.editCmd));
-                player.sendSystemMessage(Component.literal("§6[PayBot] §eNhập §bsố lượng item thưởng khi nạp §e(số nguyên):  §7§o(cancel để huỷ)"));
+                player.sendMessage(new TextComponent("§7[PayBot] Lệnh đã nhận: §a" + s.editCmd), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                player.sendMessage(new TextComponent("§6[PayBot] §eNhập §bsố lượng item thưởng khi nạp §e(số nguyên):  §7§o(cancel để huỷ)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             }
             case EDIT_WAIT_AMT_CARD, EDIT_WAIT_AMT_BANK -> {
                 try { Integer.parseInt(input.trim()); } catch (NumberFormatException e) {
-                    player.sendSystemMessage(Component.literal("§c[PayBot] Phải nhập số nguyên! Nhập lại:")); return true;
+                    player.sendMessage(new TextComponent("§c[PayBot] Phải nhập số nguyên! Nhập lại:"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID); return true;
                 }
                 String type = s.editType; int denom = s.editDenom; String cmd = s.editCmd; String amt = input.trim();
                 GuiSession.clear(player.getUUID());
@@ -63,8 +66,8 @@ public class GuiChatHandler {
                 mod.getConfig().set(section + "." + denom + ".amt", amt);
                 mod.getConfig().save();
                 if (!mod.isStandaloneMode()) mod.runAsync(() -> mod.getBotHttpClient().pushRewardConfig());
-                player.sendSystemMessage(Component.literal("§a[PayBot] §fĐã lưu §e" + GuiUtil.formatDenom(denom)
-                        + " §f(" + type + "): lệnh §a" + cmd + " §f| thưởng §a" + amt));
+                player.sendMessage(new TextComponent("§a[PayBot] §fĐã lưu §e" + GuiUtil.formatDenom(denom)
+                        + " §f(" + type + "): lệnh §a" + cmd + " §f| thưởng §a" + amt), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 mod.runOnMainThread(() -> ChinhSuaGui.open(player));
             }
             // v5.0.2: API_WAIT_* cases đã xoá — xem SetupManager.handleChat() thay thế.

@@ -1,3 +1,8 @@
+// v5.5.5 Part 89: Dung ItemStack return va broadcastChanges cho 1.16.x
+// v5.5.5 Part 80: Return ItemStack in clicked() for MC 1.16.5
+// v5.5.5 Part 79: Remove sendAllDataToRemote in fabric-1.16.5 VanillaGuiBackend
+// v5.5.5 Part 74: Fix clicked return paths for 1.16.5
+// v5.5.5 Part 73: Fix clicked return type and container sync for 1.16.5
 package com.naptien.compat;
 
 import net.minecraft.network.chat.Component;
@@ -53,7 +58,7 @@ public class VanillaGuiBackend implements GuiBackend {
                 (containerId, playerInventory, p) -> {
                     ChestMenu menu = new ChestMenu(menuType, containerId, playerInventory, container, size / 9) {
                         @Override
-                        public void clicked(int slotId, int button, net.minecraft.world.inventory.ClickType clickType, net.minecraft.world.entity.player.Player player) {
+                        public net.minecraft.world.item.ItemStack clicked(int slotId, int button, net.minecraft.world.inventory.ClickType clickType, net.minecraft.world.entity.player.Player player) {
                             // Chặn triệt để tất cả các loại click nguy hiểm có thể di chuyển / rút / thu gom / vứt item
                             if (clickType == net.minecraft.world.inventory.ClickType.QUICK_MOVE
                                     || clickType == net.minecraft.world.inventory.ClickType.PICKUP_ALL
@@ -61,9 +66,9 @@ public class VanillaGuiBackend implements GuiBackend {
                                     || clickType == net.minecraft.world.inventory.ClickType.CLONE
                                     || clickType == net.minecraft.world.inventory.ClickType.THROW) {
                                 if (player instanceof ServerPlayer sp) {
-                                    sp.containerMenu.sendAllDataToRemote();
+                                    sp.containerMenu.broadcastChanges();
                                 }
-                                return;
+                                return net.minecraft.world.item.ItemStack.EMPTY;
                             }
 
                             // Chặn tất cả các click trực tiếp vào slot thuộc GUI container
@@ -77,16 +82,17 @@ public class VanillaGuiBackend implements GuiBackend {
                                     }
                                 }
                                 if (player instanceof ServerPlayer sp) {
-                                    sp.containerMenu.sendAllDataToRemote();
+                                    sp.containerMenu.broadcastChanges();
                                 }
-                                return; // Hủy hoàn toàn xử lý Vanilla đối với GUI item
+                                return net.minecraft.world.item.ItemStack.EMPTY;
                             }
 
                             // Với slot túi đồ cá nhân bên dưới (slotId >= size), cho phép tương tác bình thường nhưng đồng bộ dữ liệu
-                            super.clicked(slotId, button, clickType, player);
+                            ItemStack res = super.clicked(slotId, button, clickType, player);
                             if (player instanceof ServerPlayer sp) {
-                                sp.containerMenu.sendAllDataToRemote();
+                                sp.containerMenu.broadcastChanges();
                             }
+                            return res != null ? res : net.minecraft.world.item.ItemStack.EMPTY;
                         }
                     };
                     return menu;
@@ -96,7 +102,7 @@ public class VanillaGuiBackend implements GuiBackend {
 
         // Ép đồng bộ dữ liệu GUI (item names, lore, components) tức thời về client ngay sau khi mở màn hình
         if (player.containerMenu != null) {
-            player.containerMenu.sendAllDataToRemote();
+            player.containerMenu.broadcastChanges();
         }
     }
 
@@ -122,7 +128,6 @@ public class VanillaGuiBackend implements GuiBackend {
         // Ép đồng bộ tức thì slot GUI mới gán Tên + Lore về Client
         if (player != null && player.containerMenu != null) {
             try {
-                player.containerMenu.sendAllDataToRemote();
                 player.containerMenu.broadcastChanges();
             } catch (Throwable ignored) {}
         }

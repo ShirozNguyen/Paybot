@@ -1,3 +1,4 @@
+// v5.5.5 Part 89: Tuong thich Minecraft 1.17.1 cho Forge
 package com.naptien.gui;
 
 import com.naptien.PayBotMod;
@@ -11,6 +12,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -205,15 +208,15 @@ public class TopupListGui {
             }
         }
 
-        admin.sendSystemMessage(Component.literal("§a[PayBot] §fĐã duyệt đơn §e" + shorten(b.invoiceId, 8) + "... §fcho §e" + b.playerName));
+        admin.sendMessage(new TextComponent("§a[PayBot] §fĐã duyệt đơn §e" + shorten(b.invoiceId, 8) + "... §fcho §e" + b.playerName), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         mod.notifyAdmins("§a[PayBot] §fAdmin đã duyệt đơn bank §e" + b.playerName
                 + " §f" + PayBotMod.formatVnd(b.amount) + " VND");
 
         ServerPlayer target = mod.getServer().getPlayerList().getPlayerByName(b.playerName);
         if (target != null) {
             RewardEffectManager.trigger(mod, target, b.amount);
-            target.sendSystemMessage(Component.literal("§a[PayBot] §fĐơn nạp §e" + PayBotMod.formatVnd(b.amount)
-                    + " VND §fđã được duyệt! Cảm ơn ♥"));
+            target.sendMessage(new TextComponent("§a[PayBot] §fĐơn nạp §e" + PayBotMod.formatVnd(b.amount)
+                    + " VND §fđã được duyệt! Cảm ơn ♥"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         }
         // Mở lại GUI sau khi duyệt
         open(admin, page, filter, mode);

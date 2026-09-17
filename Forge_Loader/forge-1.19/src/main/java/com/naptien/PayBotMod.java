@@ -1,3 +1,4 @@
+// v5.5.5 Part 89: Them getChatEventText reflection va dung sendSuccess cho CommandSourceStack tren Forge 1.19
 package com.naptien;
 
 import com.naptien.commands.CommandRegistry;
@@ -125,6 +126,20 @@ public class PayBotMod {
                 && setupManager.handleChat(sender, text)) {
             event.setCanceled(true);
         }
+    }
+
+    private static String getChatEventText(ServerChatEvent event) {
+        String[] methodNames = {"getRawText", "getMessage"};
+        for (String name : methodNames) {
+            try {
+                java.lang.reflect.Method m = event.getClass().getMethod(name);
+                Object result = m.invoke(event);
+                if (result instanceof String s) return s;
+                if (result instanceof net.minecraft.network.chat.Component c) return c.getString();
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+        return null;
     }
 
     public static String getModVersion() {
@@ -908,15 +923,15 @@ public class PayBotMod {
      * bộ với bản Fabric/Plugin (cùng nội dung, khác API Component theo loader).
      */
     public static void sendBotDisabledNotice(net.minecraft.commands.CommandSourceStack src) {
-        src.sendSystemMessage(Component.literal("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"));
+        src.sendSuccess(Component.literal("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"), false);
         Component line2 = Component.literal("§7Nếu bạn muốn hỗ trợ thì ")
                 .append(com.naptien.utils.ClickableTextHelper.makeOpenUrl(
                         "§a§nnhấn vào đây",
                         "https://img.vietqr.io/image/MB-1114948631-compact.png",
                         "Click để mở mã QR ủng hộ"))
                 .append(Component.literal("§7 để hỗ trợ kinh phí nhé!"));
-        src.sendSystemMessage(line2);
-        src.sendSystemMessage(Component.literal("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"));
+        src.sendSuccess(line2, false);
+        src.sendSuccess(Component.literal("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"), false);
     }
 
     public static void sendBotDisabledNotice(ServerPlayer player) {
