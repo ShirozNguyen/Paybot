@@ -1,6 +1,7 @@
 # Gradle
-# .gradle/
-# **/build/
+.gradle/
+**/build/
+build/
 
 # Keep Gradle Wrapper
 !gradle/wrapper/gradle-wrapper.jar
@@ -12,6 +13,12 @@ LOG.md
 *.log
 26.3-KHUNG-CHUAN-BI.md
 *.txt
+AI_AGENTS_MUST_READ_THIS.md
+docs/
+.FOR_AI_AGENTS_ONLY/
+.git/
+.github/
+.gitinore
 
 # Temporary / generated
 trash/
@@ -19,6 +26,7 @@ done/
 *.class
 *.zip
 *.tar.gz
+.architectury-transformer/
 
 # IDE
 .idea/

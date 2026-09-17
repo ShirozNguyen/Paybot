@@ -35,7 +35,7 @@ subprojects {
     // + LOG.md Part 64), nên điều kiện if() dưới đây KHÔNG cần liệt kê thêm chúng — Gradle sẽ tự
     // động không lặp qua project không tồn tại trong subprojects{}. Ghi chú lại để tránh hiểu lầm
     // rằng if() này vẫn "bảo vệ" 16 module đó — sự bảo vệ thật nằm ở tầng settings.gradle.
-    if (project.name != 'plugin' && !project.name.contains('-26.') &&
+    if (project.name != 'plugin' && !project.name.endsWith('_Loader') && !project.name.contains('-26.') &&
         project.name != 'fabric-1.21.10' && project.name != 'fabric-1.21.11') {
         apply plugin: 'dev.architectury.loom'
 
