@@ -1,9 +1,12 @@
+// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.4
 package com.naptien.managers;
 
 import com.google.gson.*;
 import com.naptien.PayBotMod;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 import java.io.*;
 import java.net.*;
@@ -55,10 +58,10 @@ public class StandaloneBankPoller {
 
         mod.runOnMainThread(() -> mod.getQRMapManager().generateQRMap(player, amount, invoiceId));
 
-        player.sendSystemMessage(Component.literal("§a[PayBot] §fĐang tạo QR chuyển khoản..."));
-        player.sendSystemMessage(Component.literal("§7Số tiền: §f" + PayBotMod.formatVnd(amount) + " VND"));
-        player.sendSystemMessage(Component.literal("§7Nội dung CK: §e" + invoiceId));
-        player.sendSystemMessage(Component.literal("§7QR hết hạn sau §e30 phút§7."));
+        player.sendMessage(new TextComponent("§a[PayBot] §fĐang tạo QR chuyển khoản..."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Số tiền: §f" + PayBotMod.formatVnd(amount) + " VND"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Nội dung CK: §e" + invoiceId), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7QR hết hạn sau §e30 phút§7."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
 
         mod.getScheduler().schedule(() -> expireOrder(invoiceId, playerName), ORDER_TTL_MS, TimeUnit.MILLISECONDS);
 
@@ -116,9 +119,12 @@ public class StandaloneBankPoller {
     // ─── Bot push + polling fallback ─────────────────────────────────────────
 
     public void pollPendingOrders() {
-        // [DEAD CODE — Bot-connected mode đã tắt] Thêm gate isStandaloneMode() tường minh —
-        // xem chi tiết đầy đủ lý do trong bản Fabric (fabric-*/managers/StandaloneBankPoller.java,
-        // cùng bug/cùng fix, đã audit trước). Giữ nguyên phần code polling bên dưới.
+        // [DEAD CODE — Bot-connected mode đã tắt] TRƯỚC ĐÂY chỉ kiểm tra "bot-url" rỗng hay
+        // không — KHÔNG qua isStandaloneMode() — nếu server nào đó còn sót "bot-url" cũ trong
+        // config (từ trước khi tắt tính năng) thì hàm này VẪN sẽ bắn request tới bot mỗi 10
+        // phút dù server đã ở standalone. Thêm gate isStandaloneMode() tường minh để đóng dứt
+        // điểm, nhất quán "không còn cơ chế reward/điều khiển từ bên ngoài" — giữ nguyên phần
+        // code polling bên dưới để khôi phục dễ dàng nếu cần dùng lại.
         if (mod.isStandaloneMode()) return;
         String botUrl = mod.getConfig().getString("bot-url", "").trim();
         if (botUrl.isEmpty()) return;
@@ -192,8 +198,8 @@ public class StandaloneBankPoller {
             mod.runOnMainThread(() -> {
                 ServerPlayer p = mod.getServer().getPlayerList().getPlayerByName(order.playerName);
                 if (p != null) {
-                    p.sendSystemMessage(Component.literal("§a§l[PayBot] §r§aĐã nhận thanh toán "
-                            + PayBotMod.formatVnd(order.amount) + " VND! Đang chờ admin cấu hình thưởng..."));
+                    p.sendMessage(new TextComponent("§a§l[PayBot] §r§aĐã nhận thanh toán "
+                            + PayBotMod.formatVnd(order.amount) + " VND! Đang chờ admin cấu hình thưởng..."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                     mod.runRewardEffect(p, order.amount);
                 }
             });
@@ -262,7 +268,7 @@ public class StandaloneBankPoller {
             mod.runAsync(() -> mod.getBotHttpClient().notifyNapBankExpired(invoiceId));
         }
         ServerPlayer p = mod.getServer().getPlayerList().getPlayerByName(playerName);
-        if (p != null) p.sendSystemMessage(Component.literal("§c[PayBot] §fQR chuyển khoản đã hết hạn!"));
+        if (p != null) p.sendMessage(new TextComponent("§c[PayBot] §fQR chuyển khoản đã hết hạn!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
     }
 
     // ─── postJson ────────────────────────────────────────────────────────────

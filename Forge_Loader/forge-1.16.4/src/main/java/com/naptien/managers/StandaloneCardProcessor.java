@@ -1,3 +1,4 @@
+// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.4
 package com.naptien.managers;
 
 import com.google.gson.*;
@@ -5,6 +6,8 @@ import com.naptien.PayBotMod;
 import com.naptien.log.LogManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -36,14 +39,14 @@ public class StandaloneCardProcessor {
         boolean configured = mod.getConfig().getBoolean("card-api.configured", false);
 
         if (!configured || site.isEmpty() || pid.isEmpty() || pkey.isEmpty()) {
-            player.sendSystemMessage(com.naptien.utils.ClickableTextHelper.makeSuggestCommand(
+            player.sendMessage(com.naptien.utils.ClickableTextHelper.makeSuggestCommand(
                     "§c[PayBot] §fServer chưa cấu hình Card API. Admin dùng §e/cardsetup §fđể cấu hình.",
                     "/cardsetup",
                     "§eClick để tự động nhập lệnh /cardsetup"
-            ));
+            ), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             return;
         }
-        player.sendSystemMessage(Component.literal("§a[PayBot] §fĐang gửi thẻ lên hệ thống..."));
+        player.sendMessage(new TextComponent("§a[PayBot] §fĐang gửi thẻ lên hệ thống..."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
 
         String requestId = UUID.randomUUID().toString();
         mod.getLocalOrderManager().createCardOrder(requestId, player.getName().getString(),
@@ -147,7 +150,7 @@ public class StandaloneCardProcessor {
             mod.getLocalOrderManager().incrementCardSubmitAttempts(requestId);
             mod.getLocalOrderManager().markCardConnectionError(requestId, false);
             ServerPlayer p = mod.getServer().getPlayerList().getPlayerByName(playerName);
-            if (p != null) p.sendSystemMessage(Component.literal("§a[PayBot] §fThẻ đã được gửi! Đang trong quá trình xử lý..."));
+            if (p != null) p.sendMessage(new TextComponent("§a[PayBot] §fThẻ đã được gửi! Đang trong quá trình xử lý..."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             notifyAdminCard(requestId, playerName, denom);
         } catch (Exception e) {
             mod.getLocalOrderManager().markCardConnectionError(requestId, true);
@@ -234,8 +237,8 @@ public class StandaloneCardProcessor {
                 mod.runOnMainThread(() -> {
                     ServerPlayer p = mod.getServer().getPlayerList().getPlayerByName(playerName);
                     if (p != null) {
-                        p.sendSystemMessage(Component.literal("§a[PayBot] §fThẻ §a" + order.telco + " §a"
-                                + PayBotMod.formatVnd(order.denom) + " VND §fthành công! Đang chờ admin cấu hình thưởng..."));
+                        p.sendMessage(new TextComponent("§a[PayBot] §fThẻ §a" + order.telco + " §a"
+                                + PayBotMod.formatVnd(order.denom) + " VND §fthành công! Đang chờ admin cấu hình thưởng..."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                         mod.runRewardEffect(p, order.denom);
                     }
                 });
@@ -249,13 +252,13 @@ public class StandaloneCardProcessor {
             if (p == null) return;
             switch (status) {
                 case LocalOrderManager.CARD_WRONG_DENOM ->
-                    p.sendSystemMessage(Component.literal("§c[PayBot] §fSai mệnh giá thẻ! Thẻ " + order.denom/1000 + "k không đúng."));
+                    p.sendMessage(new TextComponent("§c[PayBot] §fSai mệnh giá thẻ! Thẻ " + order.denom/1000 + "k không đúng."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 case LocalOrderManager.CARD_USED ->
-                    p.sendSystemMessage(Component.literal("§c[PayBot] §fThẻ đã được sử dụng trước đó."));
+                    p.sendMessage(new TextComponent("§c[PayBot] §fThẻ đã được sử dụng trước đó."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 case LocalOrderManager.CARD_WRONG ->
-                    p.sendSystemMessage(Component.literal("§c[PayBot] §fThẻ sai hoặc không hợp lệ."));
+                    p.sendMessage(new TextComponent("§c[PayBot] §fThẻ sai hoặc không hợp lệ."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 default ->
-                    p.sendSystemMessage(Component.literal("§c[PayBot] §fKết quả: " + message));
+                    p.sendMessage(new TextComponent("§c[PayBot] §fKết quả: " + message), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             }
         });
     }

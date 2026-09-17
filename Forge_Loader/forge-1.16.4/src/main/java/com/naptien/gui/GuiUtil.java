@@ -1,3 +1,5 @@
+// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.4
+// v5.5.5 Part 72: Replace 1.17+/1.19+ item constants for 1.16.5
 package com.naptien.gui;
 
 import com.naptien.compat.GuiBackend;
@@ -58,8 +60,8 @@ public class GuiUtil {
             case 30_000  -> Items.GOLD_INGOT;
             case 50_000  -> Items.DIAMOND;
             case 100_000 -> Items.PRISMARINE_SHARD;
-            case 200_000 -> Items.AMETHYST_SHARD;
-            case 300_000 -> Items.ECHO_SHARD;
+            case 200_000 -> Items.QUARTZ;
+            case 300_000 -> Items.EMERALD;
             case 500_000 -> Items.NETHERITE_SCRAP;
             default      -> Items.NETHERITE_INGOT;
         };

@@ -1,3 +1,4 @@
+// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.2
 package com.naptien.gui;
 
 import com.naptien.PayBotMod;
@@ -8,6 +9,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,14 +77,14 @@ public class CardApiSetupGui {
                     mod.getConfig().set("card-api.configured", true);
                     mod.getConfig().save();
                     gui.close();
-                    player.sendSystemMessage(Component.literal("§a[PayBot] §fĐã chuyển sang dùng API §b" + finalSite + " §ftự động từ thông tin lưu sẵn!"));
+                    player.sendMessage(new TextComponent("§a[PayBot] §fĐã chuyển sang dùng API §b" + finalSite + " §ftự động từ thông tin lưu sẵn!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                     return;
                 }
                 GuiSession s = GuiSession.get(player.getUUID());
                 s.apiSite = finalSite; s.stage = GuiSession.Stage.API_WAIT_PARTNER_ID;
                 gui.close();
-                player.sendSystemMessage(Component.literal("§a[PayBot] §fCấu hình §b"+finalSite));
-                player.sendSystemMessage(Component.literal("§6Nhập §bPartner ID§f:  §7(cancel để huỷ)"));
+                player.sendMessage(new TextComponent("§a[PayBot] §fCấu hình §b"+finalSite), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                player.sendMessage(new TextComponent("§6Nhập §bPartner ID§f:  §7(cancel để huỷ)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             });
         }
         gui.setSlot(CLOSE_SLOT, GuiUtil.getCloseItem(), "§c§lĐóng", List.of("§7Nhấn để đóng"), () -> gui.close());

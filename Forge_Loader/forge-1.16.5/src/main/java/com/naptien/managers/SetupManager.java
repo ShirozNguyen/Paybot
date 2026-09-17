@@ -1,8 +1,11 @@
+// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.5
 package com.naptien.managers;
 
 import com.naptien.PayBotMod;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 import java.util.List;
 import java.util.Map;
@@ -60,13 +63,13 @@ public class SetupManager {
     };
 
     private static void sendTutorialPage(ServerPlayer player, Session s) {
-        for (String line : TUTORIAL_PAGES[s.tutorialPage]) player.sendSystemMessage(Component.literal(line));
+        for (String line : TUTORIAL_PAGES[s.tutorialPage]) player.sendMessage(new TextComponent(line), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         if (s.tutorialPage < TUTORIAL_PAGES.length - 1) {
-            player.sendSystemMessage(Component.literal("§7§o→ Gõ §fnext §7§ođể xem tiếp (§ecancel §7§ođể huỷ):"));
+            player.sendMessage(new TextComponent("§7§o→ Gõ §fnext §7§ođể xem tiếp (§ecancel §7§ođể huỷ):"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         } else {
             s.step = Step.SEPAY_API_TOKEN;
-            player.sendSystemMessage(Component.literal("§6[PayBot] §eDán §bAPI Token SePay §evào chat:"));
-            player.sendSystemMessage(Component.literal("§7(cancel để huỷ)"));
+            player.sendMessage(new TextComponent("§6[PayBot] §eDán §bAPI Token SePay §evào chat:"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+            player.sendMessage(new TextComponent("§7(cancel để huỷ)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         }
     }
 
@@ -126,7 +129,7 @@ public class SetupManager {
         if (s.isExpired()) { sessions.remove(player.getUUID()); return false; }
         if ("cancel".equalsIgnoreCase(input.trim())) {
             sessions.remove(player.getUUID());
-            player.sendSystemMessage(Component.literal("§7[PayBot] Đã huỷ."));
+            player.sendMessage(new TextComponent("§7[PayBot] Đã huỷ."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             return true;
         }
         processInput(player, s, input.trim());
@@ -144,10 +147,10 @@ public class SetupManager {
                     sendTutorialPage(player, s);
                 } else if (input.equalsIgnoreCase("skip")) {
                     s.step = Step.SEPAY_API_TOKEN;
-                    player.sendSystemMessage(Component.literal("§6[PayBot] §eDán §bAPI Token SePay §evào chat:"));
-                    player.sendSystemMessage(Component.literal("§7(cancel để huỷ)"));
+                    player.sendMessage(new TextComponent("§6[PayBot] §eDán §bAPI Token SePay §evào chat:"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                    player.sendMessage(new TextComponent("§7(cancel để huỷ)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 } else {
-                    player.sendSystemMessage(Component.literal("§c[PayBot] §fGõ §ayes §fhoặc §bskip §f(hoặc §ecancel §fđể huỷ):"));
+                    player.sendMessage(new TextComponent("§c[PayBot] §fGõ §ayes §fhoặc §bskip §f(hoặc §ecancel §fđể huỷ):"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 }
             }
             case SEPAY_TUTORIAL -> {
@@ -155,7 +158,7 @@ public class SetupManager {
                     s.tutorialPage++;
                     sendTutorialPage(player, s);
                 } else {
-                    player.sendSystemMessage(Component.literal("§c[PayBot] §fGõ §fnext §fđể xem tiếp (hoặc §ecancel §fđể huỷ):"));
+                    player.sendMessage(new TextComponent("§c[PayBot] §fGõ §fnext §fđể xem tiếp (hoặc §ecancel §fđể huỷ):"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 }
             }
 
@@ -165,23 +168,23 @@ public class SetupManager {
                 String token = input.trim();
                 mod.getConfig().set("sepay-api.api-token", token);
                 mod.getConfig().save();
-                player.sendSystemMessage(Component.literal("§7[PayBot] Đang xác minh token và lấy danh sách ngân hàng..."));
+                player.sendMessage(new TextComponent("§7[PayBot] Đang xác minh token và lấy danh sách ngân hàng..."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 mod.runAsync(() -> {
                     SePayApiClient client = new SePayApiClient(mod);
                     String err = client.testToken();
                     if (err != null) {
                         mod.runOnMainThread(() -> {
-                            player.sendSystemMessage(Component.literal("§c[PayBot] §fToken không hợp lệ: " + err));
-                            player.sendSystemMessage(Component.literal("§7Lấy token tại: My.SePay.vn → Cấu hình Công ty → API Access"));
-                            player.sendSystemMessage(Component.literal("§7Nhập lại token hoặc §ccancel §7để huỷ:"));
+                            player.sendMessage(new TextComponent("§c[PayBot] §fToken không hợp lệ: " + err), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                            player.sendMessage(new TextComponent("§7Lấy token tại: My.SePay.vn → Cấu hình Công ty → API Access"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                            player.sendMessage(new TextComponent("§7Nhập lại token hoặc §ccancel §7để huỷ:"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                         });
                         return;
                     }
                     List<SePayApiClient.BankAccountInfo> accounts = client.listBankAccounts();
                     if (accounts.isEmpty()) {
                         mod.runOnMainThread(() -> {
-                            player.sendSystemMessage(Component.literal("§c[PayBot] §fToken hợp lệ nhưng không tìm thấy tài khoản ngân hàng nào liên kết với SePay!"));
-                            player.sendSystemMessage(Component.literal("§7Vui lòng liên kết tài khoản ngân hàng tại my.sepay.vn rồi thử lại."));
+                            player.sendMessage(new TextComponent("§c[PayBot] §fToken hợp lệ nhưng không tìm thấy tài khoản ngân hàng nào liên kết với SePay!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                            player.sendMessage(new TextComponent("§7Vui lòng liên kết tài khoản ngân hàng tại my.sepay.vn rồi thử lại."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                             sessions.remove(player.getUUID());
                         });
                         return;
@@ -196,13 +199,13 @@ public class SetupManager {
                         s.bankAccounts = accounts;
                         s.step = Step.SEPAY_CHOOSE_ACCOUNT;
                         mod.runOnMainThread(() -> {
-                            player.sendSystemMessage(Component.literal("§6[PayBot] §fTìm thấy §e" + accounts.size() + " §ftài khoản ngân hàng:"));
+                            player.sendMessage(new TextComponent("§6[PayBot] §fTìm thấy §e" + accounts.size() + " §ftài khoản ngân hàng:"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                             for (int i = 0; i < accounts.size(); i++) {
                                 SePayApiClient.BankAccountInfo a = accounts.get(i);
-                                player.sendSystemMessage(Component.literal("§7[" + (i + 1) + "] §f" + a.bankShortName
-                                        + " — §e" + a.accountNumber + " §7(§f" + a.accountHolderName + "§7)"));
+                                player.sendMessage(new TextComponent("§7[" + (i + 1) + "] §f" + a.bankShortName
+                                        + " — §e" + a.accountNumber + " §7(§f" + a.accountHolderName + "§7)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                             }
-                            player.sendSystemMessage(Component.literal("§7Nhập số §e1-" + accounts.size() + " §7để chọn tài khoản nhận tiền:"));
+                            player.sendMessage(new TextComponent("§7Nhập số §e1-" + accounts.size() + " §7để chọn tài khoản nhận tiền:"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                         });
                     }
                 });
@@ -216,11 +219,11 @@ public class SetupManager {
                 }
                 int idx;
                 try { idx = Integer.parseInt(input) - 1; } catch (NumberFormatException e) {
-                    player.sendSystemMessage(Component.literal("§c[PayBot] §fVui lòng nhập số từ 1 đến " + accounts.size() + "."));
+                    player.sendMessage(new TextComponent("§c[PayBot] §fVui lòng nhập số từ 1 đến " + accounts.size() + "."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                     return;
                 }
                 if (idx < 0 || idx >= accounts.size()) {
-                    player.sendSystemMessage(Component.literal("§c[PayBot] §fSố không hợp lệ (1-" + accounts.size() + ")."));
+                    player.sendMessage(new TextComponent("§c[PayBot] §fSố không hợp lệ (1-" + accounts.size() + ")."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                     return;
                 }
                 SePayApiClient.BankAccountInfo chosen = accounts.get(idx);
@@ -237,20 +240,20 @@ public class SetupManager {
                 String site = input.toLowerCase().trim();
                 if (!com.naptien.managers.StandaloneCardProcessor.getSupportedSites().containsKey(site)) {
                     String sites = String.join(", ", com.naptien.managers.StandaloneCardProcessor.getSupportedSites().keySet());
-                    player.sendSystemMessage(Component.literal("§c[PayBot] §fSite không hợp lệ. Dùng: §f" + sites));
-                    player.sendSystemMessage(Component.literal("§7(cancel để huỷ)"));
+                    player.sendMessage(new TextComponent("§c[PayBot] §fSite không hợp lệ. Dùng: §f" + sites), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                    player.sendMessage(new TextComponent("§7(cancel để huỷ)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                     return; // giữ nguyên step CARD_SITE, cho nhập lại thay vì huỷ session
                 }
                 s.apiSite = site;
                 s.step = Step.CARD_PARTNER_ID;
-                player.sendSystemMessage(Component.literal("§a[PayBot] §eSite: §f" + site));
-                player.sendSystemMessage(Component.literal("§e[2/4] §fNhập §bPartner ID §f(lấy từ " + site + "):"));
+                player.sendMessage(new TextComponent("§a[PayBot] §eSite: §f" + site), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                player.sendMessage(new TextComponent("§e[2/4] §fNhập §bPartner ID §f(lấy từ " + site + "):"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             }
             case CARD_PARTNER_ID -> {
                 s.partnerId = input;
                 mod.getConfig().set("card-api.partner-id", input); mod.getConfig().save();
                 s.step = Step.CARD_PARTNER_KEY;
-                player.sendSystemMessage(Component.literal("§a[PayBot] [3/4] §fNhập §bPartner Key§f: (cancel để huỷ)"));
+                player.sendMessage(new TextComponent("§a[PayBot] [3/4] §fNhập §bPartner Key§f: (cancel để huỷ)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             }
             case CARD_PARTNER_KEY -> {
                 String site = s.apiSite;
@@ -261,9 +264,9 @@ public class SetupManager {
                 mod.getConfig().set("card-api.configured",  !s.partnerId.isEmpty() && !input.isEmpty());
                 mod.getConfig().save();
                 s.step = Step.CARD_CHANNEL_ID;
-                player.sendSystemMessage(Component.literal("§a[PayBot] §a✓ Đã lưu Partner Key!"));
-                player.sendSystemMessage(Component.literal("§e[4/4] §fNhập §bID kênh Discord §fđể nhận thông báo:"));
-                player.sendSystemMessage(Component.literal("§7§o(Chỉ có tác dụng khi đã connect bot — gõ §cskip §7§ohoặc §ccancel §7§ođể bỏ qua)"));
+                player.sendMessage(new TextComponent("§a[PayBot] §a✓ Đã lưu Partner Key!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                player.sendMessage(new TextComponent("§e[4/4] §fNhập §bID kênh Discord §fđể nhận thông báo:"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                player.sendMessage(new TextComponent("§7§o(Chỉ có tác dụng khi đã connect bot — gõ §cskip §7§ohoặc §ccancel §7§ođể bỏ qua)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             }
             case CARD_CHANNEL_ID -> {
                 if (!"skip".equalsIgnoreCase(input)) {
@@ -282,14 +285,14 @@ public class SetupManager {
                 mod.getConfig().set(section + "." + s.editDenom + ".amt", input);
                 mod.getConfig().save();
                 s.step = s.step == Step.DENOM_AMT_CARD ? Step.DENOM_CMD_CARD : Step.DENOM_CMD_BANK;
-                player.sendSystemMessage(Component.literal("§a[PayBot] §fNhập §blệnh thưởng §f({player}=[tên], [amount]=[số]):"));
+                player.sendMessage(new TextComponent("§a[PayBot] §fNhập §blệnh thưởng §f({player}=[tên], [amount]=[số]):"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             }
             case DENOM_CMD_CARD, DENOM_CMD_BANK -> {
                 String section = s.step == Step.DENOM_CMD_CARD ? "denom-rewards-card" : "denom-rewards-bank";
                 mod.getConfig().set(section + "." + s.editDenom + ".cmd", input);
                 mod.getConfig().save();
                 sessions.remove(player.getUUID());
-                player.sendSystemMessage(Component.literal("§a[PayBot] §fĐã lưu cấu hình mệnh giá §e" + s.editDenom + "§f."));
+                player.sendMessage(new TextComponent("§a[PayBot] §fĐã lưu cấu hình mệnh giá §e" + s.editDenom + "§f."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             }
             default -> sessions.remove(player.getUUID());
         }
@@ -313,25 +316,25 @@ public class SetupManager {
     }
 
     private void showSePayDone(ServerPlayer player, SePayApiClient.BankAccountInfo a) {
-        player.sendSystemMessage(Component.literal("§a§l[PayBot] §r§aCấu hình SePay API thành công!"));
-        player.sendSystemMessage(Component.literal("§7Ngân hàng : §f" + a.bankFullName + " (§e" + a.bankShortName + "§f)"));
-        player.sendSystemMessage(Component.literal("§7Số TK     : §f" + a.accountNumber));
-        player.sendSystemMessage(Component.literal("§7Chủ TK    : §f" + a.accountHolderName));
-        player.sendSystemMessage(Component.literal("§7Mod sẽ tự poll SePay API mỗi §e"
-                + mod.getConfig().getInt("sepay-api.poll-interval-seconds", 10) + "s §7để phát hiện giao dịch."));
+        player.sendMessage(new TextComponent("§a§l[PayBot] §r§aCấu hình SePay API thành công!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Ngân hàng : §f" + a.bankFullName + " (§e" + a.bankShortName + "§f)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Số TK     : §f" + a.accountNumber), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Chủ TK    : §f" + a.accountHolderName), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Mod sẽ tự poll SePay API mỗi §e"
+                + mod.getConfig().getInt("sepay-api.poll-interval-seconds", 10) + "s §7để phát hiện giao dịch."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         // v5.0.5: XOÁ dòng hiển thị "webhook (tuỳ chọn)" — trước đây còn show URL
         // ngrok cũ cho admin (dù optional) dù đã chuyển hoàn toàn tự động (self-poll),
         // không còn lý do gì cần webhook nữa, giữ lại chỉ gây rối/nhầm lẫn cho admin.
-        player.sendSystemMessage(Component.literal("§7Không cần webhook, không cần bot Discord — /napbank đã sẵn sàng dùng ngay!"));
+        player.sendMessage(new TextComponent("§7Không cần webhook, không cần bot Discord — /napbank đã sẵn sàng dùng ngay!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
     }
 
     private void showCardDone(ServerPlayer player, String site, String pid, String channel) {
-        player.sendSystemMessage(Component.literal("§6§l═══════════════════════════════════════"));
-        player.sendSystemMessage(Component.literal("§a§l✓ Cấu hình Card API hoàn tất!"));
-        player.sendSystemMessage(Component.literal("§7Site       : §f" + site));
-        player.sendSystemMessage(Component.literal("§7Partner ID : §f" + pid));
-        player.sendSystemMessage(Component.literal("§7Channel ID : §f" + ("skip".equalsIgnoreCase(channel) ? "§8(bỏ qua)" : channel)));
-        player.sendSystemMessage(Component.literal("§7Tiếp theo: /chinhsuamenhgianap để cấu hình lệnh thưởng."));
-        player.sendSystemMessage(Component.literal("§6§l═══════════════════════════════════════"));
+        player.sendMessage(new TextComponent("§6§l═══════════════════════════════════════"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§a§l✓ Cấu hình Card API hoàn tất!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Site       : §f" + site), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Partner ID : §f" + pid), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Channel ID : §f" + ("skip".equalsIgnoreCase(channel) ? "§8(bỏ qua)" : channel)), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Tiếp theo: /chinhsuamenhgianap để cấu hình lệnh thưởng."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§6§l═══════════════════════════════════════"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
     }
 }

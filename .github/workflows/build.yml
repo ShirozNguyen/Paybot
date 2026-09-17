@@ -40,7 +40,7 @@ jobs:
         run: gradle --version
 
       - name: Build project
-        run: gradle build --stacktrace
+        run: gradle build --parallel --build-cache --continue --stacktrace
 
       # v5.5.5 Part 63 (sửa lại Part 62): 6 module dưới đây là 6 project Gradle HOÀN TOÀN ĐỘC
       # LẬP (không include(), không includeBuild() trong settings.gradle root) — mỗi cái có
@@ -55,8 +55,9 @@ jobs:
           for mod in Fabric_Loader/fabric-1.21.10 Fabric_Loader/fabric-1.21.11; do
             echo "=== Building $mod (Gradle 9.2, project độc lập) ==="
             chmod +x "$mod/gradlew"
-            (cd "$mod" && ./gradlew build --stacktrace)
+            (cd "$mod" && ./gradlew build --build-cache --stacktrace) &
           done
+          wait
 
       - name: Build independent modules (fabric-26.x, neoforge-26.x)
         shell: bash
@@ -64,8 +65,9 @@ jobs:
           for mod in Fabric_Loader/fabric-26.1 Fabric_Loader/fabric-26.2 NeoForge_Loader/neoforge-26.1 NeoForge_Loader/neoforge-26.2; do
             echo "=== Building $mod (Gradle 9.4, project độc lập) ==="
             chmod +x "$mod/gradlew"
-            (cd "$mod" && ./gradlew build --stacktrace)
+            (cd "$mod" && ./gradlew build --build-cache --stacktrace) &
           done
+          wait
 
       # v5.5.5 Part 65: forge-26.1/26.2 tách khỏi Part 62 sau khi lỗi build thật xác nhận
       # "ForgeGradle 7 requires Gradle 9.3.0 or later. You are currently using Gradle 8.8."
@@ -76,8 +78,9 @@ jobs:
           for mod in Forge_Loader/forge-26.1 Forge_Loader/forge-26.2; do
             echo "=== Building $mod (Gradle 9.3, project độc lập) ==="
             chmod +x "$mod/gradlew"
-            (cd "$mod" && ./gradlew build --stacktrace)
+            (cd "$mod" && ./gradlew build --build-cache --stacktrace) &
           done
+          wait
 
       # v5.5.5 Part 66: neoforge-1.21.10/11 tách sau khi lỗi build thật xác nhận "Unfixable
       # conflicts" khi remap qua dev.architectury.loom 1.7.435 (quá cũ cho NeoForge 1.21.10+).
@@ -87,8 +90,9 @@ jobs:
           for mod in NeoForge_Loader/neoforge-1.21.10 NeoForge_Loader/neoforge-1.21.11; do
             echo "=== Building $mod (Gradle 9.2, project độc lập) ==="
             chmod +x "$mod/gradlew"
-            (cd "$mod" && ./gradlew build --stacktrace)
+            (cd "$mod" && ./gradlew build --build-cache --stacktrace) &
           done
+          wait
 
       # v5.5.5 Part 64: 16 module dưới đây (fabric-1.21.2 đến fabric-1.21.9, neoforge-1.21.2 đến
       # neoforge-1.21.9) là project Gradle HOÀN TOÀN ĐỘC LẬP, cùng mô hình Part 63 — tách vì
@@ -97,17 +101,34 @@ jobs:
       # fabricmc.net blog chính thức + lỗi build thật ở fabric-1.21.5: "Mod was built with a
       # newer version of Loom (1.10.1), you are using Loom (1.7.435)"). Chỉ cần JDK 21 (đã setup
       # ở bước "Setup Java 21" phía trên) — không cần foojay-resolver-convention.
+      # v5.5.5 Part 85: Chạy song song tối đa 3 worker bằng pool để tối ưu thời gian build gấp 3 lần.
       - name: Build independent modules (fabric/neoforge 1.21.2-1.21.9)
         shell: bash
         run: |
-          for mod in Fabric_Loader/fabric-1.21.2 Fabric_Loader/fabric-1.21.3 Fabric_Loader/fabric-1.21.4 Fabric_Loader/fabric-1.21.5 Fabric_Loader/fabric-1.21.6 \
-                     Fabric_Loader/fabric-1.21.7 Fabric_Loader/fabric-1.21.8 Fabric_Loader/fabric-1.21.9 \
-                     NeoForge_Loader/neoforge-1.21.2 NeoForge_Loader/neoforge-1.21.3 NeoForge_Loader/neoforge-1.21.4 NeoForge_Loader/neoforge-1.21.5 \
-                     NeoForge_Loader/neoforge-1.21.6 NeoForge_Loader/neoforge-1.21.7 NeoForge_Loader/neoforge-1.21.8 NeoForge_Loader/neoforge-1.21.9; do
-            echo "=== Building $mod (project độc lập, dev.architectury.loom riêng) ==="
+          mods=(
+            Fabric_Loader/fabric-1.21.2 Fabric_Loader/fabric-1.21.3 Fabric_Loader/fabric-1.21.4 Fabric_Loader/fabric-1.21.5
+            Fabric_Loader/fabric-1.21.6 Fabric_Loader/fabric-1.21.7 Fabric_Loader/fabric-1.21.8 Fabric_Loader/fabric-1.21.9
+            NeoForge_Loader/neoforge-1.21.2 NeoForge_Loader/neoforge-1.21.3 NeoForge_Loader/neoforge-1.21.4 NeoForge_Loader/neoforge-1.21.5
+            NeoForge_Loader/neoforge-1.21.6 NeoForge_Loader/neoforge-1.21.7 NeoForge_Loader/neoforge-1.21.8 NeoForge_Loader/neoforge-1.21.9
+          )
+          for mod in "${mods[@]}"; do
             chmod +x "$mod/gradlew"
-            (cd "$mod" && ./gradlew build --stacktrace)
           done
+
+          max_jobs=3
+          current_jobs=0
+          for mod in "${mods[@]}"; do
+            (
+              echo "=== Building $mod (Loom riêng) ==="
+              (cd "$mod" && ./gradlew build --build-cache --stacktrace)
+            ) &
+            ((current_jobs++))
+            if [ "$current_jobs" -ge "$max_jobs" ]; then
+              wait -n
+              ((current_jobs--))
+            fi
+          done
+          wait
 
       - name: Collect JAR files
         shell: bash

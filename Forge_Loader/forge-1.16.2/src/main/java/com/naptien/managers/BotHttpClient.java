@@ -1,3 +1,4 @@
+// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.2
 package com.naptien.managers;
 
 import com.google.gson.*;
@@ -353,9 +354,10 @@ public class BotHttpClient {
 
     private JsonObject post(String path, JsonObject body, boolean silent) throws Exception {
         // [DEAD CODE — Bot-connected mode đã tắt] Ngoại lệ "/api/connect"/"/api/connect-plugin"
-        // không còn ý nghĩa thực tế — nơi DUY NHẤT gọi "/api/connect" (registerConnect trong
-        // CommandRegistry) đã tự chặn ngay từ đầu bằng isStandaloneMode(). Giữ nguyên ngoại lệ
-        // để nếu bật lại connected mode sau này thì logic connect vẫn đúng ngay.
+        // dưới đây giờ KHÔNG còn ý nghĩa thực tế: nơi DUY NHẤT gọi "/api/connect"
+        // (registerConnect trong CommandRegistry) đã tự chặn ngay từ đầu bằng
+        // isStandaloneMode() nên không bao giờ gọi tới được dòng này nữa. Giữ nguyên ngoại lệ
+        // (không xoá) để nếu bật lại connected mode sau này thì logic connect vẫn đúng ngay.
         if (mod.isStandaloneMode() && !path.equals("/api/connect") && !path.equals("/api/connect-plugin")) {
             return null;
         }

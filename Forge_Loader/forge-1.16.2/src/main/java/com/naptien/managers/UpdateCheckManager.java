@@ -1,8 +1,11 @@
+// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.2
 package com.naptien.managers;
 
 import com.naptien.PayBotMod;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -128,12 +131,12 @@ public class UpdateCheckManager {
     // ─── Internal ─────────────────────────────────────────────────────────────
 
     private static void sendUpdateNotice(ServerPlayer p) {
-        p.sendSystemMessage(Component.literal("§6§l[PayBot] ══════════════════════════════════"));
-        p.sendSystemMessage(Component.literal(
+        p.sendMessage(new TextComponent("§6§l[PayBot] ══════════════════════════════════"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        p.sendMessage(new TextComponent(
                 "§a§l✦ Có phiên bản mới! §fv§a" + latestVersion
-                + " §7(đang dùng §fv" + getCurrentVersion() + "§7)"));
-        p.sendSystemMessage(Component.literal(
-                "§7Tải về: §b§n" + MODRINTH_URL));
-        p.sendSystemMessage(Component.literal("§6§l[PayBot] ══════════════════════════════════"));
+                + " §7(đang dùng §fv" + getCurrentVersion() + "§7)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        p.sendMessage(new TextComponent(
+                "§7Tải về: §b§n" + MODRINTH_URL), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        p.sendMessage(new TextComponent("§6§l[PayBot] ══════════════════════════════════"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
     }
 }

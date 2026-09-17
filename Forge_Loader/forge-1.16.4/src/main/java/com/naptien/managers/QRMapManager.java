@@ -1,3 +1,5 @@
+// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.4
+// v5.5.5 Part 72: Fix player.getLevel(), player.getX(), player.inventory for 1.16.5
 package com.naptien.managers;
 
 import com.naptien.PayBotMod;
@@ -11,6 +13,8 @@ import net.minecraft.world.item.MapItem;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.minecraft.nbt.CompoundTag;
 
@@ -91,10 +95,10 @@ public class QRMapManager {
     private void createMapItemOnMainThread(ServerPlayer player, int amount, String invoiceId,
                                            String bankName, String bankAcct, String acctName,
                                            BufferedImage qrImg) {
-        ServerLevel world = (ServerLevel) player.level();
+        ServerLevel world = (ServerLevel) player.getLevel();
 
         // Tạo MapSavedData mới
-        ItemStack mapItem = MapItem.create(world, player.getBlockX(), player.getBlockZ(), (byte) 0, false, false);
+        ItemStack mapItem = MapItem.create(world, (int)player.getX(), (int)player.getZ(), (byte) 0, false, false);
         MapItemSavedData state = MapItemCompat.getSavedData(mapItem, world);
         int mapIdInt = 0;
         try {
@@ -152,7 +156,7 @@ public class QRMapManager {
         String name = "§6✦ §aQR Nạp §e" + PayBotMod.formatVnd(amount) + " VND §6✦";
         ItemTagCompat.setItemNameAndLore(mapItem, name, lore);
 
-        player.getInventory().add(mapItem);
+        player.inventory.add(mapItem);
         sendBankInfo(player, amount, invoiceId, bankName, bankAcct, acctName);
 
         UUID playerUuid = player.getUUID();
@@ -177,13 +181,13 @@ public class QRMapManager {
         ServerPlayer player = mod.getServer().getPlayerList().getPlayer(playerUuid);
         if (player == null) return;
 
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
+        for (int i = 0; i < player.inventory.getContainerSize(); i++) {
+            ItemStack stack = player.inventory.getItem(i);
             if (stack.getItem() == Items.FILLED_MAP) {
                 String tagInvoice = ItemTagCompat.getInvoiceId(stack);
                 if (invoiceId.equals(tagInvoice)) {
-                    player.getInventory().setItem(i, ItemStack.EMPTY);
-                    player.sendSystemMessage(Component.literal("§c[PayBot] QR nạp (" + invoiceId + ") đã hết hạn và tự xóa!"));
+                    player.inventory.setItem(i, ItemStack.EMPTY);
+                    player.sendMessage(new TextComponent("§c[PayBot] QR nạp (" + invoiceId + ") đã hết hạn và tự xóa!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                     if (mod.isNotifEnabled("order-expired") && mod.getLogFilter().allow("order-expired"))
                         PayBotMod.LOGGER.info("[QRMap] QR hết hạn: player=" + playerName + " mapId=" + mapIntId);
                     return;
@@ -194,15 +198,15 @@ public class QRMapManager {
 
     private static void sendBankInfo(ServerPlayer player, int amount, String invoiceId,
                                      String bankName, String bankAcct, String acctName) {
-        player.sendSystemMessage(Component.literal("§6§l══════ Thông tin chuyển khoản ══════"));
-        player.sendSystemMessage(Component.literal("§7Ngân hàng  : §f" + (bankName.isEmpty() ? "?" : bankName)));
-        player.sendSystemMessage(Component.literal("§7Số TK      : §e" + (bankAcct.isEmpty() ? "?" : bankAcct)));
-        player.sendSystemMessage(Component.literal("§7Tên TK     : §f" + (acctName.isEmpty() ? "?" : acctName)));
-        player.sendSystemMessage(Component.literal("§7Số tiền    : §a" + PayBotMod.formatVnd(amount) + " VND"));
-        player.sendSystemMessage(Component.literal("§7Nội dung CK: §e§l" + invoiceId));
-        player.sendSystemMessage(Component.literal("§c⚠ Ghi §eđúng nội dung§c để tự nhận phần thưởng!"));
-        player.sendSystemMessage(Component.literal("§7QR trong balo tự xóa sau §e30 phút§7."));
-        player.sendSystemMessage(Component.literal("§6§l══════════════════════════════════════"));
+        player.sendMessage(new TextComponent("§6§l══════ Thông tin chuyển khoản ══════"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Ngân hàng  : §f" + (bankName.isEmpty() ? "?" : bankName)), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Số TK      : §e" + (bankAcct.isEmpty() ? "?" : bankAcct)), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Tên TK     : §f" + (acctName.isEmpty() ? "?" : acctName)), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Số tiền    : §a" + PayBotMod.formatVnd(amount) + " VND"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Nội dung CK: §e§l" + invoiceId), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§c⚠ Ghi §eđúng nội dung§c để tự nhận phần thưởng!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7QR trong balo tự xóa sau §e30 phút§7."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§6§l══════════════════════════════════════"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
     }
 
     private static BufferedImage downloadImage(String urlStr) {

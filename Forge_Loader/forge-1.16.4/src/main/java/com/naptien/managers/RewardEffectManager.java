@@ -1,4 +1,4 @@
-// v5.5.5 Part 84: Use ClientboundSetTitlesPacket for Forge 1.16.x in forge-1.16.4
+// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.4
 // v5.5.5 Part 73: Fix actionbar displayClientMessage for 1.16.5
 // v5.5.5 Part 72: Fix player.getLevel() for 1.16.5
 package com.naptien.managers;

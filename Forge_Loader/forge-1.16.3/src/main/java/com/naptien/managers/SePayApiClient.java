@@ -1,3 +1,5 @@
+// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.3
+// v5.5.5 Part 72: Fix JsonParser for older Gson compatibility
 package com.naptien.managers;
 
 import com.google.gson.JsonElement;
@@ -177,7 +179,7 @@ public class SePayApiClient {
             consecutiveAuthFailures = 0; // Reset khi thành công (200 OK)
             InputStream is = (code >= 200 && code < 300) ? con.getInputStream() : con.getErrorStream();
             String body = is != null ? new String(is.readAllBytes(), StandardCharsets.UTF_8) : "{}";
-            result.body = JsonParser.parseString(body).getAsJsonObject();
+            result.body = new com.google.gson.JsonParser().parse(body).getAsJsonObject();
         } catch (Exception e) {
             PayBotMod.LOGGER.warn("[PayBot] SePay API lỗi (" + path + "): " + e.getMessage());
             result.error = "Lỗi mạng: " + e.getMessage();

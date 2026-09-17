@@ -1,3 +1,4 @@
+// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.3
 package com.naptien.gui;
 
 import com.naptien.PayBotMod;
@@ -8,6 +9,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,10 +67,10 @@ public class ChinhSuaGui {
             s.editDenom = denom; s.editType = type;
             s.stage = "card".equals(type) ? GuiSession.Stage.EDIT_WAIT_CMD_CARD : GuiSession.Stage.EDIT_WAIT_CMD_BANK;
             gui.close();
-            player.sendSystemMessage(Component.literal("§6[PayBot] §eCấu hình §b"+GuiUtil.formatDenom(denom)+" §e("+type+")"));
-            player.sendSystemMessage(Component.literal("§6Nhập §blệnh thưởng §e(không cần /):  §7§o(cancel để huỷ)"));
-            player.sendSystemMessage(Component.literal("§7Biến: §b[playername] §7→ tên player | §b[amount] §7→ số lượng"));
-            player.sendSystemMessage(Component.literal("§7VD: §feco give [playername] [amount]"));
+            player.sendMessage(new TextComponent("§6[PayBot] §eCấu hình §b"+GuiUtil.formatDenom(denom)+" §e("+type+")"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+            player.sendMessage(new TextComponent("§6Nhập §blệnh thưởng §e(không cần /):  §7§o(cancel để huỷ)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+            player.sendMessage(new TextComponent("§7Biến: §b[playername] §7→ tên player | §b[amount] §7→ số lượng"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+            player.sendMessage(new TextComponent("§7VD: §feco give [playername] [amount]"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         });
     }
 }

@@ -1,3 +1,4 @@
+// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.2
 package com.naptien.gui;
 
 import com.naptien.PayBotMod;
@@ -8,6 +9,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 import java.util.List;
 
@@ -100,7 +103,7 @@ public class NapTheGui {
             int finalDenom = denom;
             gui.setSlot(slot, new ItemStack(GuiUtil.getDenomItem(denom)), displayName, loreList, () -> {
                 if (!enabled) {
-                    player.sendSystemMessage(Component.literal("§c[PayBot] §fMệnh giá này chưa được cấu hình!"));
+                    player.sendMessage(new TextComponent("§c[PayBot] §fMệnh giá này chưa được cấu hình!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                     return;
                 }
                 GuiSession s = GuiSession.get(player.getUUID());
@@ -116,8 +119,8 @@ public class NapTheGui {
 
                 s.denom = finalDenom;
                 s.stage = GuiSession.Stage.CARD_WAIT_CODE;
-                player.sendSystemMessage(Component.literal("§6[PayBot] §fNhập §bmã thẻ §fvào chat:"));
-                player.sendSystemMessage(Component.literal("§7(Tin nhắn chỉ bạn mới thấy — gõ §ccancel §7để huỷ)"));
+                player.sendMessage(new TextComponent("§6[PayBot] §fNhập §bmã thẻ §fvào chat:"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                player.sendMessage(new TextComponent("§7(Tin nhắn chỉ bạn mới thấy — gõ §ccancel §7để huỷ)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             });
         }
 
