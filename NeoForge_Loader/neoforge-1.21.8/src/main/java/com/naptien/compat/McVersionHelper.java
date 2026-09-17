@@ -35,7 +35,18 @@ public final class McVersionHelper {
             java.lang.reflect.Method m = ResourceLocation.class.getMethod("fromNamespaceAndPath", String.class, String.class);
             return (ResourceLocation) m.invoke(null, namespace, path);
         } catch (Throwable ignored) {
-            return new ResourceLocation(namespace, path);
+            try {
+                java.lang.reflect.Constructor<ResourceLocation> c = ResourceLocation.class.getDeclaredConstructor(String.class, String.class);
+                c.setAccessible(true);
+                return c.newInstance(namespace, path);
+            } catch (Throwable t) {
+                try {
+                    java.lang.reflect.Method parseM = ResourceLocation.class.getMethod("parse", String.class);
+                    return (ResourceLocation) parseM.invoke(null, namespace + ":" + path);
+                } catch (Throwable t2) {
+                    return null;
+                }
+            }
         }
     }
 

@@ -270,7 +270,15 @@ public class FabricVersionAdapterModern implements VersionAdapter {
      *  nếu bytecode setHoverName() đổi giữa bản biên dịch (1.21.1) và bản đang chạy thật. */
     private void trySetHoverNameFallback(ItemStack stack, Component nameComp) {
         try {
-            stack.setHoverName(nameComp);
+            try {
+                java.lang.reflect.Method m = stack.getClass().getMethod("setHoverName", Component.class);
+                m.invoke(stack, nameComp);
+            } catch (NoSuchMethodException eNoMethod) {
+                Class<?> dc = Class.forName("net.minecraft.core.component.DataComponents");
+                Object compType = dc.getField("CUSTOM_NAME").get(null);
+                java.lang.reflect.Method mSet = stack.getClass().getMethod("set", Class.forName("net.minecraft.core.component.DataComponentType"), Object.class);
+                mSet.invoke(stack, compType, nameComp);
+            }
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("FabricVersionAdapterModern.trySetHoverNameFallback: setHoverName() trực tiếp cũng lỗi", t);
         }
@@ -610,10 +618,9 @@ public class FabricVersionAdapterModern implements VersionAdapter {
 
     private ResourceLocation createResourceLocation(String namespace, String path) {
         try {
-            return new ResourceLocation(namespace, path);
-        } catch (Throwable t1) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.createResourceLocation: constructor (namespace,path) trực tiếp lỗi", t1);
-        }
+            java.lang.reflect.Method mFrom = ResourceLocation.class.getMethod("fromNamespaceAndPath", String.class, String.class);
+            return (ResourceLocation) mFrom.invoke(null, namespace, path);
+        } catch (Throwable ignored) {}
         try {
             for (Constructor<?> ctor : ResourceLocation.class.getDeclaredConstructors()) {
                 Class<?>[] p = ctor.getParameterTypes();

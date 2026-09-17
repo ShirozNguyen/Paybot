@@ -102,10 +102,15 @@ include('Fabric_Loader:fabric-1.21.1')
 // vĩnh viễn — giới hạn kỹ thuật cứng từ Mojang, không phải vấn đề ưu tiên/code.
 // include('Forge_Loader:forge-1.14.2')
 // include('Forge_Loader:forge-1.14.3')
-include('Forge_Loader:forge-1.14.4')
-include('Forge_Loader:forge-1.15')
-include('Forge_Loader:forge-1.15.1')
-include('Forge_Loader:forge-1.15.2')
+// v5.5.5 Part 83 [REVERT forge-1.14.4..1.15.2 — BẰNG CHỨNG LOG GitHub Actions Run #35203802842]:
+// Forge 1.14.4 đến 1.15.2 bị crash compileJava do thiếu net.minecraftforge.event.server (lúc này
+// dùng FMLServerStartingEvent) và thiếu modern Component API (lúc này dùng ITextComponent).
+// Hoàn toàn tương tự như fabric-1.14.4..1.16.4 ở Part 71.
+// Forge active chính thức bắt đầu từ forge-1.16.2 trở đi.
+// include('Forge_Loader:forge-1.14.4')
+// include('Forge_Loader:forge-1.15')
+// include('Forge_Loader:forge-1.15.1')
+// include('Forge_Loader:forge-1.15.2')
 // v5.5.5 Part 71 [REVERT forge-1.16.1 — BẰNG CHỨNG LOG GitHub Actions Run #35191019178]:
 // Forge 1.16.1 (32.0.108) bị crash cứng "java.lang.RuntimeException: Unfixable conflicts"
 // trong TinyRemapper khi dev.architectury.loom 1.7.435 cố remap minecraft-merged-patched.jar
