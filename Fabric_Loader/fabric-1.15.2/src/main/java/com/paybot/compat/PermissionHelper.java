@@ -26,7 +26,16 @@ public class PermissionHelper {
         } catch (Throwable ignored) {}
 
         try {
-            Object server = player.getServer();
+            Object server = null;
+            try {
+                java.lang.reflect.Method m = player.getClass().getMethod("getServer");
+                server = m.invoke(player);
+            } catch (Throwable ignored) {
+                try {
+                    java.lang.reflect.Method m = player.getClass().getMethod("server");
+                    server = m.invoke(player);
+                } catch (Throwable ignored2) {}
+            }
             if (server != null) {
                 Method mPl = server.getClass().getMethod("getPlayerList");
                 Object pl = mPl.invoke(server);

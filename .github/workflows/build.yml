@@ -243,6 +243,7 @@ jobs:
         with:
           name: PayBot-Done
           path: Done/
+          retention-days: 1
           if-no-files-found: warn
 
       - name: Upload Build Diagnostics
@@ -251,6 +252,7 @@ jobs:
         with:
           name: PayBot-Diagnostics
           path: build-diagnostics/
+          retention-days: 1
           if-no-files-found: ignore
 
       - name: Check Overall Build Status

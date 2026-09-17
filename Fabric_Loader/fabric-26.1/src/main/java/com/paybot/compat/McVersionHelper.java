@@ -37,7 +37,16 @@ public final class McVersionHelper {
             java.lang.reflect.Method m = Identifier.class.getMethod("fromNamespaceAndPath", String.class, String.class);
             return (Identifier) m.invoke(null, namespace, path);
         } catch (Throwable ignored) {
-            return new Identifier(namespace, path);
+            try {
+                java.lang.reflect.Method m = Identifier.class.getMethod("of", String.class, String.class);
+                return (Identifier) m.invoke(null, namespace, path);
+            } catch (Throwable ignored2) {}
+            try {
+                java.lang.reflect.Constructor<Identifier> c = Identifier.class.getDeclaredConstructor(String.class, String.class);
+                c.setAccessible(true);
+                return c.newInstance(namespace, path);
+            } catch (Throwable ignored3) {}
+            return null;
         }
     }
 

@@ -33,7 +33,24 @@ public class MinecraftVersionDetector {
 
     private static String detectRawVersion() {
         try {
-            String v = SharedConstants.getCurrentVersion().getName();
+            String v = null;
+        try {
+            Object curVer = SharedConstants.getCurrentVersion();
+            if (curVer != null) {
+                try {
+                    java.lang.reflect.Method m = curVer.getClass().getMethod("getName");
+                    Object res = m.invoke(curVer);
+                    if (res != null) v = res.toString();
+                } catch (Throwable ignored) {}
+                if (v == null || v.isEmpty()) {
+                    try {
+                        java.lang.reflect.Method m = curVer.getClass().getMethod("getId");
+                        Object res = m.invoke(curVer);
+                        if (res != null) v = res.toString();
+                    } catch (Throwable ignored) {}
+                }
+            }
+        } catch (Throwable ignored) {}
             if (v != null && !v.isEmpty()) {
                 return v;
             }
