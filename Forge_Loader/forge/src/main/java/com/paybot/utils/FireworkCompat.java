@@ -73,7 +73,7 @@ public class FireworkCompat {
         try {
             CompoundTag tag = ItemStackHelper.getOrCreateTag(rocket);
             if (tag != null) {
-                CompoundTag fwTag = tag.contains("Fireworks", 10) ? tag.getCompound("Fireworks") : new CompoundTag();
+                CompoundTag fwTag = TagCompatHelper.contains(tag, "Fireworks") ? TagCompatHelper.getCompound(tag, "Fireworks") : new CompoundTag();
                 fwTag.putByte("Flight", (byte) (amount >= 100_000 ? 2 : 1));
 
                 ListTag explosions = new ListTag();

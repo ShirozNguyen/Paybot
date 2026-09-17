@@ -61,7 +61,7 @@ configurations {
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    // ModDevGradle tự động quản lý Minecraft qua neoForge block ở trên
     // Cùng danh sách thư viện shade như neoforge-1.21.11, không đổi gì ở phần này
     shadowBundle 'org.xerial:sqlite-jdbc:3.45.3.0'
     shadowBundle 'com.mysql:mysql-connector-j:8.4.0'

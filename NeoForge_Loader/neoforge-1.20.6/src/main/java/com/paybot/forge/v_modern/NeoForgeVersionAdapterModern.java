@@ -466,7 +466,7 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
             try {
                 java.lang.reflect.Method getTagMethod = stack.getClass().getMethod("getTag");
                 CompoundTag tag = (CompoundTag) getTagMethod.invoke(stack);
-                if (tag != null && tag.contains("paybot_invoice_id")) return tag.getString("paybot_invoice_id");
+                if (tag != null && com.paybot.utils.TagCompatHelper.contains(tag, "paybot_invoice_id")) return com.paybot.utils.TagCompatHelper.getString(tag, "paybot_invoice_id");
             } catch (Throwable t) {
                 PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.getInvoiceId (legacy NBT)", t);
             }
@@ -476,7 +476,7 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
         if (customDataComponentType == null || getComponentMethod == null) return null;
         try {
             CompoundTag tag = extractCompoundTag(invokeSilently(getComponentMethod, stack, customDataComponentType));
-            if (tag != null && tag.contains("paybot_invoice_id")) return tag.getString("paybot_invoice_id");
+            if (tag != null && com.paybot.utils.TagCompatHelper.contains(tag, "paybot_invoice_id")) return com.paybot.utils.TagCompatHelper.getString(tag, "paybot_invoice_id");
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.getInvoiceId", t);
         }

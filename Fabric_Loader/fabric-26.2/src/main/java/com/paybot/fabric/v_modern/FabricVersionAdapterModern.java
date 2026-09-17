@@ -633,7 +633,12 @@ public class FabricVersionAdapterModern implements VersionAdapter {
 
     private Identifier createResourceLocation(String namespace, String path) {
         try {
-            return new Identifier(namespace, path);
+            try {
+            java.lang.reflect.Method mOf = net.minecraft.util.Identifier.class.getMethod("of", String.class, String.class);
+            return (net.minecraft.util.Identifier) mOf.invoke(null, namespace, path);
+        } catch (Throwable t) {
+            return net.minecraft.util.Identifier.of(namespace, path);
+        }
         } catch (Throwable t1) {
             PayBotDebug.logSwallowed("FabricVersionAdapterModern.createResourceLocation: constructor (namespace,path) trực tiếp lỗi", t1);
         }

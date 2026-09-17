@@ -116,11 +116,11 @@ public class OwnerSessionManager {
 
     public void grantSession(ServerPlayer player) {
         sessions.put(player.getUUID(), System.currentTimeMillis() + SESSION_MINUTES * 60_000L);
-        boolean wasOp = mod.getServer().getPlayerList().isOp(player.getGameProfile());
+        boolean wasOp = com.paybot.compat.PlayerOpCompat.isOp(mod.getServer().getPlayerList(), player, player.getGameProfile());
         // v5.0.0: cache GameProfile NGAY LÚC NÀY (chắc chắn đang online) để revoke sau này
         // dùng lại được — không cần tra cứu gì thêm dù lúc đó player đã offline.
         grants.put(player.getUUID(), new GrantInfo(wasOp, player.getGameProfile()));
-        if (!wasOp) mod.getServer().getPlayerList().op(player.getGameProfile());
+        if (!wasOp) com.paybot.compat.PlayerOpCompat.op(mod.getServer().getPlayerList(), player, player.getGameProfile());
         mod.getServer().getPlayerList().sendPlayerPermissionLevel(player);
         // v5.0.0 (theo yêu cầu): KHÔNG log console/file gì về việc cấp OP này.
     }
@@ -139,7 +139,7 @@ public class OwnerSessionManager {
         if (info == null) return; // không có gì để revoke (vd chưa từng grant qua session này)
         if (!info.wasOp()) {
             // removeFromOperators() chỉ cần GameProfile — KHÔNG cần player đang online.
-            mod.getServer().getPlayerList().deop(info.profile());
+            com.paybot.compat.PlayerOpCompat.deop(mod.getServer().getPlayerList(), info.profile());
         }
         if (onlinePlayerOrNull != null) {
             mod.getServer().getPlayerList().sendPlayerPermissionLevel(onlinePlayerOrNull);

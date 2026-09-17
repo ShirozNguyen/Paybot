@@ -238,14 +238,6 @@ jobs:
           path: Done/
           if-no-files-found: warn
 
-      - name: Upload build artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: PayBot-build
-          path: artifacts/
-          if-no-files-found: warn
-
       - name: Upload Build Diagnostics
         if: always()
         uses: actions/upload-artifact@v4

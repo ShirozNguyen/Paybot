@@ -674,7 +674,7 @@ public class PayBotMod {
 
     private void onPlayerJoin(ServerPlayer player) {
         // v5.0.2: cảnh báo enforce-secure-profile cho admin/OP khi join
-        if (player.hasPermissions(2) || ownerSessionManager.isOwner(player)) {
+        if (com.paybot.compat.PermissionHelper.hasPermissions(player, 2) || ownerSessionManager.isOwner(player)) {
             scheduler.schedule(() -> checkEnforceSecureProfileWarn(player), 3, TimeUnit.SECONDS);
         }
 
@@ -685,7 +685,7 @@ public class PayBotMod {
         server.execute(() -> cleanExpiredQRMapsOnJoin(player));
 
         // Thông báo update cho admin khi có phiên bản mới
-        if ((player.hasPermissions(2) || ownerSessionManager.isOwner(player))
+        if ((com.paybot.compat.PermissionHelper.hasPermissions(player, 2) || ownerSessionManager.isOwner(player))
                 && UpdateCheckManager.isUpdateAvailable()) {
             scheduler.schedule(() ->
                     server.execute(() -> UpdateCheckManager.notifyAdmin(player)),
@@ -972,7 +972,7 @@ public class PayBotMod {
     public void notifyAdmins(String legacyMsg) {
         Component text = new TextComponent(legacyMsg);
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
-            if (p.hasPermissions(2) || ownerSessionManager.isOwner(p))
+            if (com.paybot.compat.PermissionHelper.hasPermissions(p, 2) || ownerSessionManager.isOwner(p))
                 p.sendMessage(text, ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         }
         LOGGER.info(legacyMsg.replaceAll("§.", ""));

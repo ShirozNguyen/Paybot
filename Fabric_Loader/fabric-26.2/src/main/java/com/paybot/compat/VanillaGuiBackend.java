@@ -5,7 +5,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.ChestMenu;
-import net.minecraft.world.inventory.ClickType;
+// import net.minecraft.world.inventory.ClickType; [v5.5.5 Part 101: 26.x decoupled]
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -59,19 +59,16 @@ public class VanillaGuiBackend implements GuiBackend {
      * Trích ClickType ra khỏi ContainerInput bằng reflection tổng quát (không giả định tên field).
      * Trả về null nếu không tìm được — gọi nơi dùng PHẢI coi null là "chặn lại" (fail-safe).
      */
-    private static ClickType extractClickType(Object containerInput) {
+    private static Object extractClickType(Object containerInput) {
         if (containerInput == null) return null;
         try {
             for (RecordComponent rc : containerInput.getClass().getRecordComponents()) {
-                if (rc.getType().equals(ClickType.class)) {
-                    Object value = rc.getAccessor().invoke(containerInput);
-                    if (value instanceof ClickType ct) {
-                        return ct;
-                    }
+                if (rc.getType().getSimpleName().contains("ClickType") || rc.getType().getSimpleName().contains("SlotActionType")) {
+                    return rc.getAccessor().invoke(containerInput);
                 }
             }
         } catch (Throwable t) {
-            PayBotDebug.logSwallowed("VanillaGuiBackend: reflection đọc ContainerInput thất bại", t);
+            PayBotDebug.logSwallowed("VanillaGuiBackend: reflection đọc ContainerInput", t);
         }
         return null;
     }

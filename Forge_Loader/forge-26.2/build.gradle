@@ -66,10 +66,7 @@ configurations {
 }
 
 dependencies {
-    // v5.5.5 Part 50: coordinate 'implementation "net.minecraftforge:forge:..."' — pattern FG kế
-    // thừa từ FG3-FG6, CHƯA xác nhận còn đúng ở FG7. Nếu build lỗi ngay ở dòng này, khả năng
-    // cao cú pháp FG7 đổi khác — đối chiếu MDK thật.
-    implementation "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}"
+    minecraft "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}"
 
     // Cùng danh sách thư viện shade như forge-1.20.2, không đổi gì ở phần này (phần chắc chắn)
     shadowBundle 'org.xerial:sqlite-jdbc:3.45.3.0'

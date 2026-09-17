@@ -521,7 +521,7 @@ public class FabricVersionAdapterModern implements VersionAdapter {
         try {
             Object customDataObj = invokeSilently(getComponentMethod, stack, customDataComponentType);
             CompoundTag tag = extractCompoundTag(customDataObj);
-            if (tag != null && tag.contains("paybot_invoice_id")) return tag.getString("paybot_invoice_id");
+            if (tag != null && com.paybot.utils.TagCompatHelper.contains(tag, "paybot_invoice_id")) return com.paybot.utils.TagCompatHelper.getString(tag, "paybot_invoice_id");
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("FabricVersionAdapterModern.getInvoiceId", t);
         }

@@ -134,7 +134,7 @@ public class ItemStackHelper {
         try {
             Class<?> serializerClass = null;
             try {
-                serializerClass = Component.Serializer.class;
+                serializerClass = Class.forName("net.minecraft.network.chat.Component$Serializer");
             } catch (Throwable t) {
                 try {
                     serializerClass = Class.forName("net.minecraft.class_2561$class_2562");
