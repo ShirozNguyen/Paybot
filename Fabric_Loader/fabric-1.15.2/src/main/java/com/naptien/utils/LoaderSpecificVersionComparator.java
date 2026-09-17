@@ -75,13 +75,13 @@ public class LoaderSpecificVersionComparator {
         }
 
         try {
-            JsonElement parsed = JsonParser.parseString(jsonRaw);
+            JsonElement parsed = new JsonParser().parse(jsonRaw);
             if (!parsed.isJsonArray()) {
                 return new CheckResult(false, cleanCurrent, cleanCurrent, jarLoaderType, downloadUrl);
             }
 
             JsonArray versions = parsed.getAsJsonArray();
-            if (versions.isEmpty()) {
+            if (versions.size() == 0) {
                 return new CheckResult(false, cleanCurrent, cleanCurrent, jarLoaderType, downloadUrl);
             }
 
