@@ -42,6 +42,19 @@ jobs:
       - name: Build project
         run: gradle build --parallel --build-cache --continue --stacktrace
 
+      - name: Ensure Gradle Wrapper in all submodules
+        shell: bash
+        run: |
+          for d in Fabric_Loader/* NeoForge_Loader/* Forge_Loader/*; do
+            if [ -f "$d/gradlew" ]; then
+              mkdir -p "$d/gradle/wrapper"
+              if [ ! -s "$d/gradle/wrapper/gradle-wrapper.jar" ]; then
+                cp gradle/wrapper/gradle-wrapper.jar "$d/gradle/wrapper/gradle-wrapper.jar"
+                echo "Copied wrapper to $d"
+              fi
+            fi
+          done
+
       # v5.5.5 Part 63 (sửa lại Part 62): 6 module dưới đây là 6 project Gradle HOÀN TOÀN ĐỘC
       # LẬP (không include(), không includeBuild() trong settings.gradle root) — mỗi cái có
       # gradlew + gradle-wrapper.properties riêng (9.2/9.4, khác bản 8.8 của root). 'gradle

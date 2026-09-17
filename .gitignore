@@ -46,3 +46,6 @@ Thumbs.db
 # Temp files
 hs_err_pid*.log
 croc-stdin-*
+# Always keep Gradle Wrapper JARs across all modules
+!**/gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.jar
