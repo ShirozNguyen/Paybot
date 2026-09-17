@@ -1,3 +1,4 @@
+// v5.5.5 Part 73: Fix displayClientMessage actionbar for fabric-1.18
 // v5.5.5 Part 72: Fix player.getLevel() in fabric-1.18
 package com.naptien.managers;
 
@@ -39,9 +40,8 @@ public class RewardEffectManager {
 
         // Action bar thông báo
         if (notification) {
-            player.sendMessage(
-                    new TextComponent("§a§l✓ §fNạp §a§l" + PayBotMod.formatVnd(amount) + " VND §a§lthành công!"),
-                    true, ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+            player.displayClientMessage(
+                    new TextComponent("§a§l✓ §fNạp §a§l" + PayBotMod.formatVnd(amount) + " VND §a§lthành công!"), true);
         }
 
         // Âm thanh

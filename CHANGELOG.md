@@ -1,5 +1,17 @@
 # PayBot Multi-Loader — CHANGELOG
 
+## v5.5.5 — 2026-09-17 (Part 73)
+
+**🛠️ [SỬA ĐỢT 2 CÁC LỖI BIÊN DỊCH FABRIC LEGACY (1.16.5 - 1.19.2)]:**
+
+Xem LOG.md Part 73 để đọc đầy đủ.
+
+- **🛠️ Sửa `fabric-1.16.5`**: Điều chỉnh `displayClientMessage` thay thế `sendMessage` actionbar, sửa kiểu trả về `ItemStack` cho `clicked()` trong `VanillaGuiBackend.java`, thay `sendAllDataToRemote()` bằng `broadcastChanges()`, dùng `Boolean.TRUE` cho `Style` setters trong `ComponentColorParser.java`.
+- **🛠️ Sửa `fabric-1.17.1` đến `fabric-1.18.2`**: Chuyển `sendMessage` actionbar sang `displayClientMessage`, thay `src.getPlayer()` bằng `src.getPlayerOrException()` trong `CommandRegistry.java`.
+- **🛠️ Sửa `fabric-1.19`**: Thêm tham số `, false` cho `src.sendSuccess(...)` tương thích Mojmap 1.19.0.
+- **📝 Thêm Header Comment Log vào tất cả file Java được chỉnh sửa.**
+- **📌 Giữ nguyên phiên bản v5.5.5 toàn dự án theo yêu cầu của Shiroz.**
+
 ## v5.5.5 — 2026-09-17 (Part 72)
 
 **🛠️ [SỬA LỖI BIÊN DỊCH FABRIC LEGACY (1.16.5 - 1.19.2) & ĐẨY CODE GITHUB ACTIONS]:**

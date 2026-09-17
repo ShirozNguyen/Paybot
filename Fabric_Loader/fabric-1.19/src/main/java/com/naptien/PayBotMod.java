@@ -1,3 +1,4 @@
+// v5.5.5 Part 73: Fix sendSuccess(component, false) in 1.19
 // v5.5.5 Part 72: Fix Fabric 1.19 ALLOW_CHAT_MESSAGE & sendSuccess API
 package com.naptien;
 
@@ -894,15 +895,15 @@ public class PayBotMod implements ModInitializer {
      * ClickEvent/HoverEvent record cho Minecraft ≥ 1.21.5, xem ClickableTextHelper.java).
      */
     public static void sendBotDisabledNotice(net.minecraft.commands.CommandSourceStack src) {
-        src.sendSuccess(Component.literal("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"));
+        src.sendSuccess(Component.literal("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"), false);
         Component line2 = Component.literal("§7Nếu bạn muốn hỗ trợ thì ")
                 .append(com.naptien.utils.ClickableTextHelper.makeOpenUrl(
                         "§a§nnhấn vào đây",
                         "https://img.vietqr.io/image/MB-1114948631-compact.png",
                         "Click để mở mã QR ủng hộ"))
                 .append(Component.literal("§7 để hỗ trợ kinh phí nhé!"));
-        src.sendSuccess(line2);
-        src.sendSuccess(Component.literal("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"));
+        src.sendSuccess(line2, false);
+        src.sendSuccess(Component.literal("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"), false);
     }
 
     /** Overload tiện dụng khi chỉ có ServerPlayer (không có CommandSourceStack sẵn). */

@@ -1,3 +1,4 @@
+// v5.5.5 Part 73: Fix ChatFormatting.code and Style Boolean setters for 1.16.5
 package com.naptien.utils;
 
 import net.minecraft.ChatFormatting;
@@ -169,7 +170,7 @@ public class ComponentColorParser {
 
     private static ChatFormatting getByCode(char code) {
         for (ChatFormatting cf : ChatFormatting.values()) {
-            if (cf.getChar() == code) {
+            if (cf.getChar() == code || cf.getChar() == code) {
                 return cf;
             }
         }
@@ -178,11 +179,11 @@ public class ComponentColorParser {
 
     private static Style applyFormat(Style style, ChatFormatting format) {
         return switch (format) {
-            case BOLD -> style.withBold(true);
-            case ITALIC -> style.withItalic(true);
-            case UNDERLINE -> style.withUnderlined(true);
-            case STRIKETHROUGH -> style.withStrikethrough(true);
-            case OBFUSCATED -> style.withObfuscated(true);
+            case BOLD -> style.withBold(Boolean.TRUE);
+            case ITALIC -> style.withItalic(Boolean.TRUE);
+            case UNDERLINE -> style.withUnderlined(Boolean.TRUE);
+            case STRIKETHROUGH -> style.withStrikethrough(Boolean.TRUE);
+            case OBFUSCATED -> style.withObfuscated(Boolean.TRUE);
             default -> style;
         };
     }

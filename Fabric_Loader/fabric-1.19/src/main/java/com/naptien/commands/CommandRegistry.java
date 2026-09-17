@@ -1,3 +1,4 @@
+// v5.5.5 Part 73: Fix sendSuccess(component, false) in 1.19 CommandRegistry
 // v5.5.5 Part 72: Fix CommandSourceStack sendSuccess API for 1.19
 package com.naptien.commands;
 
@@ -68,7 +69,7 @@ public class CommandRegistry {
     }
 
     private static void send(CommandSourceStack src, String msg) {
-        src.sendSuccess(Component.literal(msg));
+        src.sendSuccess(Component.literal(msg), false);
     }
 
     /**
@@ -363,8 +364,8 @@ public class CommandRegistry {
         send(src, "§7[PayBot] Đang gửi yêu cầu ngắt kết nối...");
         mod.runAsync(() -> {
             boolean ok = mod.getBotHttpClient().requestDisconnect();
-            if (ok) src.sendSuccess(Component.literal("§a[PayBot] §fYêu cầu gửi! Dùng §e/confirm §fđể xác nhận."));
-            else    src.sendSuccess(Component.literal("§c[PayBot] §fGửi thất bại! Dùng §e/disconnect --force§f."));
+            if (ok) src.sendSuccess(Component.literal("§a[PayBot] §fYêu cầu gửi! Dùng §e/confirm §fđể xác nhận."), false);
+            else    src.sendSuccess(Component.literal("§c[PayBot] §fGửi thất bại! Dùng §e/disconnect --force§f."), false);
         });
         return 1;
     }

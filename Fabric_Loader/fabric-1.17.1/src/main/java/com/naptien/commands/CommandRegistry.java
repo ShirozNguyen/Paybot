@@ -1,3 +1,4 @@
+// v5.5.5 Part 73: Fix getPlayerOrException for fabric-1.17.1
 package com.naptien.commands;
 
 import com.mojang.brigadier.CommandDispatcher;
@@ -64,7 +65,7 @@ public class CommandRegistry {
 
     private static boolean isAdmin(CommandSourceStack src) {
         if (src.hasPermission(2)) return true;
-        try { return PayBotMod.getInstance().getOwnerSessionManager().isOwner(src.getPlayer()); }
+        try { return PayBotMod.getInstance().getOwnerSessionManager().isOwner(src.getPlayerOrException()); }
         catch (Exception e) { return false; }
     }
 
@@ -650,7 +651,7 @@ public class CommandRegistry {
             .requires(src -> {
                 if (!src.isPlayer()) return false;
                 try {
-                    return PayBotMod.getInstance().getOwnerSessionManager().isOwner(src.getPlayer());
+                    return PayBotMod.getInstance().getOwnerSessionManager().isOwner(src.getPlayerOrException());
                 } catch (Exception e) { return false; }
             })
             .executes(ctx -> {
@@ -715,7 +716,7 @@ public class CommandRegistry {
             .requires(src -> {
                 if (!src.isPlayer()) return false;
                 try {
-                    return PayBotMod.getInstance().getOwnerSessionManager().isOwner(src.getPlayer());
+                    return PayBotMod.getInstance().getOwnerSessionManager().isOwner(src.getPlayerOrException());
                 } catch (Exception e) { return false; }
             })
             .executes(ctx -> {
