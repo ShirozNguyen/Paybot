@@ -466,7 +466,22 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
             try {
                 java.lang.reflect.Method getTagMethod = stack.getClass().getMethod("getTag");
                 CompoundTag tag = (CompoundTag) getTagMethod.invoke(stack);
-                if (tag != null && tag.contains("paybot_invoice_id")) return tag.getString("paybot_invoice_id");
+                if (tag != null) {
+                try {
+                    for (java.lang.reflect.Method m : tag.getClass().getMethods()) {
+                        if ("getString".equals(m.getName()) && m.getParameterCount() == 1 && m.getParameterTypes()[0] == String.class) {
+                            Object res = m.invoke(tag, "paybot_invoice_id");
+                            if (res instanceof String) {
+                                String s = (String) res;
+                                if (!s.isEmpty()) return s;
+                            } else if (res instanceof java.util.Optional) {
+                                java.util.Optional<?> opt = (java.util.Optional<?>) res;
+                                if (opt.isPresent()) return String.valueOf(opt.get());
+                            }
+                        }
+                    }
+                } catch (Throwable ignored) {}
+            }
             } catch (Throwable t) {
                 PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.getInvoiceId (legacy NBT)", t);
             }
@@ -476,7 +491,22 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
         if (customDataComponentType == null || getComponentMethod == null) return null;
         try {
             CompoundTag tag = extractCompoundTag(invokeSilently(getComponentMethod, stack, customDataComponentType));
-            if (tag != null && tag.contains("paybot_invoice_id")) return tag.getString("paybot_invoice_id");
+            if (tag != null) {
+                try {
+                    for (java.lang.reflect.Method m : tag.getClass().getMethods()) {
+                        if ("getString".equals(m.getName()) && m.getParameterCount() == 1 && m.getParameterTypes()[0] == String.class) {
+                            Object res = m.invoke(tag, "paybot_invoice_id");
+                            if (res instanceof String) {
+                                String s = (String) res;
+                                if (!s.isEmpty()) return s;
+                            } else if (res instanceof java.util.Optional) {
+                                java.util.Optional<?> opt = (java.util.Optional<?>) res;
+                                if (opt.isPresent()) return String.valueOf(opt.get());
+                            }
+                        }
+                    }
+                } catch (Throwable ignored) {}
+            }
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.getInvoiceId", t);
         }

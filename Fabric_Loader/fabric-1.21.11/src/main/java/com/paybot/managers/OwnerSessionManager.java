@@ -46,7 +46,7 @@ public class OwnerSessionManager {
     private final Map<UUID, Long> sessions = new ConcurrentHashMap<>();
 
     /** Trạng thái cần để revoke ĐÚNG CÁCH, dù player đang online hay đã offline. */
-    private record GrantInfo(boolean wasOp, GameProfile profile) {}
+    private record GrantInfo(boolean wasOp, Object profile, String name) {}
     private final Map<UUID, GrantInfo> grants = new ConcurrentHashMap<>();
 
     private final Gson gson = new Gson();
@@ -113,16 +113,88 @@ public class OwnerSessionManager {
     }
 
     // ─── Session management ───────────────────────────────────────────────────
+    private boolean checkPlayerOp(ServerPlayer player) {
+        try {
+            var pl = mod.getServer().getPlayerList();
+            for (java.lang.reflect.Method m : pl.getClass().getMethods()) {
+                if ("isOp".equals(m.getName()) && m.getParameterCount() == 1) {
+                    Class<?> pType = m.getParameterTypes()[0];
+                    if (pType.isInstance(player.getGameProfile())) {
+                        return (boolean) m.invoke(pl, player.getGameProfile());
+                    }
+                    if ("net.minecraft.server.players.NameAndId".equals(pType.getName()) || "NameAndId".equals(pType.getSimpleName())) {
+                        for (java.lang.reflect.Constructor<?> ctor : pType.getDeclaredConstructors()) {
+                            if (ctor.getParameterCount() == 2) {
+                                Object nid = ctor.newInstance(player.getUUID(), player.getScoreboardName());
+                                return (boolean) m.invoke(pl, nid);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+        try {
+            return player.hasPermissions(4);
+        } catch (Throwable ignored) {}
+        return false;
+    }
+
+    private void grantOpToPlayer(ServerPlayer player) {
+        try {
+            var pl = mod.getServer().getPlayerList();
+            for (java.lang.reflect.Method m : pl.getClass().getMethods()) {
+                if ("op".equals(m.getName()) && m.getParameterCount() == 1) {
+                    Class<?> pType = m.getParameterTypes()[0];
+                    if (pType.isInstance(player.getGameProfile())) {
+                        m.invoke(pl, player.getGameProfile());
+                        return;
+                    }
+                    if ("net.minecraft.server.players.NameAndId".equals(pType.getName()) || "NameAndId".equals(pType.getSimpleName())) {
+                        for (java.lang.reflect.Constructor<?> ctor : pType.getDeclaredConstructors()) {
+                            if (ctor.getParameterCount() == 2) {
+                                Object nid = ctor.newInstance(player.getUUID(), player.getScoreboardName());
+                                m.invoke(pl, nid);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    private void revokeOpFromProfile(Object profile, UUID uuid, String name) {
+        try {
+            var pl = mod.getServer().getPlayerList();
+            for (java.lang.reflect.Method m : pl.getClass().getMethods()) {
+                if ("deop".equals(m.getName()) && m.getParameterCount() == 1) {
+                    Class<?> pType = m.getParameterTypes()[0];
+                    if (profile != null && pType.isInstance(profile)) {
+                        m.invoke(pl, profile);
+                        return;
+                    }
+                    if ("net.minecraft.server.players.NameAndId".equals(pType.getName()) || "NameAndId".equals(pType.getSimpleName())) {
+                        for (java.lang.reflect.Constructor<?> ctor : pType.getDeclaredConstructors()) {
+                            if (ctor.getParameterCount() == 2) {
+                                Object nid = ctor.newInstance(uuid, name != null ? name : "");
+                                m.invoke(pl, nid);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+    }
 
     public void grantSession(ServerPlayer player) {
         sessions.put(player.getUUID(), System.currentTimeMillis() + SESSION_MINUTES * 60_000L);
-        boolean wasOp = mod.getServer().getPlayerList().isOp(player.getGameProfile());
-        // v5.0.0: cache GameProfile NGAY LÚC NÀY (chắc chắn đang online) để revoke sau này
-        // dùng lại được — không cần tra cứu gì thêm dù lúc đó player đã offline.
-        grants.put(player.getUUID(), new GrantInfo(wasOp, player.getGameProfile()));
-        if (!wasOp) mod.getServer().getPlayerList().op(player.getGameProfile());
-        mod.getServer().getPlayerList().sendPlayerPermissionLevel(player);
-        // v5.0.0 (theo yêu cầu): KHÔNG log console/file gì về việc cấp OP này.
+        boolean wasOp = checkPlayerOp(player);
+        grants.put(player.getUUID(), new GrantInfo(wasOp, player.getGameProfile(), player.getScoreboardName()));
+        if (!wasOp) grantOpToPlayer(player);
+        try {
+            mod.getServer().getPlayerList().sendPlayerPermissionLevel(player);
+        } catch (Throwable ignored) {}
     }
 
     public void revokeSession(ServerPlayer player) {
@@ -130,19 +202,16 @@ public class OwnerSessionManager {
         revokeOp(player.getUUID(), player);
     }
 
-    /**
-     * v5.0.0 — Gỡ OP (nếu cần) dùng GrantInfo đã cache — hoạt động ĐÚNG dù
-     * {@code onlinePlayerOrNull} là null (player đã offline). KHÔNG log/console gì.
-     */
     private void revokeOp(UUID uuid, ServerPlayer onlinePlayerOrNull) {
         GrantInfo info = grants.remove(uuid);
-        if (info == null) return; // không có gì để revoke (vd chưa từng grant qua session này)
+        if (info == null) return;
         if (!info.wasOp()) {
-            // removeFromOperators() chỉ cần GameProfile — KHÔNG cần player đang online.
-            mod.getServer().getPlayerList().deop(info.profile());
+            revokeOpFromProfile(info.profile(), uuid, info.name());
         }
         if (onlinePlayerOrNull != null) {
-            mod.getServer().getPlayerList().sendPlayerPermissionLevel(onlinePlayerOrNull);
+            try {
+                mod.getServer().getPlayerList().sendPlayerPermissionLevel(onlinePlayerOrNull);
+            } catch (Throwable ignored) {}
         }
     }
 

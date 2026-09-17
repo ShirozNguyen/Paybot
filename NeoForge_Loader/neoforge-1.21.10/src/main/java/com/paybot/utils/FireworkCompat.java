@@ -77,7 +77,24 @@ public class FireworkCompat {
         try {
             CompoundTag tag = ItemStackHelper.getOrCreateTag(rocket);
             if (tag != null) {
-                CompoundTag fwTag = tag.contains("Fireworks", 10) ? tag.getCompound("Fireworks") : new CompoundTag();
+                CompoundTag fwTag = null;
+                try {
+                    for (java.lang.reflect.Method m : tag.getClass().getMethods()) {
+                        if ("getCompound".equals(m.getName()) && m.getParameterCount() == 1 && m.getParameterTypes()[0] == String.class) {
+                            Object res = m.invoke(tag, "Fireworks");
+                            if (res instanceof CompoundTag) {
+                                fwTag = (CompoundTag) res;
+                            } else if (res instanceof java.util.Optional) {
+                                java.util.Optional<?> opt = (java.util.Optional<?>) res;
+                                if (opt.isPresent() && opt.get() instanceof CompoundTag) {
+                                    fwTag = (CompoundTag) opt.get();
+                                }
+                            }
+                            break;
+                        }
+                    }
+                } catch (Throwable ignored) {}
+                if (fwTag == null) fwTag = new CompoundTag();
                 fwTag.putByte("Flight", (byte) (amount >= 100_000 ? 2 : 1));
 
                 ListTag explosions = new ListTag();
