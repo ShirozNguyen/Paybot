@@ -1,3 +1,4 @@
+// v5.5.5 Part 72: Fix player.getLevel() for 1.16.5
 package com.naptien.managers;
 
 import com.naptien.PayBotMod;
@@ -42,7 +43,7 @@ public class RewardEffectManager {
 
         // Âm thanh
         if (sound) {
-            ServerLevel world = (ServerLevel) player.level();
+            ServerLevel world = (ServerLevel) player.getLevel();
             world.playSound(null, player.getX(), player.getY(), player.getZ(),
                     SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS,
                     1f, amount >= 100_000 ? 0.85f : 1f);
@@ -51,7 +52,7 @@ public class RewardEffectManager {
                 mod.getScheduler().schedule(() -> mod.runOnMainThread(() -> {
                     if (mod.getServer().getPlayerList().getPlayer(player.getUUID()) == null) return;
                     try {
-                        ServerLevel w = (ServerLevel) player.level();
+                        ServerLevel w = (ServerLevel) player.getLevel();
                         w.playSound(null, player.getX(), player.getY(), player.getZ(),
                                 SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
                                 SoundSource.PLAYERS, 0.65f, 1.0f);
@@ -103,7 +104,7 @@ public class RewardEffectManager {
     }
 
     private static void spawnFirework(ServerPlayer player, int amount) {
-        ServerLevel world = (ServerLevel) player.level();
+        ServerLevel world = (ServerLevel) player.getLevel();
 
         int[] colors;
         if (amount >= 1_000_000) {

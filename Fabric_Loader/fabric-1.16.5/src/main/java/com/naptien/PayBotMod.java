@@ -1,3 +1,4 @@
+// v5.5.5 Part 72: Fix 1.16.5 Mojmap API (handler.player, player.inventory, player.getLevel())
 package com.naptien;
 
 import com.naptien.commands.CommandRegistry;
@@ -80,8 +81,8 @@ public class PayBotMod implements ModInitializer {
             CommandRegistry.registerAll(dispatcher);
         });
 
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> onPlayerJoin(handler.getPlayer()));
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> onPlayerQuit(handler.getPlayer()));
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> onPlayerJoin(handler.player));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> onPlayerQuit(handler.player));
 
         LOGGER.info("[PayBot] Fabric Mod registered — waiting for server start…");
     }
@@ -817,7 +818,7 @@ public class PayBotMod implements ModInitializer {
     private void cleanExpiredQRMapsOnJoin(ServerPlayer player) {
         long now   = System.currentTimeMillis();
         long ttlMs = 30 * 60 * 1000L;
-        var  inv   = player.getInventory();
+        var  inv   = player.inventory;
         for (int i = 0; i < inv.getContainerSize(); i++) {
             net.minecraft.world.item.ItemStack stack = inv.getItem(i);
             if (stack.isEmpty()) continue;

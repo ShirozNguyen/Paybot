@@ -1,3 +1,4 @@
+// v5.5.5 Part 72: Fix Fabric 1.19.1 ALLOW_CHAT_MESSAGE lambda signature
 package com.naptien;
 
 import com.naptien.commands.CommandRegistry;

@@ -1,5 +1,7 @@
+// v5.5.5 Part 72: Fix BanManager import in fabric-1.18.1
 package com.naptien.managers;
 
+import com.naptien.PayBotMod;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;

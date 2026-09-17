@@ -1,3 +1,4 @@
+// v5.5.5 Part 72: Fix rewards.entrySet() in fabric-1.17.1
 package com.naptien.managers;
 
 import com.google.gson.*;
@@ -267,7 +268,8 @@ public class PluginHttpServer extends NanoHTTPD {
 
     private int applyRewards(JsonObject rewards, String section) {
         int count = 0;
-        for (String key : rewards.keySet()) {
+        for (java.util.Map.Entry<String, com.google.gson.JsonElement> entrySet : rewards.entrySet()) {
+            String key = entrySet.getKey();
             try {
                 Integer.parseInt(key);
                 JsonObject entry = rewards.getAsJsonObject(key);

@@ -1,3 +1,4 @@
+// v5.5.5 Part 72: Replace 1.17+ item constants for 1.16.5
 package com.naptien.gui;
 
 import com.naptien.PayBotMod;
@@ -452,8 +453,8 @@ public class PayBotPlaceholderGui {
         return switch (rank) {
             case 1  -> Items.GOLD_INGOT;
             case 2  -> Items.IRON_INGOT;
-            case 3  -> Items.COPPER_INGOT;
-            case 4  -> Items.AMETHYST_SHARD;
+            case 3  -> Items.GOLD_NUGGET;
+            case 4  -> Items.QUARTZ;
             case 5  -> Items.PRISMARINE_SHARD;
             default -> Items.FLINT;
         };

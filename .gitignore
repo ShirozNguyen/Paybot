@@ -8,8 +8,8 @@ build/
 
 # Documentation / logs
 !README.md
-CHANGELOG.md
-LOG.md
+!CHANGELOG.md
+!LOG.md
 *.log
 26.3-KHUNG-CHUAN-BI.md
 *.txt
@@ -46,4 +46,5 @@ Thumbs.db
 *.tar.gz
 
 # Temp files
+hs_err_pid*.log
 croc-stdin-*

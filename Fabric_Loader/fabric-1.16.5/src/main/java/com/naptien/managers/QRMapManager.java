@@ -1,3 +1,4 @@
+// v5.5.5 Part 72: Fix player.getLevel(), player.getX(), player.inventory for 1.16.5
 package com.naptien.managers;
 
 import com.naptien.PayBotMod;
@@ -93,10 +94,10 @@ public class QRMapManager {
     private void createMapItemOnMainThread(ServerPlayer player, int amount, String invoiceId,
                                            String bankName, String bankAcct, String acctName,
                                            BufferedImage qrImg) {
-        ServerLevel world = (ServerLevel) player.level();
+        ServerLevel world = (ServerLevel) player.getLevel();
 
         // Tạo MapSavedData mới
-        ItemStack mapItem = MapItem.create(world, player.getBlockX(), player.getBlockZ(), (byte) 0, false, false);
+        ItemStack mapItem = MapItem.create(world, (int)player.getX(), (int)player.getZ(), (byte) 0, false, false);
         MapItemSavedData state = MapItemCompat.getSavedData(mapItem, world);
         int mapIdInt = 0;
         try {
@@ -154,7 +155,7 @@ public class QRMapManager {
         String name = "§6✦ §aQR Nạp §e" + PayBotMod.formatVnd(amount) + " VND §6✦";
         ItemTagCompat.setItemNameAndLore(mapItem, name, lore);
 
-        player.getInventory().add(mapItem);
+        player.inventory.add(mapItem);
         sendBankInfo(player, amount, invoiceId, bankName, bankAcct, acctName);
 
         UUID playerUuid = player.getUUID();
@@ -179,12 +180,12 @@ public class QRMapManager {
         ServerPlayer player = mod.getServer().getPlayerList().getPlayer(playerUuid);
         if (player == null) return;
 
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack stack = player.getInventory().getItem(i);
+        for (int i = 0; i < player.inventory.getContainerSize(); i++) {
+            ItemStack stack = player.inventory.getItem(i);
             if (stack.getItem() == Items.FILLED_MAP) {
                 String tagInvoice = ItemTagCompat.getInvoiceId(stack);
                 if (invoiceId.equals(tagInvoice)) {
-                    player.getInventory().setItem(i, ItemStack.EMPTY);
+                    player.inventory.setItem(i, ItemStack.EMPTY);
                     player.sendMessage(new TextComponent("§c[PayBot] QR nạp (" + invoiceId + ") đã hết hạn và tự xóa!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                     if (mod.isNotifEnabled("order-expired") && mod.getLogFilter().allow("order-expired"))
                         PayBotMod.LOGGER.info("[QRMap] QR hết hạn: player=" + playerName + " mapId=" + mapIntId);

@@ -1,3 +1,4 @@
+// v5.5.5 Part 72: Fix Fabric 1.19 ALLOW_CHAT_MESSAGE & sendSuccess API
 package com.naptien;
 
 import com.naptien.commands.CommandRegistry;
@@ -91,8 +92,8 @@ public class PayBotMod implements ModInitializer {
         // tiep khong qua wrapper) - xac nhan qua mappings.dev: FilteredMessage (Yarn)
         // = FilteredText (Mojang), method raw() tra ve T ben trong. Dung message.raw()
         // de lay PlayerChatMessage that su truoc khi goi decoratedContent().
-        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((FilteredText<PlayerChatMessage> message, ServerPlayer sender, ChatType.Bound boundChatType) -> {
-            String text = message.raw().decoratedContent().getString();
+        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((FilteredText message, ServerPlayer sender) -> {
+            String text = message.raw().getString();
             if (com.naptien.gui.GuiSession.isAnyoneWaiting(sender.getUUID())
                     && com.naptien.gui.GuiChatHandler.handle(sender, text)) {
                 return false;
@@ -893,15 +894,15 @@ public class PayBotMod implements ModInitializer {
      * ClickEvent/HoverEvent record cho Minecraft ≥ 1.21.5, xem ClickableTextHelper.java).
      */
     public static void sendBotDisabledNotice(net.minecraft.commands.CommandSourceStack src) {
-        src.sendSystemMessage(Component.literal("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"));
+        src.sendSuccess(Component.literal("§c[PayBot] §fTính năng này hiện tại đã bị tắt vì không có kinh phí duy trì bot Discord :)"));
         Component line2 = Component.literal("§7Nếu bạn muốn hỗ trợ thì ")
                 .append(com.naptien.utils.ClickableTextHelper.makeOpenUrl(
                         "§a§nnhấn vào đây",
                         "https://img.vietqr.io/image/MB-1114948631-compact.png",
                         "Click để mở mã QR ủng hộ"))
                 .append(Component.literal("§7 để hỗ trợ kinh phí nhé!"));
-        src.sendSystemMessage(line2);
-        src.sendSystemMessage(Component.literal("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"));
+        src.sendSuccess(line2);
+        src.sendSuccess(Component.literal("§7Nếu được ủng hộ sẽ có chức năng nạp từ web, từ Discord,... cho ae thoải mái custom nhé!"));
     }
 
     /** Overload tiện dụng khi chỉ có ServerPlayer (không có CommandSourceStack sẵn). */

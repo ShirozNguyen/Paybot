@@ -1,3 +1,4 @@
+// v5.5.5 Part 72: Fix Fabric 1.19.2 ALLOW_CHAT_MESSAGE lambda signature
 package com.naptien;
 
 import com.naptien.commands.CommandRegistry;
@@ -91,7 +92,7 @@ public class PayBotMod implements ModInitializer {
         // tiep khong qua wrapper) - xac nhan qua mappings.dev: FilteredMessage (Yarn)
         // = FilteredText (Mojang), method raw() tra ve T ben trong. Dung message.raw()
         // de lay PlayerChatMessage that su truoc khi goi decoratedContent().
-        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((FilteredText<PlayerChatMessage> message, ServerPlayer sender, ChatType.Bound boundChatType) -> {
+        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((FilteredText message, ServerPlayer sender, ChatType.Bound boundChatType) -> {
             String text = message.raw().decoratedContent().getString();
             if (com.naptien.gui.GuiSession.isAnyoneWaiting(sender.getUUID())
                     && com.naptien.gui.GuiChatHandler.handle(sender, text)) {
