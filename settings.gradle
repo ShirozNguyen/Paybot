@@ -101,7 +101,12 @@ include('Forge_Loader:forge-1.14.4')
 include('Forge_Loader:forge-1.15')
 include('Forge_Loader:forge-1.15.1')
 include('Forge_Loader:forge-1.15.2')
-include('Forge_Loader:forge-1.16.1')
+// v5.5.5 Part 71 [REVERT forge-1.16.1 — BẰNG CHỨNG LOG GitHub Actions Run #35191019178]:
+// Forge 1.16.1 (32.0.108) bị crash cứng "java.lang.RuntimeException: Unfixable conflicts"
+// trong TinyRemapper khi dev.architectury.loom 1.7.435 cố remap minecraft-merged-patched.jar
+// qua Mojang Official Mappings 1.16.1. Đây là giới hạn kỹ thuật từ Architectury Loom đối với Forge
+// 1.16.1 (Forge chỉ ổn định từ 1.16.2 trở đi với Loom 1.7.435). Comment lại vĩnh viễn.
+// include('Forge_Loader:forge-1.16.1')
 include('Forge_Loader:forge-1.16.2')
 include('Forge_Loader:forge-1.16.3')
 include('Forge_Loader:forge-1.16.4')
