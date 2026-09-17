@@ -36,9 +36,7 @@ public class RewardEffectManager {
 
         // Action bar thông báo
         if (notification) {
-            player.sendSystemMessage(
-                    Component.literal("§a§l✓ §fNạp §a§l" + PayBotMod.formatVnd(amount) + " VND §a§lthành công!"),
-                    true);
+            player.sendSystemMessage(Component.literal("§a§l✓ §fNạp §a§l" + PayBotMod.formatVnd(amount) + " VND §a§lthành công!"));
         }
 
         // Âm thanh

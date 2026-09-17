@@ -115,7 +115,7 @@ public class PayBotMod {
     @SubscribeEvent
     public void onServerChat(ServerChatEvent event) {
         ServerPlayer sender = event.getPlayer();
-        String text = event.getRawText();
+        String text = getChatEventText(event);
         if (com.naptien.gui.GuiSession.isAnyoneWaiting(sender.getUUID())
                 && com.naptien.gui.GuiChatHandler.handle(sender, text)) {
             event.setCanceled(true);

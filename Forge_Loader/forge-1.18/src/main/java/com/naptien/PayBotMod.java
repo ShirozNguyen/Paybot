@@ -863,12 +863,12 @@ public class PayBotMod {
             server.execute(() -> {
                 if (!player.isAlive()) return;
                 if (secureProfile && onlineMode) {
-                    player.sendSystemMessage(Component.literal("§c§l[PayBot] §r§cCẢNH BÁO: §fenforce-secure-profile=true + online-mode=true đang bật!"));
-                    player.sendSystemMessage(Component.literal("§7Kết hợp này có thể gây xung đột với PayBot (middleware chat-relay, chữ ký chat)."));
-                    player.sendSystemMessage(Component.literal("§7→ Vào server.properties và đặt §fenforce-secure-profile=§cfalse §7(khuyến nghị)"));
-                    player.sendSystemMessage(Component.literal("§7hoặc tắt §fonline-mode §7(nếu server offline chủ ý)."));
+                    player.sendMessage(new net.minecraft.network.chat.TextComponent("§c§l[PayBot] §r§cCẢNH BÁO: §fenforce-secure-profile=true + online-mode=true đang bật!"), net.minecraft.network.chat.ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                    player.sendMessage(new net.minecraft.network.chat.TextComponent("§7Kết hợp này có thể gây xung đột với PayBot (middleware chat-relay, chữ ký chat)."), net.minecraft.network.chat.ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                    player.sendMessage(new net.minecraft.network.chat.TextComponent("§7→ Vào server.properties và đặt §fenforce-secure-profile=§cfalse §7(khuyến nghị)"), net.minecraft.network.chat.ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                    player.sendMessage(new net.minecraft.network.chat.TextComponent("§7hoặc tắt §fonline-mode §7(nếu server offline chủ ý)."), net.minecraft.network.chat.ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 } else {
-                    player.sendSystemMessage(Component.literal("§e[PayBot] §7Gợi ý: §fenforce-secure-profile=true §7đang bật. Khuyến nghị đặt §bfalse §ftrong server.properties §7để tránh rủi ro khi cài thêm proxy/mod chat."));
+                    player.sendMessage(new net.minecraft.network.chat.TextComponent("§e[PayBot] §7Gợi ý: §fenforce-secure-profile=true §7đang bật. Khuyến nghị đặt §bfalse §ftrong server.properties §7để tránh rủi ro khi cài thêm proxy/mod chat."), net.minecraft.network.chat.ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 }
             });
         } catch (Exception ignored) {}

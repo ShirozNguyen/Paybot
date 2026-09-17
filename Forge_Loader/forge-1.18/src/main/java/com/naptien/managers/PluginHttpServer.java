@@ -1,3 +1,4 @@
+// v5.5.5 Part 72: Fix rewards.entrySet() in fabric-1.18.2
 package com.naptien.managers;
 
 import com.google.gson.*;
@@ -67,8 +68,12 @@ public class PluginHttpServer extends NanoHTTPD {
         }
 
         // [DEAD CODE — Bot-connected mode đã tắt] TOÀN BỘ endpoint dưới đây (reward-push/
-        // execute-reward, bank-paid, card-result, receive-config) chỉ phục vụ Discord bot —
-        // chặn NGAY TỪ ĐÂY, trước cả bước kiểm tra X-API-Key. "/api/sepay-ipn" KHÔNG bị đụng.
+        // execute-reward, bank-paid, card-result, receive-config) chỉ tồn tại để phục vụ
+        // Discord bot — KHÔNG còn cơ chế cấp thưởng/điều khiển/báo kết quả thanh toán từ bên
+        // ngoài nữa (xem PayBotMod.isStandaloneMode()). Chặn NGAY TỪ ĐÂY, TRƯỚC CẢ bước kiểm
+        // tra X-API-Key. "/api/sepay-ipn" KHÔNG bị đụng — không liên quan Discord bot, vẫn là
+        // đường xác nhận thanh toán CHÍNH của standalone mode. Toàn bộ handler xử lý của các
+        // endpoint trên GIỮ NGUYÊN bên dưới, chỉ không còn route nào gọi tới.
         if (!uri.equals("/api/sepay-ipn") && mod.isStandaloneMode()) {
             return err("disabled");
         }
@@ -114,9 +119,9 @@ public class PluginHttpServer extends NanoHTTPD {
 
         // ── [SECURITY FIX v5.5.5] ────────────────────────────────────────────
         // TRƯỚC ĐÂY: endpoint /api/sepay-ipn KHÔNG có bất kỳ xác thực nào (bị loại
-        // trừ khỏi check X-API-Key chung mà KHÔNG có cơ chế thay thế nào khác) — bất
-        // kỳ ai gửi POST content+transferAmount khớp 1 đơn pending đều khiến đơn đó
-        // được đánh dấu ĐÃ THANH TOÁN mà không cần chuyển tiền thật.
+        // trừ khỏi check X-API-Key chung ở dòng ~72 mà KHÔNG có cơ chế thay thế nào
+        // khác) — bất kỳ ai gửi POST content+transferAmount khớp 1 đơn pending đều
+        // khiến đơn đó được đánh dấu ĐÃ THANH TOÁN mà không cần chuyển tiền thật.
         // Fix: dùng lại đúng config "sepay.secret-key" đã có sẵn trong config-template.yml
         // (trước đây khai báo nhưng chưa từng được đọc/dùng ở đâu), theo header
         // Authorization: ApiKey <key> / Bearer <key> hoặc X-API-Key — khớp đúng quy ước
@@ -194,11 +199,11 @@ public class PluginHttpServer extends NanoHTTPD {
             if (data.has("reward_amount"))
                 amount = (int) Double.parseDouble(data.get("reward_amount").getAsString());
         } catch (Exception e) {
-            // v5.5.5 Part 54 [BUG NHỎ - audit, cung pattern da sua ben fabric/plugin]: TRUOC DAY
-            // im lang. amount chi dung de log/hien thi (lenh thuong that nam trong rawCmd).
-            PayBotMod.LOGGER.warn("[RewardPush] reward_amount khong parse duoc (raw=\"" +
-                    (data.has("reward_amount") ? data.get("reward_amount").getAsString() : "null") +
-                    "\") - dung tam 0 (chi anh huong hien thi, khong anh huong lenh thuong that).");
+            // v5.5.5 Part 53 [BUG NHỎ — audit]: TRƯỚC ĐÂY im lặng. amount ở đây chỉ dùng để
+            // log/hiển thị (lệnh thưởng thật nằm trong rawCmd, không phụ thuộc amount) nên KHÔNG
+            // gây mất thưởng — nhưng log "amount=0" sai lệch có thể gây hiểu nhầm khi tra cứu.
+            PayBotMod.LOGGER.warn("[RewardPush] reward_amount không parse được (raw=\"{}\") — dùng tạm 0 (chỉ ảnh hưởng hiển thị, không ảnh hưởng lệnh thưởng thật).",
+                    data.has("reward_amount") ? data.get("reward_amount").getAsString() : "null");
         }
 
         if (playerName.isEmpty() || rawCmd.isEmpty()) return err("Missing fields");
@@ -263,7 +268,8 @@ public class PluginHttpServer extends NanoHTTPD {
 
     private int applyRewards(JsonObject rewards, String section) {
         int count = 0;
-        for (String key : rewards.keySet()) {
+        for (java.util.Map.Entry<String, com.google.gson.JsonElement> entrySet : rewards.entrySet()) {
+            String key = entrySet.getKey();
             try {
                 Integer.parseInt(key);
                 JsonObject entry = rewards.getAsJsonObject(key);

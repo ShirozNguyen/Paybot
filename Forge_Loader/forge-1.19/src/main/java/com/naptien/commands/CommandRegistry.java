@@ -1,3 +1,5 @@
+// v5.5.5 Part 73: Fix sendSuccess(component, false) in 1.19 CommandRegistry
+// v5.5.5 Part 72: Fix CommandSourceStack sendSuccess API for 1.19
 package com.naptien.commands;
 
 import com.mojang.brigadier.CommandDispatcher;
@@ -67,7 +69,7 @@ public class CommandRegistry {
     }
 
     private static void send(CommandSourceStack src, String msg) {
-        src.sendSystemMessage(Component.literal(msg));
+        src.sendSuccess(Component.literal(msg), false);
     }
 
     /**
@@ -263,7 +265,7 @@ public class CommandRegistry {
                 // xem comment trong config-template.yml, default đúng phải là 25580).
                 int port = mod.getConfig().getInt("plugin-port", 25580);
                 send(ctx.getSource(), "§8§m────────────────────────────────────");
-                send(ctx.getSource(), "§6§l  PayBot Forge §r§7— Setup Status §7(v" + PayBotMod.getModVersion() + ")");
+                send(ctx.getSource(), "§6§l  PayBot Fabric §r§7— Setup Status §7(v" + PayBotMod.getModVersion() + ")");
                 send(ctx.getSource(), "§8§m────────────────────────────────────");
                 send(ctx.getSource(), "§7Chế độ  : " + (standalone ? "§a[Standalone]" : "§b[Bot-connected] §7— các cấu hình sau do bot quản lý"));
                 if (!standalone) {
@@ -294,15 +296,22 @@ public class CommandRegistry {
     private static void registerConnect(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("connect")
             .requires(src -> isAdmin(src))
-            // [DEAD CODE — Bot-connected mode đã tắt] Chặn ngay từ literal gốc — xem chi tiết
-            // trong bản Fabric (cùng bug/cùng fix). Giữ nguyên toàn bộ code phía dưới.
+            // [DEAD CODE — Bot-connected mode đã tắt] Chặn ngay từ literal gốc — không còn
+            // cần tới cả 2 nhánh (không tham số / discord <guild_id>) bên dưới. Giữ nguyên
+            // toàn bộ code phía dưới để khôi phục dễ dàng nếu cần dùng lại sau này.
             .executes(ctx -> { PayBotMod.sendBotDisabledNotice(ctx.getSource()); return 1; })
+            // v5.0.0 (theo yêu cầu): /connect KHÔNG kèm gì cả → gợi ý add bot. Hiện URL
+            // dạng text thường (KHÔNG dùng ClickEvent) — client Minecraft (vanilla/Fabric)
+            // tự nhận diện URL trong chat và tự làm thành link bấm được sẵn, không cần
+            // styling thủ công (tránh rủi ro API Text/ClickEvent đổi giữa các bản nhỏ).
             .then(Commands.literal("discord")
                 .then(Commands.argument("guild_id", StringArgumentType.greedyString())
                     .executes(ctx -> {
                         PayBotMod.sendBotDisabledNotice(ctx.getSource());
                         return 1;
-                        /* [DEAD CODE — Bot-connected mode đã tắt]
+                        /* [DEAD CODE — Bot-connected mode đã tắt] Toàn bộ logic connect gốc
+                         * được giữ nguyên dưới dạng bất tử (unreachable) bằng early-return
+                         * phía trên — xem PayBotMod.isStandaloneMode() để khôi phục.
                         String raw = StringArgumentType.getString(ctx, "guild_id").trim();
                         String[] parts = raw.split("\\s+");
                         String guildId = parts[0];
@@ -344,6 +353,8 @@ public class CommandRegistry {
             .executes(ctx -> { PayBotMod.sendBotDisabledNotice(ctx.getSource()); return 1; })
             .then(Commands.literal("--force")
                 .executes(ctx -> { PayBotMod.sendBotDisabledNotice(ctx.getSource()); return 1; })));
+        // [DEAD CODE — Bot-connected mode đã tắt] disconnectLogic() bên dưới GIỮ NGUYÊN,
+        // không còn route nào gọi tới nữa (2 executes() trên đã chặn từ literal gốc).
     }
     private static int disconnectLogic(CommandSourceStack src, boolean force) {
         PayBotMod mod = PayBotMod.getInstance();
@@ -353,8 +364,8 @@ public class CommandRegistry {
         send(src, "§7[PayBot] Đang gửi yêu cầu ngắt kết nối...");
         mod.runAsync(() -> {
             boolean ok = mod.getBotHttpClient().requestDisconnect();
-            if (ok) src.sendSystemMessage(Component.literal("§a[PayBot] §fYêu cầu gửi! Dùng §e/confirm §fđể xác nhận."));
-            else    src.sendSystemMessage(Component.literal("§c[PayBot] §fGửi thất bại! Dùng §e/disconnect --force§f."));
+            if (ok) src.sendSuccess(Component.literal("§a[PayBot] §fYêu cầu gửi! Dùng §e/confirm §fđể xác nhận."), false);
+            else    src.sendSuccess(Component.literal("§c[PayBot] §fGửi thất bại! Dùng §e/disconnect --force§f."), false);
         });
         return 1;
     }
@@ -364,7 +375,9 @@ public class CommandRegistry {
         d.register(Commands.literal("confirm")
             .requires(src -> isAdmin(src))
             .executes(ctx -> { PayBotMod.sendBotDisabledNotice(ctx.getSource()); return 1; }));
-        /* [DEAD CODE — Bot-connected mode đã tắt]
+        // [DEAD CODE — Bot-connected mode đã tắt] Logic confirm gốc GIỮ NGUYÊN bên dưới dạng
+        // comment, không còn route nào gọi tới — xem PayBotMod.isStandaloneMode() để khôi phục.
+        /*
         d.register(Commands.literal("confirm")
             .requires(src -> isAdmin(src))
             .executes(ctx -> {
@@ -509,7 +522,7 @@ public class CommandRegistry {
             .executes(ctx -> {
                 PayBotMod mod = PayBotMod.getInstance();
                 send(ctx.getSource(), "§8§m────────────────────────────────");
-                send(ctx.getSource(), "§6§l PayBot Forge v" + PayBotMod.getModVersion() + " — Info");
+                send(ctx.getSource(), "§6§l PayBot Fabric v5.0.0 — Info");
                 send(ctx.getSource(), "§8§m────────────────────────────────");
                 send(ctx.getSource(), "§7Server ID : §e" + mod.getConfig().getString("server-id","(chưa có)"));
                 send(ctx.getSource(), "§7Guild ID  : §e" + mod.getConfig().getString("guild-id","(chưa kết nối)"));
@@ -561,7 +574,9 @@ public class CommandRegistry {
                 ServerPlayer p = ctx.getSource().getPlayer();
                 String code = StringArgumentType.getString(ctx,"code").trim();
                 PayBotMod mod = PayBotMod.getInstance();
-                // [DEAD CODE — Bot-connected mode đã tắt] Chặn trước khi gọi verifyWithBot.
+                // [DEAD CODE — Bot-connected mode đã tắt] Chặn NGAY TỪ ĐÂY (trước khi gọi
+                // verifyWithBot async) để hiển thị đúng thông báo đầy đủ thay vì rơi vào case
+                // NO_BOT_URL (dễ gây hiểu lầm "chưa cấu hình" — thực ra là tính năng đã tắt).
                 if (mod.isStandaloneMode()) {
                     PayBotMod.sendBotDisabledNotice(ctx.getSource());
                     return 1;

@@ -6,6 +6,8 @@ import com.naptien.PayBotMod;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 
 import java.io.*;
 import java.net.*;
@@ -61,9 +63,11 @@ public class OwnerSessionManager {
     }
 
     public VerifyResult verifyWithBot(ServerPlayer player, String code) {
-        // [DEAD CODE — Bot-connected mode đã tắt] Chặn tường minh ngay tại đây — xem chi tiết
-        // trong bản Fabric (cùng bug/cùng fix). Không chặn isOwner()/revokeSession() ở
-        // CommandRegistry — thao tác cục bộ, vô hại kể cả khi tính năng này tắt.
+        // [DEAD CODE — Bot-connected mode đã tắt] Đăng nhập owner qua mã Discord phụ thuộc
+        // HOÀN TOÀN vào bot — chặn tường minh ngay tại đây (không chỉ dựa vào "bot-url" rỗng
+        // hay không, vì server upgrade có thể còn sót giá trị cũ trong config). Không chặn
+        // isOwner()/revokeSession()/remainingMinutes() ở CommandRegistry — đó là thao tác cục
+        // bộ thuần tuý, vô hại kể cả khi tính năng này tắt. Giữ nguyên toàn bộ code bên dưới.
         if (mod.isStandaloneMode()) return VerifyResult.NO_BOT_URL;
         String botUrl = mod.getConfig().getString("bot-url", "").trim();
         if (botUrl.isEmpty()) return VerifyResult.NO_BOT_URL;
@@ -179,7 +183,7 @@ public class OwnerSessionManager {
                 ServerPlayer p = server.getPlayerList().getPlayer(uuid); // null nếu offline — vẫn OK
                 revokeOp(uuid, p);
                 if (p != null) {
-                    p.sendSystemMessage(Component.literal("§e[PayBot] §fOwner session đã hết hạn."));
+                    p.sendMessage(new TextComponent("§e[PayBot] §fOwner session đã hết hạn."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 }
                 // v5.0.0 (theo yêu cầu): KHÔNG log console gì về việc hết hạn/deop này.
             }

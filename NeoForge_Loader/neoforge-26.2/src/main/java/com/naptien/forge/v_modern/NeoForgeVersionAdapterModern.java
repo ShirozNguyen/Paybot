@@ -243,13 +243,10 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
         }
     }
 
-    private void trySetHoverNameFallback(ItemStack stack, Component nameComp) {
+        private void trySetHoverNameFallback(ItemStack stack, Component nameComp) {
         try {
             stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, nameComp);
         } catch (Throwable t) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.trySetHoverNameFallback", t);
-        }
-    } catch (Throwable t) {
             PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.trySetHoverNameFallback", t);
         }
     }
@@ -259,9 +256,6 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
         try {
             stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, nameComp);
         } catch (Throwable t) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setNameLegacyNbt", t);
-        }
-    } catch (Throwable t) {
             PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setNameLegacyNbt", t);
         }
     }

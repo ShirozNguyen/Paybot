@@ -1,3 +1,4 @@
+// v5.5.5 Part 72: Replace ECHO_SHARD for fabric-1.18.2
 package com.naptien.gui;
 
 import com.naptien.compat.GuiBackend;
@@ -59,7 +60,7 @@ public class GuiUtil {
             case 50_000  -> Items.DIAMOND;
             case 100_000 -> Items.PRISMARINE_SHARD;
             case 200_000 -> Items.AMETHYST_SHARD;
-            case 300_000 -> Items.ECHO_SHARD;
+            case 300_000 -> Items.EMERALD;
             case 500_000 -> Items.NETHERITE_SCRAP;
             default      -> Items.NETHERITE_INGOT;
         };
