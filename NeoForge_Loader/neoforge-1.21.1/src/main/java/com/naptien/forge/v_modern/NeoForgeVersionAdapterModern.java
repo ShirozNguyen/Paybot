@@ -1,3 +1,4 @@
+// v5.5.5 Part 90: Dung reflection getTag va ResourceLocation tranh compile error tren MC 1.20.5 - 1.21.1
 // v5.5.5 Part 89: FIX cu phap NeoForgeVersionAdapterModern, xoa bo block code mo coi sau setLoreLegacyNbt
 package com.naptien.forge.v_modern;
 
@@ -463,7 +464,8 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
 
         if (!dataComponentsEra) {
             try {
-                CompoundTag tag = stack.getTag();
+                java.lang.reflect.Method getTagMethod = stack.getClass().getMethod("getTag");
+                CompoundTag tag = (CompoundTag) getTagMethod.invoke(stack);
                 if (tag != null && tag.contains("paybot_invoice_id")) return tag.getString("paybot_invoice_id");
             } catch (Throwable t) {
                 PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.getInvoiceId (legacy NBT)", t);
@@ -568,7 +570,21 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
 
     private ResourceLocation createResourceLocation(String namespace, String path) {
         try {
-            return new ResourceLocation(namespace, path);
+            Method m = ResourceLocation.class.getMethod("fromNamespaceAndPath", String.class, String.class);
+            return (ResourceLocation) m.invoke(null, namespace, path);
+        } catch (Throwable ignored) {}
+        try {
+            Method m = ResourceLocation.class.getMethod("tryBuild", String.class, String.class);
+            return (ResourceLocation) m.invoke(null, namespace, path);
+        } catch (Throwable ignored) {}
+        try {
+            for (Constructor<?> ctor : ResourceLocation.class.getDeclaredConstructors()) {
+                Class<?>[] p = ctor.getParameterTypes();
+                if (p.length == 2 && p[0] == String.class && p[1] == String.class) {
+                    ctor.setAccessible(true);
+                    return (ResourceLocation) ctor.newInstance(namespace, path);
+                }
+            }
         } catch (Throwable t1) {
             PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.createResourceLocation: constructor trực tiếp lỗi", t1);
         }
