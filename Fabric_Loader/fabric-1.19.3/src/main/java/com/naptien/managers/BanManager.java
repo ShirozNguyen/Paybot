@@ -1,4 +1,7 @@
+// v5.5.5 Part 81: Import PayBotMod in BanManager for fabric-1.19.3
 package com.naptien.managers;
+
+import com.naptien.PayBotMod;
 
 import java.io.*;
 import java.net.*;

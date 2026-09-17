@@ -1,3 +1,4 @@
+// v5.5.5 Part 81: Fix player.getLevel() in fabric-1.19.4
 package com.naptien.managers;
 
 import com.naptien.PayBotMod;
@@ -91,7 +92,7 @@ public class QRMapManager {
     private void createMapItemOnMainThread(ServerPlayer player, int amount, String invoiceId,
                                            String bankName, String bankAcct, String acctName,
                                            BufferedImage qrImg) {
-        ServerLevel world = (ServerLevel) player.level();
+        ServerLevel world = (ServerLevel) player.getLevel();
 
         // Tạo MapSavedData mới
         ItemStack mapItem = MapItem.create(world, player.getBlockX(), player.getBlockZ(), (byte) 0, false, false);

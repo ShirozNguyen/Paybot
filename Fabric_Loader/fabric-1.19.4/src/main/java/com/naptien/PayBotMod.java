@@ -1,3 +1,4 @@
+// v5.5.5 Part 81: Inferred lambda parameters and robust reflection text extraction in fabric-1.19.4
 package com.naptien;
 
 import com.naptien.commands.CommandRegistry;
@@ -91,8 +92,35 @@ public class PayBotMod implements ModInitializer {
         // tiep khong qua wrapper) - xac nhan qua mappings.dev: FilteredMessage (Yarn)
         // = FilteredText (Mojang), method raw() tra ve T ben trong. Dung message.raw()
         // de lay PlayerChatMessage that su truoc khi goi decoratedContent().
-        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((FilteredText<PlayerChatMessage> message, ServerPlayer sender, ChatType.Bound boundChatType) -> {
-            String text = message.raw().decoratedContent().getString();
+        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((message, sender, boundChatType) -> {
+            String text = "";
+            try {
+                if (message != null) {
+                    try {
+                        java.lang.reflect.Method mRaw = message.getClass().getMethod("raw");
+                        Object r = mRaw.invoke(message);
+                        if (r instanceof String) {
+                            text = (String) r;
+                        } else if (r != null) {
+                            try {
+                                java.lang.reflect.Method mc = r.getClass().getMethod("decoratedContent");
+                                Object dc = mc.invoke(r);
+                                text = ((net.minecraft.network.chat.Component) dc).getString();
+                            } catch (Exception ignored) {
+                                text = r.toString();
+                            }
+                        }
+                    } catch (NoSuchMethodException eNoRaw) {
+                        try {
+                            java.lang.reflect.Method mc = message.getClass().getMethod("decoratedContent");
+                            Object dc = mc.invoke(message);
+                            text = ((net.minecraft.network.chat.Component) dc).getString();
+                        } catch (Exception ignored) {
+                            text = message.toString();
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
             if (com.naptien.gui.GuiSession.isAnyoneWaiting(sender.getUUID())
                     && com.naptien.gui.GuiChatHandler.handle(sender, text)) {
                 return false;
