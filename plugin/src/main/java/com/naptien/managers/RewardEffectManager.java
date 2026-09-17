@@ -1,3 +1,4 @@
+// v5.5.5 Part 93: Folia and Folia-forks (Canvas) full audit and thread-safety compliance
 package com.naptien.managers;
 
 import com.naptien.NapTienPlugin;
@@ -30,13 +31,14 @@ public class RewardEffectManager {
 
     /**
      * Kích hoạt tất cả hiệu ứng được cấu hình cho player vừa nạp thành công.
-     * Phải gọi từ main thread.
+     * Phải gọi từ main thread hoặc entity scheduler của player.
      *
      * @param plugin  plugin instance
      * @param player  người chơi nhận thưởng
      * @param amount  số tiền nạp (VND), dùng để chọn hiệu ứng phù hợp
      */
     public static void trigger(NapTienPlugin plugin, Player player, int amount) {
+        if (player == null || !player.isOnline()) return;
         boolean firework     = plugin.getConfig().getBoolean("Reward_Firework",     true);
         boolean sound        = plugin.getConfig().getBoolean("Reward_Sound",        true);
         boolean notification = plugin.getConfig().getBoolean("Reward_Notification", true);
@@ -72,6 +74,7 @@ public class RewardEffectManager {
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private static void spawnFirework(NapTienPlugin plugin, Player player) {
+        if (player == null || !player.isOnline()) return;
         try {
             Firework fw = player.getWorld().spawn(player.getLocation(), Firework.class);
             FireworkMeta meta = fw.getFireworkMeta();

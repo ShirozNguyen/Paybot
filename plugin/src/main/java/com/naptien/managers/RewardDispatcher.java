@@ -1,3 +1,4 @@
+// v5.5.5 Part 93: Folia and Folia-forks (Canvas) full audit and thread-safety compliance
 package com.naptien.managers;
 
 import com.naptien.NapTienPlugin;
@@ -206,62 +207,66 @@ public final class RewardDispatcher {
     }
 
     /**
-     * [Part 45] Đụng rất nhiều tới target (dispatchCommand hướng tới player, sendMessage,
-     * QRMapManager.removeQRMap, RewardEffectManager.trigger — toàn bộ entity-specific).
-     * TỰ dispatch qua entity-scheduler của target ở đây — KHÔNG giả định caller đã ở đúng
-     * thread (audit phát hiện nhiều nơi gọi qua SchedulerUtils.runSync/Global — SAI ngữ
-     * cảnh vì đó là Global Region Scheduler, không sở hữu region của target).
+     * [Part 93] Chuẩn hóa tương thích 100% Folia / Canvas / Paper / Purpur:
+     * - Phase 1 (Console Command): Lệnh console (Bukkit.dispatchCommand(ConsoleSender, ...))
+     *   bắt buộc phải chạy trên GlobalRegionScheduler (Folia) hoặc Server Main Thread (Paper/Bukkit)
+     *   thông qua SchedulerUtils.runSync().
+     * - Phase 2 (Player Actions & Effects): Gửi tin nhắn (sendMessage), xóa QR map trong balo,
+     *   hiệu ứng pháo hoa/sound (RewardEffectManager.trigger), ghi nhận thống kê (recordTopup),
+     *   và bắn PayBotTopupEvent bắt buộc phải chạy trên EntityScheduler của target
+     *   thông qua SchedulerUtils.runForPlayer().
      */
     public static void deliverNow(NapTienPlugin plugin, Player target, List<String> rawCmds, String rewardAmt,
                                    String denomVnd, String type, String invoiceId, boolean isLate) {
-        SchedulerUtils.runForPlayer(plugin, target, () ->
-            deliverNowSync(plugin, target, rawCmds, rewardAmt, denomVnd, type, invoiceId, isLate));
+        if (target == null) return;
+
+        // Phase 1: Thực thi lệnh thưởng console trên Global Region / Main thread
+        SchedulerUtils.runSync(plugin, () -> {
+            boolean anyFail = false;
+            for (String rawCmd : rawCmds) {
+                if (rawCmd == null || rawCmd.isBlank()) continue;
+                String finalCmd = buildFinalCmd(rawCmd, target.getName(), rewardAmt);
+                boolean ok = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), finalCmd);
+                NotificationManager.log(plugin, "reward-dispatch",
+                        "[PayBot] Reward: /" + finalCmd + " -> " + ok + " (player=" + target.getName() + ")");
+                if (!ok) {
+                    anyFail = true;
+                    NotificationManager.warn(plugin, "reward-invalid",
+                            "[PayBot] Reward command THẤT BẠI cho " + target.getName() + ": /" + finalCmd);
+                }
+            }
+            if (anyFail) {
+                NotificationManager.notifyAdmins(plugin, "reward-invalid",
+                        "§c[PayBot] §fCó §e1+ §flệnh reward lỗi cho §e" + target.getName()
+                                + "§f — kiểm tra console!");
+            }
+
+            // Phase 2: Dispatch các thao tác đụng tới Player / Inventory sang EntityScheduler của player
+            SchedulerUtils.runForPlayer(plugin, target, () ->
+                deliverPlayerEffectsSync(plugin, target, rewardAmt, denomVnd, type, invoiceId, isLate));
+        });
     }
 
-    private static void deliverNowSync(NapTienPlugin plugin, Player target, List<String> rawCmds, String rewardAmt,
-                                   String denomVnd, String type, String invoiceId, boolean isLate) {
+    private static void deliverPlayerEffectsSync(NapTienPlugin plugin, Player target, String rewardAmt,
+                                                 String denomVnd, String type, String invoiceId, boolean isLate) {
+        if (!target.isOnline()) return;
         boolean isBank = "bank".equalsIgnoreCase(type);
-        boolean anyFail = false;
 
-        for (String rawCmd : rawCmds) {
-            if (rawCmd == null || rawCmd.isBlank()) continue;
-            String finalCmd = buildFinalCmd(rawCmd, target.getName(), rewardAmt);
-            boolean ok = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), finalCmd);
-            NotificationManager.log(plugin, "reward-dispatch",
-                    "[PayBot] Reward: /" + finalCmd + " -> " + ok + " (player=" + target.getName() + ")");
-            if (!ok) {
-                anyFail = true;
-                NotificationManager.warn(plugin, "reward-invalid",
-                        "[PayBot] Reward command THẤT BẠI cho " + target.getName() + ": /" + finalCmd);
+        String lateSuffix = isLate ? " (Xử lý trễ)" : "";
+        if (isBank) {
+            target.sendMessage(NapTienPlugin.f("§a§l[PayBot] §r§aThanh toán thành công!" + lateSuffix));
+            if (denomVnd != null && !denomVnd.isEmpty()) {
+                try {
+                    target.sendMessage("§7Số tiền: §f" + formatVnd(Integer.parseInt(denomVnd)) + " VND");
+                } catch (NumberFormatException ignored) {}
             }
-        }
-        if (anyFail) {
-            NotificationManager.notifyAdmins(plugin, "reward-invalid",
-                    "§c[PayBot] §fCó §e1+ §flệnh reward lỗi cho §e" + target.getName()
-                            + "§f — kiểm tra console!");
-        }
-
-        if (target.isOnline()) {
-            String lateSuffix = isLate ? " (Xử lý trễ)" : "";
-            if (isBank) {
-                target.sendMessage(NapTienPlugin.f("§a§l[PayBot] §r§aThanh toán thành công!" + lateSuffix));
-                if (denomVnd != null && !denomVnd.isEmpty()) {
-                    try {
-                        target.sendMessage("§7Số tiền: §f" + formatVnd(Integer.parseInt(denomVnd)) + " VND");
-                    } catch (NumberFormatException ignored) {}
-                }
-                if (invoiceId != null && !invoiceId.isEmpty()) {
-                    plugin.getQRMapManager().removeQRMap(target, invoiceId);
-                }
-            } else {
-                target.sendMessage(NapTienPlugin.f("§a[PayBot] §fThẻ của bạn đã được xử lý thành công!" + lateSuffix));
+            if (invoiceId != null && !invoiceId.isEmpty()) {
+                plugin.getQRMapManager().removeQRMap(target, invoiceId);
             }
+        } else {
+            target.sendMessage(NapTienPlugin.f("§a[PayBot] §fThẻ của bạn đã được xử lý thành công!" + lateSuffix));
         }
 
-        // Bắn pháo hoa / sound / action-bar — CHỈ tại đây (1 lần / đơn, không lặp theo lệnh),
-        // vì tới đây player CHẮC CHẮN đang online (online ngay khi duyệt, hoặc vừa join lại
-        // để nhận reward trễ). Tier (pháo thường / thành tựu epic) tính theo MỆNH GIÁ NẠP
-        // (denomVnd), không phải số lượng reward (rewardAmt) — 2 giá trị này khác nhau.
         int tierAmount = parseAmountForTier(denomVnd, rewardAmt);
         RewardEffectManager.trigger(plugin, target, tierAmount);
 
@@ -274,12 +279,7 @@ public final class RewardDispatcher {
                         target.getName(), parsedVnd, type != null ? type.toUpperCase() : "BANK", invoiceId
                 ));
             } catch (NumberFormatException e) {
-                // v5.5.5 Part 52 [BUG NHỎ — audit]: TRƯỚC ĐÂY im lặng hoàn toàn. Reward THẬT SỰ
-                // đã được phát ở trên (không mất tiền/reward) — nhưng ghi nhận thống kê tổng nạp
-                // (TopupStatsManager, dùng cho PlaceholderAPI) VÀ event PayBotTopupEvent (addon
-                // khác có thể lắng nghe) bị bỏ qua im lặng, tạo khoảng trống thống kê không giải
-                // thích được nếu admin sau này thắc mắc sao tổng nạp không khớp số đơn đã duyệt.
-                plugin.getLogger().warning("[PayBot] deliverNowSync: denomVnd='" + denomVnd
+                plugin.getLogger().warning("[PayBot] deliverPlayerEffectsSync: denomVnd='" + denomVnd
                         + "' không parse được — BỎ QUA ghi thống kê topup + PayBotTopupEvent cho "
                         + target.getName() + " (reward vẫn đã phát bình thường, chỉ thống kê bị thiếu).");
             }

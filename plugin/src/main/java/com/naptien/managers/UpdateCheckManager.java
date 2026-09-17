@@ -1,134 +1,82 @@
+// v5.5.5 Part 94: Pure Java self-JAR loader detection and loader-specific update checking
 package com.naptien.managers;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.naptien.NapTienPlugin;
-import org.bukkit.Bukkit;
-
+import com.naptien.utils.JarLoaderDetector;
+import com.naptien.utils.JarLoaderDetector.JarLoaderType;
+import com.naptien.utils.LoaderSpecificVersionComparator;
+import com.naptien.utils.LoaderSpecificVersionComparator.CheckResult;
+import com.naptien.utils.LoaderUpdateNotifier;
+import com.naptien.utils.ModrinthVersionFetcher;
 import com.naptien.utils.SchedulerUtils;
 
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-
 /**
- * UpdateCheckManager — Tự động kiểm tra phiên bản mới nhất từ Modrinth API.
+ * UpdateCheckManager — Tự động kiểm tra phiên bản mới nhất từ Modrinth API
+ * theo đúng Loader của chính file JAR đang chạy trên server.
  * <p>
- * Chạy bất đồng bộ (async) một lần khi plugin khởi động.
- * Nếu phát hiện phiên bản mới hơn, in cảnh báo rõ ràng ra console.
- * </p>
- *
  * Changelog:
  * - v4.0.1: Thêm mới UpdateCheckManager (tự động kiểm tra phiên bản từ Modrinth)
- * - v5.0.0: Theo yêu cầu — chỉ cần phát hiện phiên bản hiện tại KHÁC bản trên Modrinth
- *   là báo (không cần phân biệt mới hơn/cũ hơn). Method {@link #compareVersions} vẫn
- *   giữ lại trong file (không xoá) phòng sau này cần dùng lại, nhưng hiện KHÔNG được
- *   gọi ở logic chính nữa.
+ * - v5.0.0: Cảnh báo khi phiên bản khác Modrinth
+ * - v5.5.5 Part 94: Tự nhận diện Loader của CHÍNH FILE JAR đang chạy bằng Java thuần,
+ *   chỉ đối chiếu phiên bản mới nhất dành riêng cho Loader đó trên Modrinth.
+ * </p>
  */
 public class UpdateCheckManager {
 
-    // Modrinth API trả về mảng version, phần tử [0] là mới nhất
-    // include_changelog=false giảm kích thước response, Modrinth khuyến nghị dùng khi không cần changelog
-    private static final String MODRINTH_VERSIONS_URL =
-            "https://api.modrinth.com/v2/project/paybot/version?include_changelog=false";
-
-    private static final String MODRINTH_PAGE_URL =
-            "https://modrinth.com/plugin/paybot";
-
     private final NapTienPlugin plugin;
+    private static volatile CheckResult lastCheckResult = null;
 
     public UpdateCheckManager(NapTienPlugin plugin) {
         this.plugin = plugin;
     }
 
-    /**
-     * So sánh 2 chuỗi version dạng "X.Y.Z..." theo TỪNG PHẦN SỐ (không so chuỗi thô —
-     * so chuỗi thô sẽ sai, vd "10.0.0" so chuỗi nhỏ hơn "9.0.0" vì ký tự '1' < '9').
-     * Phần không phải số ở cuối mỗi đoạn (vd "5.0.0-beta") bị cắt bỏ, chỉ lấy phần số đầu.
-     *
-     * @return số dương nếu a &gt; b, số âm nếu a &lt; b, 0 nếu bằng nhau.
-     */
-    static int compareVersions(String a, String b) {
-        String[] pa = a.split("\\.");
-        String[] pb = b.split("\\.");
-        int len = Math.max(pa.length, pb.length);
-        for (int i = 0; i < len; i++) {
-            int va = i < pa.length ? leadingInt(pa[i]) : 0;
-            int vb = i < pb.length ? leadingInt(pb[i]) : 0;
-            if (va != vb) return Integer.compare(va, vb);
-        }
-        return 0;
+    public static boolean isUpdateAvailable() {
+        return lastCheckResult != null && lastCheckResult.isUpdateAvailable();
     }
 
-    private static int leadingInt(String s) {
-        StringBuilder digits = new StringBuilder();
-        for (char c : s.toCharArray()) {
-            if (Character.isDigit(c)) digits.append(c); else break;
-        }
-        return digits.length() == 0 ? 0 : Integer.parseInt(digits.toString());
+    public static String getLatestVersion() {
+        return lastCheckResult != null ? lastCheckResult.getLatestVersion() : null;
+    }
+
+    public static CheckResult getLastCheckResult() {
+        return lastCheckResult;
     }
 
     /**
-     * Gọi method này trong {@code onEnable()} để kiểm tra phiên bản bất đồng bộ.
-     * Không block main thread.
+     * Gọi trong onEnable() để kiểm tra phiên bản bất đồng bộ, không block main thread.
      */
     public void checkForUpdates() {
         SchedulerUtils.runAsync(plugin, () -> {
             try {
-                HttpURLConnection conn =
-                        (HttpURLConnection) new URL(MODRINTH_VERSIONS_URL).openConnection();
-                conn.setRequestMethod("GET");
-                // Modrinth yêu cầu User-Agent hợp lệ
-                conn.setRequestProperty("User-Agent",
-                        "PayBot-Plugin/" + plugin.getDescription().getVersion()
-                        + " (update-checker)");
-                conn.setConnectTimeout(6000);
-                conn.setReadTimeout(6000);
-                conn.setDoInput(true);
+                // 1. Tự nhận diện loại Loader của CHÍNH FILE JAR này
+                JarLoaderType selfLoader = JarLoaderDetector.detectSelfLoader();
+                String currentVersion = plugin.getDescription().getVersion().trim();
 
-                int responseCode = conn.getResponseCode();
-                if (responseCode != 200) {
+                // 2. Tạo User-Agent chuẩn cho Loader của JAR
+                String userAgent = "PayBot-" + selfLoader.getCode() + "/" + currentVersion + " (update-checker)";
+
+                // 3. Lấy dữ liệu phiên bản từ Modrinth API
+                String jsonRaw = ModrinthVersionFetcher.fetchVersionsJson(selfLoader.getModrinthSlug(), userAgent);
+                if (jsonRaw == null || jsonRaw.trim().isEmpty()) {
                     NotificationManager.warn(plugin, "update-available",
-                            "[UpdateCheck] Không thể kiểm tra cập nhật — Modrinth trả về HTTP "
-                            + responseCode + ".");
+                            "[UpdateCheck] Không thể kết nối tới Modrinth API để kiểm tra cập nhật cho " + selfLoader.getDisplayName() + ".");
                     return;
                 }
 
-                JsonArray versions = JsonParser
-                        .parseReader(new InputStreamReader(conn.getInputStream()))
-                        .getAsJsonArray();
+                // 4. Lọc và so sánh phiên bản dành riêng cho Loader của JAR này
+                CheckResult result = LoaderSpecificVersionComparator.evaluateUpdate(jsonRaw, selfLoader, currentVersion);
+                lastCheckResult = result;
 
-                if (versions == null || versions.isEmpty()) {
-                    NotificationManager.warn(plugin, "update-available",
-                            "[UpdateCheck] Modrinth không trả về dữ liệu phiên bản.");
-                    return;
-                }
+                // 5. Xuất thông báo ra console server
+                LoaderUpdateNotifier.printConsoleLog(
+                        result,
+                        msg -> NotificationManager.log(plugin, "update-available", msg),
+                        msg -> NotificationManager.warn(plugin, "update-available", msg)
+                );
 
-                // Phần tử đầu tiên = phiên bản mới nhất (Modrinth sắp xếp mới → cũ)
-                JsonObject latest        = versions.get(0).getAsJsonObject();
-                String     latestVersion = latest.get("version_number").getAsString().trim();
-                String     currentVersion = plugin.getDescription().getVersion().trim();
-
-                // Lấy bản mới nhất từ Modrinth rồi so sánh với version hiện tại đang chạy
-                if (compareVersions(latestVersion, currentVersion) > 0) {
-                    NotificationManager.warn(plugin, "update-available", "================================================");
-                    NotificationManager.warn(plugin, "update-available", " [PayBot] ĐÃ PHÁT HIỆN PHIÊN BẢN MỚI TRÊN MODRINTH!");
-                    NotificationManager.warn(plugin, "update-available", " Phiên bản hiện tại là " + currentVersion
-                            + ", phiên bản mới nhất là " + latestVersion);
-                    NotificationManager.warn(plugin, "update-available", " Tải tại: " + MODRINTH_PAGE_URL);
-                    NotificationManager.warn(plugin, "update-available", "================================================");
-                } else {
-                    NotificationManager.log(plugin, "update-available",
-                            "[PayBot] Plugin đang dùng phiên bản mới nhất (" + currentVersion + ").");
-                }
-
-            } catch (java.net.SocketTimeoutException e) {
+            } catch (Throwable t) {
                 NotificationManager.warn(plugin, "update-available",
-                        "[UpdateCheck] Hết thời gian kết nối khi kiểm tra cập nhật.");
-            } catch (Exception e) {
-                NotificationManager.warn(plugin, "update-available",
-                        "[UpdateCheck] Lỗi khi kiểm tra cập nhật: " + e.getMessage());
+                        "[UpdateCheck] Lỗi khi kiểm tra cập nhật: " + t.getMessage());
             }
         });
     }

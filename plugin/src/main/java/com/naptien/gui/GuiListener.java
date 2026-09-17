@@ -1,3 +1,4 @@
+// v5.5.5 Part 93: Folia and Folia-forks (Canvas) full audit and thread-safety compliance
 package com.naptien.gui;
 
 import com.naptien.NapTienPlugin;

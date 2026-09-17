@@ -1,5 +1,13 @@
+// v5.5.5 Part 94: Pure Java self-JAR loader detection and loader-specific update checking
 // v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.4
 package com.naptien.managers;
+
+import com.naptien.utils.JarLoaderDetector;
+import com.naptien.utils.JarLoaderDetector.JarLoaderType;
+import com.naptien.utils.ModrinthVersionFetcher;
+import com.naptien.utils.LoaderSpecificVersionComparator;
+import com.naptien.utils.LoaderSpecificVersionComparator.CheckResult;
+import com.naptien.utils.LoaderUpdateNotifier;
 
 import com.naptien.PayBotMod;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,12 +28,9 @@ import java.net.URI;
  */
 public class UpdateCheckManager {
 
-    private static final String MODRINTH_PROJECT = "paybotmod";
-    private static final String MODRINTH_API =
-            "https://api.modrinth.com/v2/project/" + MODRINTH_PROJECT
-                    + "/version?loaders=%5B%22fabric%22%5D";
-    private static final String MODRINTH_URL =
-            "https://modrinth.com/plugin/" + MODRINTH_PROJECT;
+    
+    
+    private static volatile String downloadUrl = "https://modrinth.com/mod/paybot";
 
     // Kết quả check lưu static để dùng khi admin join sau
     private static volatile String latestVersion   = null;
@@ -69,41 +74,31 @@ public class UpdateCheckManager {
         return digits.length() == 0 ? 0 : Integer.parseInt(digits.toString());
     }
 
-    /** Gọi từ background thread khi server khởi động. */
+        /** Gọi từ background thread khi server khởi động. */
     public void checkForUpdates() {
         try {
+            // 1. Tự nhận diện loại Loader của CHÍNH FILE JAR này
+            JarLoaderType selfLoader = JarLoaderDetector.detectSelfLoader();
             String currentVersion = getCurrentVersion();
-            HttpURLConnection conn = (HttpURLConnection) URI.create(MODRINTH_API).toURL().openConnection();
-            conn.setRequestProperty("User-Agent",
-                    "PayBot-Fabric/" + currentVersion + " (" + MODRINTH_URL + ")");
-            conn.setConnectTimeout(6000);
-            conn.setReadTimeout(6000);
-            if (conn.getResponseCode() != 200) return;
+            String userAgent = "PayBot-" + selfLoader.getCode() + "/" + currentVersion + " (update-checker)";
 
-            StringBuilder sb = new StringBuilder();
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String line;
-                while ((line = br.readLine()) != null) sb.append(line);
+            // 2. Lấy danh sách phiên bản từ Modrinth API
+            String jsonRaw = ModrinthVersionFetcher.fetchVersionsJson(selfLoader.getModrinthSlug(), userAgent);
+            if (jsonRaw == null || jsonRaw.trim().isEmpty()) {
+                return;
             }
 
-            String resp = sb.toString();
-            if (!resp.contains("\"version_number\"")) return;
+            // 3. Lọc và so sánh phiên bản dành riêng cho Loader của chính file JAR này
+            CheckResult result = LoaderSpecificVersionComparator.evaluateUpdate(jsonRaw, selfLoader, currentVersion);
+            latestVersion = result.getLatestVersion();
+            updateAvailable = result.isUpdateAvailable();
+            downloadUrl = result.getDownloadUrl();
 
-            int idx = resp.indexOf("\"version_number\"") + 19;
-            String found = resp.substring(idx, resp.indexOf("\"", idx)).trim();
+            // 4. Xuất log ra console server
+            LoaderUpdateNotifier.printConsoleLog(result, PayBotMod.LOGGER::info, PayBotMod.LOGGER::warn);
 
-            latestVersion = found;
-            // Tự động lấy bản mới nhất từ Modrinth rồi so sánh với phiên bản đang chạy hiện tại
-            updateAvailable = compareVersions(latestVersion, currentVersion) > 0;
-
+            // 5. Nếu có bản cập nhật mới, gửi thông báo cho các Admin online
             if (updateAvailable) {
-                PayBotMod.LOGGER.warn("[PayBot] ================================================");
-                PayBotMod.LOGGER.warn("[PayBot]  [PayBot] ĐÃ PHÁT HIỆN PHIÊN BẢN MỚI TRÊN MODRINTH!");
-                PayBotMod.LOGGER.warn("[PayBot]  Phiên bản hiện tại là " + currentVersion + ", phiên bản mới nhất là " + latestVersion);
-                PayBotMod.LOGGER.warn("[PayBot]  Tải tại: " + MODRINTH_URL);
-                PayBotMod.LOGGER.warn("[PayBot] ================================================");
-
-                // Thông báo cho tất cả admin đang online
                 mod.runOnMainThread(() -> {
                     for (ServerPlayer p : mod.getServer().getPlayerList().getPlayers()) {
                         if (p.hasPermissions(2) || mod.getOwnerSessionManager().isOwner(p)) {
@@ -111,10 +106,8 @@ public class UpdateCheckManager {
                         }
                     }
                 });
-            } else {
-                PayBotMod.LOGGER.info("[PayBot] Đang dùng phiên bản mới nhất: v" + currentVersion);
             }
-        } catch (Exception e) {
+        } catch (Throwable ignored) {
             // Không có mạng hoặc Modrinth không phản hồi — bỏ qua, không crash
         }
     }
@@ -136,7 +129,7 @@ public class UpdateCheckManager {
                 "§a§l✦ Có phiên bản mới! §fv§a" + latestVersion
                 + " §7(đang dùng §fv" + getCurrentVersion() + "§7)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         p.sendMessage(new TextComponent(
-                "§7Tải về: §b§n" + MODRINTH_URL), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                "§7Tải về: §b§n" + downloadUrl), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         p.sendMessage(new TextComponent("§6§l[PayBot] ══════════════════════════════════"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
     }
 }

@@ -1,3 +1,4 @@
+// v5.5.5 Part 93: Folia and Folia-forks (Canvas) full audit and thread-safety compliance
 package com.naptien;
 
 import com.google.gson.JsonObject;
@@ -545,12 +546,18 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
                 if (LocalOrderManager.BANK_PENDING.equals(o.status) && o.createdAt <= cutoff) {
                     localOrderManager.updateBankStatus(o.invoiceId, LocalOrderManager.BANK_EXPIRED);
                     NotificationManager.log(this, "order-expired", "[Standalone] Bank order expired: " + o.invoiceId);
-                    Player p = Bukkit.getPlayerExact(o.playerName);
-                    if (p != null && p.isOnline()) {
-                        p.sendMessage(NapTienPlugin.f("§c[PayBot] §fQR nạp tiền §e#" + o.invoiceId
-                                + " §fđã hết hạn (30 phút). Dùng /napbank để tạo mới."));
-                        qrMapManager.removeQRMap(p, o.invoiceId);
-                    }
+                    // [Part 93] Chuyển việc tìm player và can thiệp inventory (removeQRMap) sang
+                    // Global/Entity Scheduler an toàn luồng, không thao tác inventory từ async thread!
+                    SchedulerUtils.runSync(this, () -> {
+                        Player p = Bukkit.getPlayerExact(o.playerName);
+                        if (p != null && p.isOnline()) {
+                            SchedulerUtils.runForPlayer(this, p, () -> {
+                                p.sendMessage(NapTienPlugin.f("§c[PayBot] §fQR nạp tiền §e#" + o.invoiceId
+                                        + " §fđã hết hạn (30 phút). Dùng /napbank để tạo mới."));
+                                qrMapManager.removeQRMap(p, o.invoiceId);
+                            });
+                        }
+                    });
                 }
             }
         }, 600L, 600L);
@@ -577,6 +584,8 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
         if (ownerSessionManager != null) ownerSessionManager.shutdown();
         // v5.1.0: đóng DB sạch sẽ trước khi plugin dừng
         if (databaseManager != null) databaseManager.close();
+        // v5.5.5 Part 93: Hủy toàn bộ task của plugin trên mọi scheduler (Folia/Canvas/Paper/Purpur/Spigot)
+        SchedulerUtils.cancelAllTasks(this);
         getLogger().info("[PayBot] Plugin stopped.");
     }
 
@@ -703,10 +712,9 @@ public class NapTienPlugin extends JavaPlugin implements Listener {
                         if (!player.isOnline()) return;
                         RewardDispatcher.deliverNow(this, player, rewardCmds, rewardAmt, String.valueOf(order.denom), "card", null, false);
                         String denomStr = order.telco + " " + com.naptien.gui.GuiUtil.formatDenom(order.denom);
-                        Bukkit.getOnlinePlayers().stream()
-                                .filter(p -> p.hasPermission("naptien.admin"))
-                                .forEach(p -> p.sendMessage("§a[PayBot] §fThẻ §e" + order.playerName + " §f" + denomStr
-                                        + " §athành công ✓ — §7thưởng tự giao khi join (standalone)§f."));
+                        NotificationManager.notifyAdmins(this, "card-payment-received",
+                                "§a[PayBot] §fThẻ §e" + order.playerName + " §f" + denomStr
+                                        + " §athành công ✓ — §7thưởng tự giao khi join (standalone)§f.");
                     });
                 }
             }

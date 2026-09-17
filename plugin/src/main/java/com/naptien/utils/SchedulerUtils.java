@@ -1,26 +1,53 @@
+// v5.5.5 Part 93: Folia and Folia-forks (Canvas) full audit and thread-safety compliance
 package com.naptien.utils;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tiện ích lập lịch tác vụ hỗ trợ đa nền tảng (Folia và Bukkit/Spigot/Paper truyền thống).
- * Tự động phát hiện Folia tại thời điểm chạy và điều hướng các tác vụ lập lịch tương ứng.
+ * Tiện ích lập lịch tác vụ hỗ trợ đa nền tảng (Folia, Canvas, Paper, Purpur, Spigot).
+ * Tự động phát hiện Folia/Canvas tại thời điểm chạy và điều hướng các tác vụ lập lịch tương ứng.
  */
 public class SchedulerUtils {
     private static boolean isFolia = false;
+    private static boolean isPaper = false;
+    private static boolean isPurpur = false;
 
     static {
         try {
             Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
             isFolia = true;
         } catch (ClassNotFoundException ignored) {}
+
+        try {
+            Class.forName("com.destroystokyo.paper.PaperConfig");
+            isPaper = true;
+        } catch (ClassNotFoundException e1) {
+            try {
+                Class.forName("io.papermc.paper.configuration.Configuration");
+                isPaper = true;
+            } catch (ClassNotFoundException ignored) {}
+        }
+
+        try {
+            Class.forName("org.purpurmc.purpur.PurpurConfig");
+            isPurpur = true;
+        } catch (ClassNotFoundException ignored) {}
     }
 
     public static boolean isFolia() {
         return isFolia;
+    }
+
+    public static boolean isPaper() {
+        return isPaper;
+    }
+
+    public static boolean isPurpur() {
+        return isPurpur;
     }
 
     /**
@@ -59,16 +86,12 @@ public class SchedulerUtils {
 
     /**
      * Chạy tác vụ trên Global Region Scheduler (Folia) — CHỈ dùng cho việc KHÔNG đụng tới
-     * player/entity/world/chunk cụ thể nào (vd: đọc/ghi config, log, tính toán thuần Java).
+     * player/entity/world/chunk cụ thể nào (vd: console command dispatch, đọc/ghi config, log).
      * <p>
      * ⚠️ KHÔNG dùng hàm này (hay runSyncLater/runSyncTimer) cho tác vụ đụng inventory,
      * sendMessage, teleport... của 1 player cụ thể — Global Region Scheduler KHÔNG sở hữu
      * region của bất kỳ entity nào, gọi API entity từ đây trên Folia thật sẽ ném lỗi. Dùng
      * {@link #runForPlayer}/{@link #runForPlayerLater} cho các trường hợp đó thay vào đó.
-     * <p>
-     * Hiện KHÔNG có hàm cho tác vụ gắn với 1 Location/Chunk cụ thể (không phải player) —
-     * nếu cần sau này, dùng {@code Bukkit.getRegionScheduler()} (Folia) theo đúng mẫu các
-     * hàm trên, xác minh chữ ký qua Javadoc chính thức trước khi thêm, đừng đoán.
      */
     public static void runSync(Plugin plugin, Runnable task) {
         if (isFolia) {
@@ -120,8 +143,7 @@ public class SchedulerUtils {
 
     /**
      * Giống {@link #runForPlayer} nhưng có delay — dùng entity scheduler của Folia
-     * ({@code EntityScheduler.runDelayed(Plugin, Consumer, Runnable, long)}, xác nhận
-     * chữ ký qua Javadoc chính thức Paper trước khi viết, không đoán).
+     * ({@code EntityScheduler.runDelayed(Plugin, Consumer, Runnable, long)}).
      * Cùng lưu ý vòng đời entity như {@link #runForPlayer} — chỉ dùng cho delay NGẮN,
      * nơi việc tác vụ tự huỷ khi player logout là hành vi chấp nhận được/mong muốn.
      */
@@ -130,6 +152,47 @@ public class SchedulerUtils {
             player.getScheduler().runDelayed(plugin, scheduledTask -> task.run(), null, delayTicks);
         } else {
             Bukkit.getScheduler().runTaskLater(plugin, task, delayTicks);
+        }
+    }
+
+    /**
+     * Chạy tác vụ gắn liền với 1 Location/Chunk cụ thể trong World (spawn block, particle, firework, v.v.).
+     * Trên Folia/Canvas dùng RegionScheduler; trên Paper/Purpur/Spigot dùng BukkitScheduler.
+     */
+    public static void runAtLocation(Plugin plugin, Location location, Runnable task) {
+        if (isFolia && location != null && location.getWorld() != null) {
+            Bukkit.getRegionScheduler().execute(plugin, location, task);
+        } else {
+            Bukkit.getScheduler().runTask(plugin, task);
+        }
+    }
+
+    /**
+     * Chạy tác vụ gắn liền với Location kèm độ trễ (delayTicks).
+     */
+    public static void runAtLocationLater(Plugin plugin, Location location, Runnable task, long delayTicks) {
+        if (isFolia && location != null && location.getWorld() != null) {
+            Bukkit.getRegionScheduler().runDelayed(plugin, location, scheduledTask -> task.run(), delayTicks);
+        } else {
+            Bukkit.getScheduler().runTaskLater(plugin, task, delayTicks);
+        }
+    }
+
+    /**
+     * Hủy toàn bộ tác vụ của plugin khi tắt server hoặc reload plugin (dọn sạch tài nguyên triệt để).
+     */
+    public static void cancelAllTasks(Plugin plugin) {
+        if (isFolia) {
+            try {
+                Bukkit.getAsyncScheduler().cancelTasks(plugin);
+            } catch (Exception ignored) {}
+            try {
+                Bukkit.getGlobalRegionScheduler().cancelTasks(plugin);
+            } catch (Exception ignored) {}
+        } else {
+            try {
+                Bukkit.getScheduler().cancelTasks(plugin);
+            } catch (Exception ignored) {}
         }
     }
 }
