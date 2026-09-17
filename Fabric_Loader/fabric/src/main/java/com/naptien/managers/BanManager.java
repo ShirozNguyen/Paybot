@@ -1,4 +1,8 @@
+// v5.5.5 Part 87: Use independent logger for BanManager
 package com.naptien.managers;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.naptien.PayBotMod;
 
@@ -18,6 +22,7 @@ import java.util.*;
  * v5.0.3
  */
 public class BanManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger("PayBot-BanManager");
 
     // Vị trí file ban — cố định trong home dir của OS user chạy server
     // Không log vị trí này ra console để OP không biết và xóa

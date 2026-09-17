@@ -59,4 +59,35 @@ public class ClickableTextHelper {
 
         return comp;
     }
+
+    /**
+     * Tạo Component có thể click bấm để mở URL trong trình duyệt.
+     *
+     * v5.5.5 Part 68: bổ sung method còn thiếu (đã bị gọi ở PayBotMod.java nhưng chưa từng
+     * được viết ở module MC 1.16.5 — chỉ tồn tại ở module MC ≥1.21.5 với cú pháp record mới
+     * ClickEvent.OpenUrl/HoverEvent.ShowText). MC 1.16.5 dùng cú pháp class thường, giống
+     * makeSuggestCommand/makeRunCommand ở trên — ClickEvent.Action.OPEN_URL tồn tại xuyên
+     * suốt các bản Minecraft dùng cú pháp class ClickEvent thường (trước khi đổi sang record
+     * ở bản ≥1.21.5).
+     *
+     * @param text text hiển thị trên chat
+     * @param url URL sẽ được mở khi click
+     * @param hoverTooltip text hiển thị khi di chuột vào (nullable)
+     */
+    public static Component makeOpenUrl(String text, String url, String hoverTooltip) {
+        MutableComponent comp = (MutableComponent) ComponentColorParser.parse(text);
+
+        ClickEvent clickEvent = new ClickEvent(ClickEvent.Action.OPEN_URL, url);
+        comp.withStyle(style -> style.withClickEvent(clickEvent));
+
+        if (hoverTooltip != null && !hoverTooltip.isEmpty()) {
+            HoverEvent hoverEvent = new HoverEvent(
+                    HoverEvent.Action.SHOW_TEXT,
+                    ComponentColorParser.parse(hoverTooltip)
+            );
+            comp.withStyle(style -> style.withHoverEvent(hoverEvent));
+        }
+
+        return comp;
+    }
 }

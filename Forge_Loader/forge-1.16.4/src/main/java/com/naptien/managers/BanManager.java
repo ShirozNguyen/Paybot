@@ -1,6 +1,9 @@
-// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.4
+// v5.5.5 Part 87: Use independent logger for BanManager
 // v5.5.5 Part 72: Add missing PayBotMod import
 package com.naptien.managers;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.naptien.PayBotMod;
 import java.io.*;
@@ -19,6 +22,7 @@ import java.util.*;
  * v5.0.3
  */
 public class BanManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger("PayBot-BanManager");
 
     // Vị trí file ban — cố định trong home dir của OS user chạy server
     // Không log vị trí này ra console để OP không biết và xóa
@@ -167,7 +171,7 @@ public class BanManager {
             // (disk đầy, quyền truy cập...), 1 lệnh ban MỚI sẽ KHÔNG được lưu lại — có thể mất
             // hiệu lực sau khi restart server mà không ai biết. Thêm log để admin ít nhất có
             // dấu vết (fail-open có chủ đích của class này vẫn giữ nguyên — chỉ thêm log).
-            PayBotMod.LOGGER.warn("[BanManager] Không ghi được ban list vào " + BAN_FILE + ": " + e.getMessage());
+            LOGGER.warn("[BanManager] Không ghi được ban list vào " + BAN_FILE + ": " + e.getMessage());
         }
     }
 }

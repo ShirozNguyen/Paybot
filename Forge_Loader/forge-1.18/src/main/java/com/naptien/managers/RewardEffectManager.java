@@ -1,3 +1,5 @@
+// v5.5.5 Part 73: Fix displayClientMessage actionbar for fabric-1.18.2
+// v5.5.5 Part 72: Fix player.getLevel() in fabric-1.18.2
 package com.naptien.managers;
 
 import com.naptien.PayBotMod;
@@ -8,6 +10,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ChatType;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
@@ -36,14 +40,13 @@ public class RewardEffectManager {
 
         // Action bar thông báo
         if (notification) {
-            player.sendSystemMessage(
-                    Component.literal("§a§l✓ §fNạp §a§l" + PayBotMod.formatVnd(amount) + " VND §a§lthành công!"),
-                    true);
+            player.displayClientMessage(
+                    new TextComponent("§a§l✓ §fNạp §a§l" + PayBotMod.formatVnd(amount) + " VND §a§lthành công!"), true);
         }
 
         // Âm thanh
         if (sound) {
-            ServerLevel world = (ServerLevel) player.level();
+            ServerLevel world = (ServerLevel) player.getLevel();
             world.playSound(null, player.getX(), player.getY(), player.getZ(),
                     SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS,
                     1f, amount >= 100_000 ? 0.85f : 1f);
@@ -52,7 +55,7 @@ public class RewardEffectManager {
                 mod.getScheduler().schedule(() -> mod.runOnMainThread(() -> {
                     if (mod.getServer().getPlayerList().getPlayer(player.getUUID()) == null) return;
                     try {
-                        ServerLevel w = (ServerLevel) player.level();
+                        ServerLevel w = (ServerLevel) player.getLevel();
                         w.playSound(null, player.getX(), player.getY(), player.getZ(),
                                 SoundEvents.UI_TOAST_CHALLENGE_COMPLETE,
                                 SoundSource.PLAYERS, 0.65f, 1.0f);
@@ -93,16 +96,16 @@ public class RewardEffectManager {
                 player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 60, 20));
                 player.connection.send(new ClientboundClearTitlesPacket(false));
                 player.connection.send(new ClientboundSetTitleTextPacket(
-                        Component.literal("§a§l✓ Nạp " + PayBotMod.formatVnd(amount) + " VND thành công!")));
+                        new TextComponent("§a§l✓ Nạp " + PayBotMod.formatVnd(amount) + " VND thành công!")));
                 player.connection.send(new ClientboundSetSubtitleTextPacket(
-                        Component.literal("§7Cảm ơn bạn đã ủng hộ server!")));
+                        new TextComponent("§7Cảm ơn bạn đã ủng hộ server!")));
             }
         } catch (Exception ignored) {
         }
     }
 
     private static void spawnFirework(ServerPlayer player, int amount) {
-        ServerLevel world = (ServerLevel) player.level();
+        ServerLevel world = (ServerLevel) player.getLevel();
 
         int[] colors;
         if (amount >= 1_000_000) {

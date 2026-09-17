@@ -35,7 +35,7 @@ public final class McVersionHelper {
             java.lang.reflect.Method m = ResourceLocation.class.getMethod("fromNamespaceAndPath", String.class, String.class);
             return (ResourceLocation) m.invoke(null, namespace, path);
         } catch (Throwable ignored) {
-            return new ResourceLocation(namespace, path);
+            return ResourceLocation.parse(namespace + ":" + path);
         }
     }
 

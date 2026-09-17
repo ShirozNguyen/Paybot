@@ -3,7 +3,7 @@ package com.naptien.utils;
 import com.naptien.PayBotMod;
 
 /**
- * PayBotDebug — v5.5.5 (Forge)
+ * PayBotDebug — v5.5.5 (Fabric)
  *
  * Trung tâm log lỗi/warning chi tiết khi config "debug-mode: true".
  * Thay cho các khối `catch (Throwable ignored) {}` rải rác toàn module (xem
@@ -12,7 +12,7 @@ import com.naptien.PayBotMod;
  * Mặc định (debug-mode=false): hoàn toàn im lặng, giống hệt hành vi trước khi có class này.
  * Khi bật: log WARNING qua PayBotMod.LOGGER (SLF4J) kèm context + stacktrace nếu có.
  *
- * Độc lập hoàn toàn với PayBotDebug bên plugin/fabric — không share code, đúng "Rule 17"
+ * Độc lập hoàn toàn với PayBotDebug bên plugin/forge — không share code, đúng "Rule 17"
  * (mỗi module tự chứa, không phụ thuộc chéo) đã áp dụng xuyên suốt dự án.
  */
 public final class PayBotDebug {

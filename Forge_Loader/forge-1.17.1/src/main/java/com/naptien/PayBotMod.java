@@ -1,4 +1,4 @@
-// v5.5.5 Part 86: Use ServerStartedEvent/ServerStoppingEvent for Forge 1.17.1
+// v5.5.5 Part 87: Use net.minecraftforge.fmlserverevents for Forge 1.17.1
 package com.naptien;
 
 import com.naptien.commands.CommandRegistry;
@@ -8,8 +8,8 @@ import com.naptien.log.LogSpamFilter;
 import com.naptien.managers.*;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
+import net.minecraftforge.fmlserverevents.FMLServerStartedEvent;
+import net.minecraftforge.fmlserverevents.FMLServerStoppingEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -81,12 +81,12 @@ public class PayBotMod {
     }
 
     @SubscribeEvent
-    public void onServerStarted(ServerStartedEvent event) {
+    public void onServerStarted(FMLServerStartedEvent event) {
         onServerStart(event.getServer());
     }
 
     @SubscribeEvent
-    public void onServerStopping(ServerStoppingEvent event) {
+    public void onServerStopping(FMLServerStoppingEvent event) {
         onServerStop();
     }
 

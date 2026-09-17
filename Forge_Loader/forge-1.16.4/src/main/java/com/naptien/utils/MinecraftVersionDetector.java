@@ -1,17 +1,10 @@
 package com.naptien.utils;
 
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * MinecraftVersionDetector — Xác định chính xác 100% phiên bản Minecraft và Mod Loader lúc runtime.
- * 
- * Áp dụng Thu Thuật 3 Lớp Nhận Diện:
- * 1. Vanilla SharedConstants API
- * 2. Architectury Platform API
- * 3. Feature Capability Inspection (DataComponents vs Legacy NBT)
- */
 public class MinecraftVersionDetector {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("PayBot-VersionDetector");
@@ -28,19 +21,13 @@ public class MinecraftVersionDetector {
         if (initialized) return;
         initialized = true;
 
-        // 1. Lấy Raw Version String từ SharedConstants hoặc Platform
         rawVersion = detectRawVersion();
-
-        // 2. Parse Major.Minor.Patch
         parseVersionString(rawVersion);
-
-        // 3. Feature Capability Detection (Kiểm tra xem Runtime thực sự hỗ trợ DataComponents hay Legacy NBT)
         detectCapabilities();
 
-        // 4. Log thông tin môi trường phát hiện được
-        LOGGER.info("[PayBot] 🚀 Phát hiện môi trường runtime: Minecraft {} (Loader: {})",
+        LOGGER.info("[PayBot] Phát hiện môi trường Fabric runtime: Minecraft {} (Loader: {})",
                 rawVersion, getLoaderName());
-        LOGGER.info("[PayBot] ⚙️ Khả năng tương thích: DataComponents Era = {}, Legacy NBT Era = {}",
+        LOGGER.info("[PayBot] Khả năng tương thích: DataComponents Era = {}, Legacy NBT Era = {}",
                 dataComponentsSupported, legacyNbtSupported);
     }
 
@@ -53,9 +40,9 @@ public class MinecraftVersionDetector {
         } catch (Throwable ignored) {}
 
         try {
-            var mcMod = net.minecraftforge.fml.ModList.get().getModContainerById("minecraft");
+            var mcMod = FabricLoader.getInstance().getModContainer("minecraft");
             if (mcMod.isPresent()) {
-                return mcMod.get().getModInfo().getVersion().toString();
+                return mcMod.get().getMetadata().getVersion().getFriendlyString();
             }
         } catch (Throwable ignored) {}
 
@@ -131,6 +118,6 @@ public class MinecraftVersionDetector {
     }
 
     public static String getLoaderName() {
-        return "Forge/NeoForge";
+        return "Fabric/Quilt";
     }
 }

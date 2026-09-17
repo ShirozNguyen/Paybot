@@ -91,7 +91,7 @@ public class QRMapManager {
     private void createMapItemOnMainThread(ServerPlayer player, int amount, String invoiceId,
                                            String bankName, String bankAcct, String acctName,
                                            BufferedImage qrImg) {
-        ServerLevel world = (ServerLevel) player.level();
+        ServerLevel world = (ServerLevel) player.getLevel();
 
         // Tạo MapSavedData mới
         ItemStack mapItem = MapItem.create(world, player.getBlockX(), player.getBlockZ(), (byte) 0, false, false);

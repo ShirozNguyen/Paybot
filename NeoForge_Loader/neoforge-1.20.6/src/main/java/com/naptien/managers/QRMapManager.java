@@ -98,7 +98,8 @@ public class QRMapManager {
         MapItemSavedData state = MapItemCompat.getSavedData(mapItem, world);
         int mapIdInt = 0;
         try {
-            Integer id = MapItem.getMapId(mapItem);
+            net.minecraft.world.level.saveddata.maps.MapId mapId = mapItem.get(net.minecraft.core.component.DataComponents.MAP_ID);
+            Integer id = mapId != null ? mapId.id() : null;
             if (id != null) mapIdInt = id;
         } catch (Throwable t) {
             // v5.5.5 Part 53 [BUG NHỎ — audit]: TRƯỚC ĐÂY im lặng. mapIdInt=0 sai sẽ được dùng

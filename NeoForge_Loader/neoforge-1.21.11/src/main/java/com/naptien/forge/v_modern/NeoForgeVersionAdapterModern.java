@@ -245,8 +245,11 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
 
     private void trySetHoverNameFallback(ItemStack stack, Component nameComp) {
         try {
-            stack.setHoverName(nameComp);
+            stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, nameComp);
         } catch (Throwable t) {
+            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.trySetHoverNameFallback", t);
+        }
+    } catch (Throwable t) {
             PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.trySetHoverNameFallback", t);
         }
     }
@@ -254,8 +257,11 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
     /** Nhánh 1.20.2-1.20.4: chưa có Data Components, vẫn dùng NBT display.Name như bản legacy. */
     private void setNameLegacyNbt(ItemStack stack, Component nameComp) {
         try {
-            stack.setHoverName(nameComp);
+            stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, nameComp);
         } catch (Throwable t) {
+            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setNameLegacyNbt", t);
+        }
+    } catch (Throwable t) {
             PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setNameLegacyNbt", t);
         }
     }
@@ -304,12 +310,8 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
 
     /** Nhánh 1.20.2-1.20.4: lore vẫn là NBT List<String> JSON trong display.Lore, giống bản legacy. */
     private void setLoreLegacyNbt(ItemStack stack, List<Component> componentList) {
-        try {
-            CompoundTag display = stack.getOrCreateTagElement("display");
-            net.minecraft.nbt.ListTag loreList = new net.minecraft.nbt.ListTag();
-            for (Component c : componentList) {
-                loreList.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(c)));
-            }
+        // 1.20.5+ does not use legacy NBT lore
+    }
             display.put("Lore", loreList);
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setLoreLegacyNbt", t);
@@ -364,14 +366,7 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
         if (stack == null || stack.isEmpty() || invoiceId == null) return;
         ensureInitialized();
 
-        if (!dataComponentsEra) {
-            try {
-                stack.getOrCreateTag().putString("paybot_invoice_id", invoiceId);
-            } catch (Throwable t) {
-                PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setInvoiceId (legacy NBT)", t);
-            }
-            return;
-        }
+        // 1.20.5+ always uses DataComponents
 
         if (customDataComponentType == null || setComponentMethod == null || getComponentMethod == null) {
             PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setInvoiceId: thiếu component type/method", null);
