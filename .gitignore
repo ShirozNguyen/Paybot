@@ -17,9 +17,6 @@ AI_AGENTS_MUST_READ_THIS.md
 docs/
 .FOR_AI_AGENTS/
 .FOR_AI_AGENTS_ONLY/
-.git/
-.github/
-.gitinore
 
 # Temporary / generated
 trash/
