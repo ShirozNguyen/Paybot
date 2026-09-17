@@ -1,3 +1,4 @@
+// v5.5.5 Part 79: Remove sendAllDataToRemote in fabric-1.16.5 VanillaGuiBackend
 // v5.5.5 Part 74: Fix clicked return paths for 1.16.5
 // v5.5.5 Part 73: Fix clicked return type and container sync for 1.16.5
 package com.naptien.compat;
@@ -124,7 +125,6 @@ public class VanillaGuiBackend implements GuiBackend {
         // Ép đồng bộ tức thì slot GUI mới gán Tên + Lore về Client
         if (player != null && player.containerMenu != null) {
             try {
-                player.containerMenu.sendAllDataToRemote();
                 player.containerMenu.broadcastChanges();
             } catch (Throwable ignored) {}
         }

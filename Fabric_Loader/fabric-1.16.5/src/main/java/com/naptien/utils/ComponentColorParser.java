@@ -1,3 +1,4 @@
+// v5.5.5 Part 79: Fix getByCode and applyFormat in ComponentColorParser for fabric-1.16.5
 // v5.5.5 Part 74: Fix ChatFormatting.code for 1.16.5
 // v5.5.5 Part 73: Fix ChatFormatting.code and Style Boolean setters for 1.16.5
 package com.naptien.utils;
@@ -170,22 +171,10 @@ public class ComponentColorParser {
     }
 
     private static ChatFormatting getByCode(char code) {
-        for (ChatFormatting cf : ChatFormatting.values()) {
-            if (cf.code == code) {
-                return cf;
-            }
-        }
-        return null;
+        return ChatFormatting.getByCode(code);
     }
 
     private static Style applyFormat(Style style, ChatFormatting format) {
-        return switch (format) {
-            case BOLD -> style.withBold(Boolean.TRUE);
-            case ITALIC -> style.withItalic(Boolean.TRUE);
-            case UNDERLINE -> style.withUnderlined(Boolean.TRUE);
-            case STRIKETHROUGH -> style.withStrikethrough(Boolean.TRUE);
-            case OBFUSCATED -> style.withObfuscated(Boolean.TRUE);
-            default -> style;
-        };
+        return style.applyFormat(format);
     }
 }
