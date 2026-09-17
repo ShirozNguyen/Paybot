@@ -1,3 +1,4 @@
+// v5.5.5 Part 78: Fix displayClientMessage actionbar in fabric-1.19
 // v5.5.5 Part 74: Fix displayClientMessage for fabric-1.19
 // v5.5.5 Part 73: Fix displayClientMessage in 1.19
 package com.naptien.managers;
@@ -38,9 +39,7 @@ public class RewardEffectManager {
 
         // Action bar thông báo
         if (notification) {
-            player.sendSystemMessage(
-                    Component.literal("§a§l✓ §fNạp §a§l" + PayBotMod.formatVnd(amount) + " VND §a§lthành công!"),
-                    true);
+            player.displayClientMessage(Component.literal("§a§l✓ §fNạp §a§l" + PayBotMod.formatVnd(amount) + " VND §a§lthành công!"), true);
         }
 
         // Âm thanh

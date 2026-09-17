@@ -1,3 +1,4 @@
+// v5.5.5 Part 78: Inferred lambda and robust reflection text extractor for ALLOW_CHAT_MESSAGE in fabric-1.19.1
 // v5.5.5 Part 77: Fix Fabric 1.19.1 ALLOW_CHAT_MESSAGE FilteredText API
 // v5.5.5 Part 74: Fix ALLOW_CHAT_MESSAGE lambda for fabric-1.19.1
 // v5.5.5 Part 72: Fix Fabric 1.19.1 ALLOW_CHAT_MESSAGE lambda signature
@@ -93,8 +94,35 @@ public class PayBotMod implements ModInitializer {
         // "public record FilteredText" không có type parameter, field "raw: String". Cấu trúc
         // PlayerChatMessage phức tạp (kèm signature) chỉ xuất hiện từ MC 1.20+. Dùng message.raw()
         // trực tiếp làm String, bỏ .decoratedContent().getString() (String không có method đó).
-        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((FilteredText message, ServerPlayer sender, ChatType.Bound boundChatType) -> {
-            String text = message.raw();
+        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((message, sender, boundChatType) -> {
+            String text = "";
+            try {
+                if (message != null) {
+                    try {
+                        java.lang.reflect.Method mRaw = message.getClass().getMethod("raw");
+                        Object r = mRaw.invoke(message);
+                        if (r instanceof String) {
+                            text = (String) r;
+                        } else if (r != null) {
+                            try {
+                                java.lang.reflect.Method mc = r.getClass().getMethod("decoratedContent");
+                                Object dc = mc.invoke(r);
+                                text = ((net.minecraft.network.chat.Component) dc).getString();
+                            } catch (Exception ignored) {
+                                text = r.toString();
+                            }
+                        }
+                    } catch (NoSuchMethodException eNoRaw) {
+                        try {
+                            java.lang.reflect.Method mc = message.getClass().getMethod("decoratedContent");
+                            Object dc = mc.invoke(message);
+                            text = ((net.minecraft.network.chat.Component) dc).getString();
+                        } catch (Exception ignored) {
+                            text = message.toString();
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
             if (com.naptien.gui.GuiSession.isAnyoneWaiting(sender.getUUID())
                     && com.naptien.gui.GuiChatHandler.handle(sender, text)) {
                 return false;
