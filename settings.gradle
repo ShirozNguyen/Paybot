@@ -42,14 +42,19 @@ rootProject.name = 'PayBot'
 // do Mojang không phát hành official mappings cho 2 bản này (đã confirm ở Part 59).
 // include('Fabric_Loader:fabric-1.14.2')
 // include('Fabric_Loader:fabric-1.14.3')
-include('Fabric_Loader:fabric-1.14.4')
-include('Fabric_Loader:fabric-1.15')
-include('Fabric_Loader:fabric-1.15.1')
-include('Fabric_Loader:fabric-1.15.2')
-include('Fabric_Loader:fabric-1.16.1')
-include('Fabric_Loader:fabric-1.16.2')
-include('Fabric_Loader:fabric-1.16.3')
-include('Fabric_Loader:fabric-1.16.4')
+// v5.5.5 Part 71 [REVERT fabric-1.14.4..1.16.4 — BẰNG CHỨNG LOG GitHub Actions Run #35192218288]:
+// fabric-1.14.4 đến fabric-1.16.4 bị crash compileJava do dùng Fabric API v2 (net.fabricmc.fabric.api.command.v2
+// và message.v1 không tồn tại ở MC ≤1.16.4) và các class Packet/Component 1.17+ (ClientboundSetTitleTextPacket,
+// MutableComponent, TextColor). Các bản Fabric này cần refactor code API riêng nếu muốn hỗ trợ sau này.
+// Fabric active chính thức bắt đầu từ fabric-1.16.5 trở đi.
+// include('Fabric_Loader:fabric-1.14.4')
+// include('Fabric_Loader:fabric-1.15')
+// include('Fabric_Loader:fabric-1.15.1')
+// include('Fabric_Loader:fabric-1.15.2')
+// include('Fabric_Loader:fabric-1.16.1')
+// include('Fabric_Loader:fabric-1.16.2')
+// include('Fabric_Loader:fabric-1.16.3')
+// include('Fabric_Loader:fabric-1.16.4')
 include('Fabric_Loader:fabric-1.16.5')
 include('Fabric_Loader:fabric-1.17.1')
 include('Fabric_Loader:fabric-1.18')
