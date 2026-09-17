@@ -116,6 +116,7 @@ jobs:
       # newer version of Loom (1.10.1), you are using Loom (1.7.435)"). Chỉ cần JDK 21 (đã setup
       # ở bước "Setup Java 21" phía trên) — không cần foojay-resolver-convention.
       # v5.5.5 Part 85: Chạy song song tối đa 3 worker bằng pool để tối ưu thời gian build gấp 3 lần.
+      # v5.5.5 Part 98: Chuẩn hóa cú pháp tăng giảm biến đếm worker POSIX ($((current_jobs + 1))) tránh mã lỗi 1 của ((0++)) ngắt shell khi set -e.
       - name: Build independent modules (fabric/neoforge 1.21.2-1.21.9)
         shell: bash
         run: |
@@ -136,13 +137,13 @@ jobs:
               echo "=== Building $mod (Loom riêng) ==="
               (cd "$mod" && ./gradlew build --build-cache --stacktrace)
             ) &
-            ((current_jobs++))
+            current_jobs=$((current_jobs + 1))
             if [ "$current_jobs" -ge "$max_jobs" ]; then
-              wait -n
-              ((current_jobs--))
+              wait -n || true
+              current_jobs=$((current_jobs - 1))
             fi
           done
-          wait
+          wait || true
 
       - name: Collect JAR files
         shell: bash
