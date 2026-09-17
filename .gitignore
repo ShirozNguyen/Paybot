@@ -8,13 +8,14 @@ build/
 
 # Documentation / logs
 !README.md
-!CHANGELOG.md
-!LOG.md
+CHANGELOG.md
+LOG.md
 *.log
 26.3-KHUNG-CHUAN-BI.md
 *.txt
 AI_AGENTS_MUST_READ_THIS.md
 docs/
+.FOR_AI_AGENTS/
 .FOR_AI_AGENTS_ONLY/
 .git/
 .github/
