@@ -61,7 +61,7 @@ public class CommandRegistry {
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private static boolean isAdmin(CommandSourceStack src) {
-        if (src.hasPermission(2)) return true;
+        if (com.paybot.compat.PermissionHelper.hasPermissions(src, 2)) return true;
         try { return PayBotMod.getInstance().getOwnerSessionManager().isOwner(src.getPlayer()); }
         catch (Exception e) { return false; }
     }
@@ -611,7 +611,7 @@ public class CommandRegistry {
     // ─── /testnapbank — OP only (v5.0.5: mở ĐÚNG NapBankGui thật, đồng bộ plugin) ──
     private static void registerTestNapBank(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("testnapbank")
-            .requires(src -> src.isPlayer() && src.hasPermission(4))
+            .requires(src -> src.isPlayer() && com.paybot.compat.PermissionHelper.hasPermissions(src, 4))
             .executes(ctx -> {
                 ServerPlayer p = ctx.getSource().getPlayer();
                 p.sendSystemMessage(Component.literal("§e§l[TEST MODE] §r§eChọn 1 mệnh giá — đơn sẽ được giả lập "
@@ -625,7 +625,7 @@ public class CommandRegistry {
     // ─── /testnapthe — OP only (v5.0.5: mở ĐÚNG NapTheGui thật, đồng bộ plugin) ────
     private static void registerTestNapThe(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("testnapthe")
-            .requires(src -> src.isPlayer() && src.hasPermission(4))
+            .requires(src -> src.isPlayer() && com.paybot.compat.PermissionHelper.hasPermissions(src, 4))
             .executes(ctx -> {
                 ServerPlayer p = ctx.getSource().getPlayer();
                 p.sendSystemMessage(Component.literal("§e§l[TEST MODE] §r§eChọn nhà mạng + mệnh giá — §a§lTHÀNH CÔNG "

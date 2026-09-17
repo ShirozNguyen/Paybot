@@ -53,11 +53,22 @@ public final class McVersionHelper {
 
     private static String detectRawVersion() {
         try {
-            var mc = ModList.get().getModContainerById("minecraft");
-            if (mc.isPresent())
-                return mc.get().getModInfo().getVersion().toString();
-        } catch (Exception ignored) {}
-        return "1.20.1";
+            Class<?> mlClass = Class.forName("net.minecraftforge.fml.ModList");
+            java.lang.reflect.Method mGet = mlClass.getMethod("get");
+            Object ml = mGet.invoke(null);
+            if (ml != null) {
+                java.lang.reflect.Method mGetMod = ml.getClass().getMethod("getModContainerById", String.class);
+                Object mcOpt = mGetMod.invoke(ml, "minecraft");
+                if (mcOpt instanceof java.util.Optional<?> opt && opt.isPresent()) {
+                    Object container = opt.get();
+                    java.lang.reflect.Method mInfo = container.getClass().getMethod("getModInfo");
+                    Object info = mInfo.invoke(container);
+                    java.lang.reflect.Method mVer = info.getClass().getMethod("getVersion");
+                    return mVer.invoke(info).toString();
+                }
+            }
+        } catch (Throwable ignored) {}
+        return "26.1";
     }
 
     private static int compareVersions(String v1, String v2) {

@@ -633,37 +633,17 @@ public class FabricVersionAdapterModern implements VersionAdapter {
 
     private Identifier createResourceLocation(String namespace, String path) {
         try {
-            try {
-            java.lang.reflect.Method mOf = net.minecraft.util.Identifier.class.getMethod("of", String.class, String.class);
-            return (net.minecraft.util.Identifier) mOf.invoke(null, namespace, path);
-        } catch (Throwable t) {
-            return net.minecraft.util.Identifier.of(namespace, path);
-        }
+            return Identifier.of(namespace, path);
         } catch (Throwable t1) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.createResourceLocation: constructor (namespace,path) trực tiếp lỗi", t1);
-        }
-        try {
-            for (Constructor<?> ctor : Identifier.class.getDeclaredConstructors()) {
-                Class<?>[] p = ctor.getParameterTypes();
-                if (p.length == 2 && p[0] == String.class && p[1] == String.class) {
-                    ctor.setAccessible(true);
-                    return (Identifier) ctor.newInstance(namespace, path);
+            try {
+                for (Constructor<?> ctor : Identifier.class.getDeclaredConstructors()) {
+                    Class<?>[] p = ctor.getParameterTypes();
+                    if (p.length == 2 && p[0] == String.class && p[1] == String.class) {
+                        ctor.setAccessible(true);
+                        return (Identifier) ctor.newInstance(namespace, path);
+                    }
                 }
-            }
-        } catch (Throwable t2) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.createResourceLocation: fallback constructor reflection lỗi", t2);
-        }
-        try {
-            for (Method m : Identifier.class.getMethods()) {
-                if (Modifier.isStatic(m.getModifiers())
-                        && m.getParameterCount() == 1 && m.getParameterTypes()[0] == String.class
-                        && Identifier.class.isAssignableFrom(m.getReturnType())) {
-                    Object result = m.invoke(null, namespace + ":" + path);
-                    if (result != null) return (Identifier) result;
-                }
-            }
-        } catch (Throwable t3) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.createResourceLocation: fallback static factory lỗi", t3);
+            } catch (Throwable ignored) {}
         }
         return null;
     }

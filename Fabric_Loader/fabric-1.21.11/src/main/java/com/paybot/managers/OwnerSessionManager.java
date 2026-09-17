@@ -134,7 +134,7 @@ public class OwnerSessionManager {
             }
         } catch (Throwable ignored) {}
         try {
-            return player.hasPermissions(4);
+            return com.paybot.compat.PermissionHelper.hasPermissions(player, 4);
         } catch (Throwable ignored) {}
         return false;
     }

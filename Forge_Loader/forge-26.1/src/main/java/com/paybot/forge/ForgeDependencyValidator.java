@@ -12,7 +12,15 @@ public class ForgeDependencyValidator {
     public static void validate() {
         boolean hasMod = false;
         try {
-            hasMod = ModList.get() != null && ModList.get().isLoaded("architectury");
+            try {
+            Class<?> mlClass = Class.forName("net.minecraftforge.fml.ModList");
+            java.lang.reflect.Method mGet = mlClass.getMethod("get");
+            Object ml = mGet.invoke(null);
+            if (ml != null) {
+                java.lang.reflect.Method mIsLoaded = ml.getClass().getMethod("isLoaded", String.class);
+                hasMod = (Boolean) mIsLoaded.invoke(ml, "architectury");
+            }
+        } catch (Throwable ignored) {}
         } catch (Throwable ignored) {
             hasMod = DependencyChecker.isClassPresent("dev.architectury.platform.Platform");
         }

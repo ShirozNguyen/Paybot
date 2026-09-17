@@ -59,21 +59,25 @@ public class VanillaGuiBackend implements GuiBackend {
      * Trích ClickType ra khỏi ContainerInput bằng reflection tổng quát (không giả định tên field).
      * Trả về null nếu không tìm được — gọi nơi dùng PHẢI coi null là "chặn lại" (fail-safe).
      */
-    private static ClickType extractClickType(Object containerInput) {
+    private static Object extractClickType(Object containerInput) {
         if (containerInput == null) return null;
         try {
             for (RecordComponent rc : containerInput.getClass().getRecordComponents()) {
-                if (rc.getType().equals(ClickType.class)) {
-                    Object value = rc.getAccessor().invoke(containerInput);
-                    if (value instanceof ClickType ct) {
-                        return ct;
-                    }
+                if (rc.getType().getSimpleName().contains("ClickType") || rc.getType().getSimpleName().contains("SlotActionType")) {
+                    return rc.getAccessor().invoke(containerInput);
                 }
             }
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("VanillaGuiBackend: reflection đọc ContainerInput thất bại", t);
         }
         return null;
+    }
+
+    private static boolean isRestrictedClickType(Object containerInput) {
+        Object ct = extractClickType(containerInput);
+        if (ct == null) return true; // fail-safe
+        String name = ct.toString();
+        return name.contains("QUICK_MOVE") || name.contains("PICKUP_ALL") || name.contains("SWAP") || name.contains("CLONE") || name.contains("THROW");
     }
 
     @Override
@@ -92,16 +96,7 @@ public class VanillaGuiBackend implements GuiBackend {
                     ChestMenu menu = new ChestMenu(menuType, containerId, playerInventory, container, size / 9) {
                         @Override
                         public void clicked(int slotId, int button, net.minecraft.world.inventory.ContainerInput containerInput, net.minecraft.world.entity.player.Player player) {
-                            ClickType clickType = extractClickType(containerInput);
-
-                            // clickType == null nghĩa là không trích được từ ContainerInput — chặn
-                            // an toàn (fail-safe) thay vì cho qua, vì đây là GUI thanh toán.
-                            if (clickType == null
-                                    || clickType == ClickType.QUICK_MOVE
-                                    || clickType == ClickType.PICKUP_ALL
-                                    || clickType == ClickType.SWAP
-                                    || clickType == ClickType.CLONE
-                                    || clickType == ClickType.THROW) {
+                            if (isRestrictedClickType(containerInput)) {
                                 if (player instanceof ServerPlayer sp) {
                                     sp.containerMenu.sendAllDataToRemote();
                                 }

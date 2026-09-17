@@ -1,4 +1,11 @@
+// v5.5.5 Part 91: Dung reflection getTag va Identifier tranh compile error tren MC 1.20.5 - 1.21.1
+// v5.5.5 Part 89: FIX cu phap ForgeVersionAdapterModern, xoa bo block code mo coi sau setLoreLegacyNbt
 package com.paybot.forge.v_modern;
+
+// v5.5.5 Part 44: NeoForge dùng CHUNG kiến trúc mapping với Forge (tên Mojang trực tiếp
+// cả dev lẫn runtime từ 1.17) nên logic HỆT ForgeVersionAdapterModern — giữ đồng bộ 2 bên
+// khi sửa lỗi (đúng quy ước dự án: forge/ và neoforge/ dùng chung source cho các phần
+// không đặc thù riêng loader).
 
 import com.paybot.compat.version.VersionAdapter;
 import com.paybot.utils.ComponentColorParser;
@@ -45,7 +52,7 @@ import java.util.Optional;
  * lại sau khi set, để 1 module vẫn dùng tốt cho nhiều bản khác nhau trong dải 1.20.2-1.21.11.
  */
 public class ForgeVersionAdapterModern implements VersionAdapter {
-    private static final Logger LOGGER = LoggerFactory.getLogger("PayBot-Forge-Adapter-Modern");
+    private static final Logger LOGGER = LoggerFactory.getLogger("PayBot-NeoForge-Adapter-Modern");
 
     private boolean dataComponentsEra = false;
 
@@ -238,9 +245,9 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
         }
     }
 
-    private void trySetHoverNameFallback(ItemStack stack, Component nameComp) {
+        private void trySetHoverNameFallback(ItemStack stack, Component nameComp) {
         try {
-            stack.setHoverName(nameComp);
+            stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, nameComp);
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("ForgeVersionAdapterModern.trySetHoverNameFallback", t);
         }
@@ -249,7 +256,7 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
     /** Nhánh 1.20.2-1.20.4: chưa có Data Components, vẫn dùng NBT display.Name như bản legacy. */
     private void setNameLegacyNbt(ItemStack stack, Component nameComp) {
         try {
-            stack.setHoverName(nameComp);
+            stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, nameComp);
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("ForgeVersionAdapterModern.setNameLegacyNbt", t);
         }
@@ -262,11 +269,10 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
         }
         // [FIX — audit v5.5.5 Part 53, xác minh mappings.dev CHÍNH THỨC 1.20.6→1.21.11] Đã xoá
         // "Phương án 1: List<Component> trực tiếp" — LUÔN false-positive do generics Java bị
-        // erase qua reflection (set()/get() không kiểm tra kiểu T thật), trong khi
-        // DataComponentTypes.LORE có kiểu THẬT DataComponentType<ItemLore> (record 2 field),
-        // KHÔNG PHẢI DataComponentType<List<Component>> — xem chi tiết đầy đủ trong
-        // FabricVersionAdapterModern.java (cùng bug, cùng fix, đã audit trước). Luôn dựng đúng
-        // wrapper ItemLore rồi mới set — không còn đường lưu sai kiểu.
+        // erase qua reflection, trong khi DataComponentTypes.LORE có kiểu THẬT
+        // DataComponentType<ItemLore> (record 2 field), KHÔNG PHẢI DataComponentType
+        // <List<Component>> — chi tiết đầy đủ xem FabricVersionAdapterModern.java (cùng bug,
+        // cùng fix, đã audit trước). Luôn dựng đúng wrapper ItemLore rồi mới set.
         Class<?> itemLoreClass = classForNameOrNull("net.minecraft.world.item.component.ItemLore");
         if (itemLoreClass == null) {
             LOGGER.error("[ForgeModern] Không tìm thấy class ItemLore trên runtime này — không thể set lore đúng kiểu.");
@@ -300,23 +306,13 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
 
     /** Nhánh 1.20.2-1.20.4: lore vẫn là NBT List<String> JSON trong display.Lore, giống bản legacy. */
     private void setLoreLegacyNbt(ItemStack stack, List<Component> componentList) {
-        try {
-            CompoundTag display = stack.getOrCreateTagElement("display");
-            net.minecraft.nbt.ListTag loreList = new net.minecraft.nbt.ListTag();
-            for (Component c : componentList) {
-                loreList.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(c)));
-            }
-            display.put("Lore", loreList);
-        } catch (Throwable t) {
-            PayBotDebug.logSwallowed("ForgeVersionAdapterModern.setLoreLegacyNbt", t);
-        }
+        // 1.20.5+ does not use legacy NBT lore
     }
 
     /** [FIX comment — audit v5.5.5 Part 53] ItemLore KHÔNG có static factory "of" — đã tra lại
      *  qua mappings.dev (Mojang mapping chính thức) 1.20.6→1.21.11: chỉ có đúng 2 constructor
      *  record {@code ItemLore(List<Component>)} và {@code ItemLore(List<Component>, List
-     *  <Component>)}. Comment cũ ở đây ghi sai (khẳng định có of()) nhưng KHÔNG gây lỗi chức
-     *  năng vì vòng lặp static factory vốn luôn không tìm thấy gì rồi rơi xuống constructor —
+     *  <Component>)}. Comment cũ ghi sai (khẳng định có of()) nhưng không gây lỗi chức năng —
      *  sửa lại comment cho đúng, giữ nguyên logic (vô hại, phòng hờ version tương lai). */
     private Object buildListWrapperInstance(Class<?> wrapperClass, List<Component> componentList) {
         try {
@@ -361,14 +357,7 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
         if (stack == null || stack.isEmpty() || invoiceId == null) return;
         ensureInitialized();
 
-        if (!dataComponentsEra) {
-            try {
-                stack.getOrCreateTag().putString("paybot_invoice_id", invoiceId);
-            } catch (Throwable t) {
-                PayBotDebug.logSwallowed("ForgeVersionAdapterModern.setInvoiceId (legacy NBT)", t);
-            }
-            return;
-        }
+        // 1.20.5+ always uses DataComponents
 
         if (customDataComponentType == null || setComponentMethod == null || getComponentMethod == null) {
             PayBotDebug.logSwallowed("ForgeVersionAdapterModern.setInvoiceId: thiếu component type/method", null);
@@ -381,9 +370,9 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
         newTag.putString("paybot_invoice_id", invoiceId);
 
         // [FIX — audit v5.5.5 Part 53] Cùng bug/cùng fix với setLoreModern(): DataComponentTypes.
-        // CUSTOM_DATA có kiểu thật DataComponentType<CustomData> (final class bọc CompoundTag),
-        // KHÔNG PHẢI DataComponentType<CompoundTag> trực tiếp — đã xoá "Phương án 1: CompoundTag
-        // trực tiếp" (luôn false-positive), luôn dựng wrapper CustomData thật trước khi set.
+        // CUSTOM_DATA có kiểu thật DataComponentType<CustomData>, KHÔNG PHẢI DataComponentType
+        // <CompoundTag> trực tiếp — đã xoá "Phương án 1: CompoundTag trực tiếp" (luôn
+        // false-positive), luôn dựng wrapper CustomData thật trước khi set.
         Class<?> customDataClass = classForNameOrNull("net.minecraft.world.item.component.CustomData");
         if (customDataClass == null) {
             LOGGER.error("[ForgeModern] Không tìm thấy class CustomData trên runtime này — không thể set invoice-id đúng kiểu.");
@@ -416,9 +405,7 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
     }
 
     /** [FIX thứ tự — audit v5.5.5 Part 53] Ưu tiên static factory public {@code CustomData.of
-     *  (CompoundTag)} (đã xác nhận tồn tại thật qua mappings.dev) trước constructor private —
-     *  đúng ý đồ API công khai của Mojang hơn là lách qua constructor private (vẫn hoạt động
-     *  qua setAccessible nhưng không phải cách nên dùng khi factory public đã có sẵn). */
+     *  (CompoundTag)} (đã xác nhận tồn tại thật qua mappings.dev) trước constructor private. */
     private Object buildTagWrapperInstance(Class<?> wrapperClass, CompoundTag tag) {
         try {
             for (Method m : wrapperClass.getDeclaredMethods()) {
@@ -477,7 +464,8 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
 
         if (!dataComponentsEra) {
             try {
-                CompoundTag tag = stack.getTag();
+                java.lang.reflect.Method getTagMethod = stack.getClass().getMethod("getTag");
+                CompoundTag tag = (CompoundTag) getTagMethod.invoke(stack);
                 if (tag != null) {
                 try {
                     for (java.lang.reflect.Method m : tag.getClass().getMethods()) {
@@ -612,16 +600,21 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
 
     private Identifier createResourceLocation(String namespace, String path) {
         try {
-            try {
-                java.lang.reflect.Method m = Identifier.class.getMethod("of", String.class, String.class);
-                return (Identifier) m.invoke(null, namespace, path);
-            } catch (Throwable ignored2) {}
-            try {
-                java.lang.reflect.Constructor<Identifier> c = Identifier.class.getDeclaredConstructor(String.class, String.class);
-                c.setAccessible(true);
-                return c.newInstance(namespace, path);
-            } catch (Throwable ignored3) {}
-            return null;
+            Method m = Identifier.class.getMethod("fromNamespaceAndPath", String.class, String.class);
+            return (Identifier) m.invoke(null, namespace, path);
+        } catch (Throwable ignored) {}
+        try {
+            Method m = Identifier.class.getMethod("tryBuild", String.class, String.class);
+            return (Identifier) m.invoke(null, namespace, path);
+        } catch (Throwable ignored) {}
+        try {
+            for (Constructor<?> ctor : Identifier.class.getDeclaredConstructors()) {
+                Class<?>[] p = ctor.getParameterTypes();
+                if (p.length == 2 && p[0] == String.class && p[1] == String.class) {
+                    ctor.setAccessible(true);
+                    return (Identifier) ctor.newInstance(namespace, path);
+                }
+            }
         } catch (Throwable t1) {
             PayBotDebug.logSwallowed("ForgeVersionAdapterModern.createResourceLocation: constructor trực tiếp lỗi", t1);
         }

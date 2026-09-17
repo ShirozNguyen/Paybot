@@ -22,7 +22,6 @@
 // quan gì tới bug NSME của Architectury Loom (#320) đã lo ngại trước đó.
 plugins {
     id 'net.fabricmc.fabric-loom-remap' version '1.17.20'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'java'
 }
 
@@ -92,21 +91,19 @@ processResources {
     }
 }
 
-shadowJar {
+jar {
+    archiveClassifier = "dev"
+    from {
+        configurations.shadowBundle.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     exclude "architectury.common.json"
-    // v5.5.5 Part 44: loại trừ slf4j đóng gói theo HikariCP (xem giải thích ở fabric-legacy)
     exclude "org/slf4j/**"
-
-    configurations = [project.configurations.shadowBundle]
-    archiveClassifier = "dev-shadow"
 }
 
 remapJar {
-    input.set shadowJar.archiveFile
-    dependsOn shadowJar
+    input.set jar.archiveFile
+    dependsOn jar
     archiveClassifier = null
 }
 
-jar {
-    archiveClassifier = "dev"
-}
