@@ -1,6 +1,6 @@
 name: PayBot
 version: ${version}
-main: com.naptien.NapTienPlugin
+main: com.paybot.PayBotPlugin
 api-version: "1.13"
 folia-supported: true
 description: "PayBot - Hệ thống nạp thẻ cào + ngân hàng tích hợp Discord Bot và SePay"

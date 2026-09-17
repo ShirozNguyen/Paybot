@@ -63,25 +63,38 @@ jobs:
       # (root không hề biết chúng tồn tại) — phải gọi ./gradlew build TỪ BÊN TRONG từng thư mục
       # để dùng đúng engine Gradle riêng của nó. foojay-resolver-convention (đã khai trong
       # settings.gradle của 4 module 26.x) sẽ tự tải JDK 25 nếu runner GitHub Actions chưa có sẵn.
+      # v5.5.5 Part 99: Bắt mã lỗi trung thực cho từng submodule độc lập, dừng build nếu có module lỗi.
       - name: Build independent modules (fabric-1.21.10, fabric-1.21.11)
         shell: bash
         run: |
+          pids=()
           for mod in Fabric_Loader/fabric-1.21.10 Fabric_Loader/fabric-1.21.11; do
-            echo "=== Building $mod (Gradle 9.2, project độc lập) ==="
+            echo "=== Building $mod (Gradle 9.5, project độc lập) ==="
             chmod +x "$mod/gradlew"
             (cd "$mod" && ./gradlew build --build-cache --stacktrace) &
+            pids+=($!)
           done
-          wait
+          failed=0
+          for pid in "${pids[@]}"; do
+            wait "$pid" || failed=1
+          done
+          if [ "$failed" -ne 0 ]; then exit 1; fi
 
       - name: Build independent modules (fabric-26.x, neoforge-26.x)
         shell: bash
         run: |
+          pids=()
           for mod in Fabric_Loader/fabric-26.1 Fabric_Loader/fabric-26.2 NeoForge_Loader/neoforge-26.1 NeoForge_Loader/neoforge-26.2; do
             echo "=== Building $mod (Gradle 9.4, project độc lập) ==="
             chmod +x "$mod/gradlew"
             (cd "$mod" && ./gradlew build --build-cache --stacktrace) &
+            pids+=($!)
           done
-          wait
+          failed=0
+          for pid in "${pids[@]}"; do
+            wait "$pid" || failed=1
+          done
+          if [ "$failed" -ne 0 ]; then exit 1; fi
 
       # v5.5.5 Part 65: forge-26.1/26.2 tách khỏi Part 62 sau khi lỗi build thật xác nhận
       # "ForgeGradle 7 requires Gradle 9.3.0 or later. You are currently using Gradle 8.8."
@@ -89,34 +102,40 @@ jobs:
       - name: Build independent modules (forge-26.x)
         shell: bash
         run: |
+          pids=()
           for mod in Forge_Loader/forge-26.1 Forge_Loader/forge-26.2; do
             echo "=== Building $mod (Gradle 9.3, project độc lập) ==="
             chmod +x "$mod/gradlew"
             (cd "$mod" && ./gradlew build --build-cache --stacktrace) &
+            pids+=($!)
           done
-          wait
+          failed=0
+          for pid in "${pids[@]}"; do
+            wait "$pid" || failed=1
+          done
+          if [ "$failed" -ne 0 ]; then exit 1; fi
 
       # v5.5.5 Part 66: neoforge-1.21.10/11 tách sau khi lỗi build thật xác nhận "Unfixable
       # conflicts" khi remap qua dev.architectury.loom 1.7.435 (quá cũ cho NeoForge 1.21.10+).
       - name: Build independent modules (neoforge-1.21.10, neoforge-1.21.11)
         shell: bash
         run: |
+          pids=()
           for mod in NeoForge_Loader/neoforge-1.21.10 NeoForge_Loader/neoforge-1.21.11; do
             echo "=== Building $mod (Gradle 9.2, project độc lập) ==="
             chmod +x "$mod/gradlew"
             (cd "$mod" && ./gradlew build --build-cache --stacktrace) &
+            pids+=($!)
           done
-          wait
+          failed=0
+          for pid in "${pids[@]}"; do
+            wait "$pid" || failed=1
+          done
+          if [ "$failed" -ne 0 ]; then exit 1; fi
 
       # v5.5.5 Part 64: 16 module dưới đây (fabric-1.21.2 đến fabric-1.21.9, neoforge-1.21.2 đến
-      # neoforge-1.21.9) là project Gradle HOÀN TOÀN ĐỘC LẬP, cùng mô hình Part 63 — tách vì
-      # dev.architectury.loom 1.7.435 dùng chung ở root CHỈ đủ chuẩn cho MC 1.21/1.21.1 (Loom
-      # ≥1.6), không đủ cho MC 1.21.2 trở đi (cần Loom 1.8/1.9/1.10/1.11 tùy mốc — xác nhận qua
-      # fabricmc.net blog chính thức + lỗi build thật ở fabric-1.21.5: "Mod was built with a
-      # newer version of Loom (1.10.1), you are using Loom (1.7.435)"). Chỉ cần JDK 21 (đã setup
-      # ở bước "Setup Java 21" phía trên) — không cần foojay-resolver-convention.
-      # v5.5.5 Part 85: Chạy song song tối đa 3 worker bằng pool để tối ưu thời gian build gấp 3 lần.
-      # v5.5.5 Part 98: Chuẩn hóa cú pháp tăng giảm biến đếm worker POSIX ($((current_jobs + 1))) tránh mã lỗi 1 của ((0++)) ngắt shell khi set -e.
+      # neoforge-1.21.9) là project Gradle HOÀN TOÀN ĐỘC LẬP.
+      # v5.5.5 Part 99: Pool worker song song max 3 jobs kiểm tra exit code trung thực.
       - name: Build independent modules (fabric/neoforge 1.21.2-1.21.9)
         shell: bash
         run: |
@@ -132,6 +151,7 @@ jobs:
 
           max_jobs=3
           current_jobs=0
+          failed=0
           for mod in "${mods[@]}"; do
             (
               echo "=== Building $mod (Loom riêng) ==="
@@ -139,11 +159,15 @@ jobs:
             ) &
             current_jobs=$((current_jobs + 1))
             if [ "$current_jobs" -ge "$max_jobs" ]; then
-              wait -n || true
+              wait -n || failed=1
               current_jobs=$((current_jobs - 1))
             fi
           done
-          wait || true
+          while [ "$current_jobs" -gt 0 ]; do
+            wait -n || failed=1
+            current_jobs=$((current_jobs - 1))
+          done
+          if [ "$failed" -ne 0 ]; then exit 1; fi
 
       - name: Collect JAR files
         shell: bash

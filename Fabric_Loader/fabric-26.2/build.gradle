@@ -24,7 +24,7 @@ plugins {
 // (trước đây thừa hưởng tự động qua allprojects{} — xem LOG.md Part 62 để biết đầy đủ). Khối
 // java.toolchain{} bên dưới GIỮ NGUYÊN từ Part 51 (đã tự ghi đè Java 25 từ trước).
 version = '5.5.5'
-group = 'com.naptien'
+group = 'com.paybot'
 
 repositories {
     mavenCentral()
@@ -58,6 +58,7 @@ configurations {
 }
 
 dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
     // v5.5.5 Part 48: implementation/compileOnly thay modImplementation/modCompileOnly —
     // đúng 1 trong 4 bước migrate chính thức của Fabric cho 26.1 (docs.fabricmc.net/26.1/develop/porting).
     implementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"

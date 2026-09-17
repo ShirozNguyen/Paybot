@@ -11,7 +11,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.naptien.fabric.PayBotFabricInit"
+      "com.paybot.fabric.PayBotFabricInit"
     ]
   },
   "mixins": [

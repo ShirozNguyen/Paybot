@@ -22,7 +22,7 @@ plugins {
 // nữa, nên PHẢI tự khai lại version/group/repositories/toolchain/dependencies{minecraft}
 // y hệt logic root (trước đây thừa hưởng tự động qua allprojects{}). Xem LOG.md Part 66.
 version = '5.5.5'
-group = 'com.naptien'
+group = 'com.paybot'
 
 repositories {
     mavenCentral()
