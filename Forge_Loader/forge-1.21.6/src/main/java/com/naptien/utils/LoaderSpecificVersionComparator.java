@@ -147,8 +147,8 @@ public class LoaderSpecificVersionComparator {
         if (a == null) return -1;
         if (b == null) return 1;
 
-        String[] pa = a.trim().split("\.");
-        String[] pb = b.trim().split("\.");
+        String[] pa = a.trim().split("\\.");
+        String[] pb = b.trim().split("\\.");
         int len = Math.max(pa.length, pb.length);
 
         for (int i = 0; i < len; i++) {
