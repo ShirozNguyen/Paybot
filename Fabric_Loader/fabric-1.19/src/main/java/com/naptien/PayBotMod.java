@@ -1,3 +1,4 @@
+// v5.5.5 Part 74: Fix ALLOW_CHAT_MESSAGE lambda for fabric-1.19
 // v5.5.5 Part 73: Fix sendSuccess(component, false) in 1.19
 // v5.5.5 Part 72: Fix Fabric 1.19 ALLOW_CHAT_MESSAGE & sendSuccess API
 package com.naptien;
@@ -93,8 +94,8 @@ public class PayBotMod implements ModInitializer {
         // tiep khong qua wrapper) - xac nhan qua mappings.dev: FilteredMessage (Yarn)
         // = FilteredText (Mojang), method raw() tra ve T ben trong. Dung message.raw()
         // de lay PlayerChatMessage that su truoc khi goi decoratedContent().
-        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((FilteredText message, ServerPlayer sender) -> {
-            String text = message.raw().getString();
+        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((PlayerChatMessage message, ServerPlayer sender, ChatType.Bound boundChatType) -> {
+            String text = message.signedContent().plain();
             if (com.naptien.gui.GuiSession.isAnyoneWaiting(sender.getUUID())
                     && com.naptien.gui.GuiChatHandler.handle(sender, text)) {
                 return false;

@@ -1,3 +1,4 @@
+// v5.5.5 Part 74: Fix displayClientMessage for fabric-1.19
 // v5.5.5 Part 73: Fix displayClientMessage in 1.19
 package com.naptien.managers;
 

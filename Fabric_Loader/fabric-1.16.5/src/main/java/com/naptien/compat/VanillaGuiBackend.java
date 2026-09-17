@@ -1,3 +1,4 @@
+// v5.5.5 Part 74: Fix clicked return paths for 1.16.5
 // v5.5.5 Part 73: Fix clicked return type and container sync for 1.16.5
 package com.naptien.compat;
 
@@ -64,7 +65,7 @@ public class VanillaGuiBackend implements GuiBackend {
                                 if (player instanceof ServerPlayer sp) {
                                     sp.containerMenu.broadcastChanges();
                                 }
-                                return;
+                                return net.minecraft.world.item.ItemStack.EMPTY;
                             }
 
                             // Chặn tất cả các click trực tiếp vào slot thuộc GUI container

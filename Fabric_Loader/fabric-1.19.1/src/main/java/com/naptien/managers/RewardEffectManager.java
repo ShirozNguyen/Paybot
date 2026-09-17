@@ -1,3 +1,4 @@
+// v5.5.5 Part 74: Fix displayClientMessage for fabric-1.19.1
 package com.naptien.managers;
 
 import com.naptien.PayBotMod;

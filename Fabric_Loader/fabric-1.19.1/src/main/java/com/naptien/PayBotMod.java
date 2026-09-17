@@ -1,3 +1,4 @@
+// v5.5.5 Part 74: Fix ALLOW_CHAT_MESSAGE lambda for fabric-1.19.1
 // v5.5.5 Part 72: Fix Fabric 1.19.1 ALLOW_CHAT_MESSAGE lambda signature
 package com.naptien;
 
@@ -91,7 +92,7 @@ public class PayBotMod implements ModInitializer {
         // "public record FilteredText" không có type parameter, field "raw: String". Cấu trúc
         // PlayerChatMessage phức tạp (kèm signature) chỉ xuất hiện từ MC 1.20+. Dùng message.raw()
         // trực tiếp làm String, bỏ .decoratedContent().getString() (String không có method đó).
-        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((FilteredText message, ServerPlayer sender, ChatType.Bound boundChatType) -> {
+        ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((PlayerChatMessage message, ServerPlayer sender, ChatType.Bound boundChatType) -> {
             String text = message.raw();
             if (com.naptien.gui.GuiSession.isAnyoneWaiting(sender.getUUID())
                     && com.naptien.gui.GuiChatHandler.handle(sender, text)) {

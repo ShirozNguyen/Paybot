@@ -1,5 +1,17 @@
 # PayBot Multi-Loader — CHANGELOG
 
+## v5.5.5 — 2026-09-17 (Part 74)
+
+**🛠️ [SỬA ĐỢT 3 CÁC LỖI BIÊN DỊCH FABRIC LEGACY (1.16.5 - 1.19.2)]:**
+
+Xem LOG.md Part 74 để đọc đầy đủ.
+
+- **🛠️ Sửa `CommandRegistry.java` (1.16.5 - 1.18.2)**: Thay `.requires(src -> src.isPlayer())` bằng `.requires(src -> src.getEntity() instanceof ServerPlayer)`, thay tất cả getter player bằng `((ServerPlayer) src.getEntity())` tương thích Mojmap 1.16.5 - 1.18.2.
+- **🛠️ Sửa `fabric-1.16.5`**: Dùng `cf.code` trong `ComponentColorParser.java`, trả về `ItemStack.EMPTY` cho tất cả các nhánh trong `VanillaGuiBackend.java`.
+- **🛠️ Sửa `fabric-1.19` đến `fabric-1.19.2`**: Chuẩn hoá signature `PlayerChatMessage` và `signedContent().plain()` cho Fabric API 1.19.0, 1.19.1 và 1.19.2.
+- **📝 Thêm Header Comment Log vào tất cả file Java được chỉnh sửa.**
+- **📌 Giữ nguyên phiên bản v5.5.5 toàn dự án theo yêu cầu của Shiroz.**
+
 ## v5.5.5 — 2026-09-17 (Part 73)
 
 **🛠️ [SỬA ĐỢT 2 CÁC LỖI BIÊN DỊCH FABRIC LEGACY (1.16.5 - 1.19.2)]:**

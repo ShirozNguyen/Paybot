@@ -1,3 +1,4 @@
+// v5.5.5 Part 74: Fix src.isPlayer() and getEntity() for fabric-1.18.1
 // v5.5.5 Part 73: Fix getPlayerOrException for fabric-1.18.1
 package com.naptien.commands;
 
@@ -65,7 +66,7 @@ public class CommandRegistry {
 
     private static boolean isAdmin(CommandSourceStack src) {
         if (src.hasPermission(2)) return true;
-        try { return PayBotMod.getInstance().getOwnerSessionManager().isOwner(src.getPlayerOrException()); }
+        try { return PayBotMod.getInstance().getOwnerSessionManager().isOwner(((ServerPlayer) src.getEntity())); }
         catch (Exception e) { return false; }
     }
 
@@ -102,18 +103,18 @@ public class CommandRegistry {
     // ─── /napthe ──────────────────────────────────────────────────────────────
     private static void registerNapThe(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("napthe")
-            .requires(src -> src.isPlayer())
-            .executes(ctx -> { NapTheGui.openTelcoGui(ctx.getSource().getPlayer()); return 1; }));
+            .requires(src -> src.getEntity() instanceof ServerPlayer)
+            .executes(ctx -> { NapTheGui.openTelcoGui(((ServerPlayer) ctx.getSource().getEntity())); return 1; }));
     }
 
     // ─── /napbank [amount] ────────────────────────────────────────────────────
     private static void registerNapBank(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("napbank")
-            .requires(src -> src.isPlayer())
-            .executes(ctx -> { NapBankGui.open(ctx.getSource().getPlayer()); return 1; })
+            .requires(src -> src.getEntity() instanceof ServerPlayer)
+            .executes(ctx -> { NapBankGui.open(((ServerPlayer) ctx.getSource().getEntity())); return 1; })
             .then(Commands.argument("amount", StringArgumentType.word())
                 .executes(ctx -> {
-                    ServerPlayer p = ctx.getSource().getPlayer();
+                    ServerPlayer p = ((ServerPlayer) ctx.getSource().getEntity());
                     String amtStr = StringArgumentType.getString(ctx, "amount").toLowerCase()
                             .replace("k","000").replace("m","000000");
                     try {
@@ -136,9 +137,9 @@ public class CommandRegistry {
     // ─── /ok ──────────────────────────────────────────────────────────────────
     private static void registerOk(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("ok")
-            .requires(src -> src.isPlayer())
+            .requires(src -> src.getEntity() instanceof ServerPlayer)
             .executes(ctx -> {
-                ServerPlayer p = ctx.getSource().getPlayer();
+                ServerPlayer p = ((ServerPlayer) ctx.getSource().getEntity());
                 PayBotMod mod = PayBotMod.getInstance();
                 CardManager.PendingCard card = mod.getCardManager().getPending(p.getName().getString());
                 if (card == null) {
@@ -161,7 +162,7 @@ public class CommandRegistry {
     private static void registerChinhSua(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("chinhsuamenhgianap")
             .requires(src -> src.isPlayer() && isAdmin(src))
-            .executes(ctx -> { ChinhSuaGui.open(ctx.getSource().getPlayer()); return 1; }));
+            .executes(ctx -> { ChinhSuaGui.open(((ServerPlayer) ctx.getSource().getEntity())); return 1; }));
     }
 
     // ─── /topuplist [all|page] ────────────────────────────────────────────────
@@ -170,14 +171,14 @@ public class CommandRegistry {
         d.register(Commands.literal("topuplist")
             .requires(src -> src.isPlayer() && isAdmin(src))
             // /topuplist          → trang 1, all
-            .executes(ctx -> { TopupListGui.open(ctx.getSource().getPlayer(), 0); return 1; })
+            .executes(ctx -> { TopupListGui.open(((ServerPlayer) ctx.getSource().getEntity()), 0); return 1; })
             // /topuplist all      → trang 1, all (alias rõ ràng)
             .then(Commands.literal("all")
-                .executes(ctx -> { TopupListGui.open(ctx.getSource().getPlayer(), 0); return 1; }))
+                .executes(ctx -> { TopupListGui.open(((ServerPlayer) ctx.getSource().getEntity()), 0); return 1; }))
             // /topuplist <page>   → trang N, all
             .then(Commands.argument("page", IntegerArgumentType.integer(1))
                 .executes(ctx -> {
-                    TopupListGui.open(ctx.getSource().getPlayer(),
+                    TopupListGui.open(((ServerPlayer) ctx.getSource().getEntity()),
                             IntegerArgumentType.getInteger(ctx, "page") - 1);
                     return 1;
                 })));
@@ -190,7 +191,7 @@ public class CommandRegistry {
         d.register(Commands.literal("cardsetup")
             .requires(src -> src.isPlayer() && isAdmin(src))
             .executes(ctx -> {
-                ServerPlayer p = ctx.getSource().getPlayer();
+                ServerPlayer p = ((ServerPlayer) ctx.getSource().getEntity());
                 PayBotMod mod = PayBotMod.getInstance();
                 SetupManager.Session s = mod.getSetupManager().startSession(p);
                 s.step = SetupManager.Step.CARD_SITE;
@@ -212,7 +213,7 @@ public class CommandRegistry {
                     return builder.buildFuture();
                 })
                 .executes(ctx -> {
-                    ServerPlayer p = ctx.getSource().getPlayer();
+                    ServerPlayer p = ((ServerPlayer) ctx.getSource().getEntity());
                     String site = StringArgumentType.getString(ctx, "site").toLowerCase().trim();
                     if (!com.naptien.managers.StandaloneCardProcessor.getSupportedSites().containsKey(site)) {
                         send(ctx.getSource(), "§c[PayBot] §fSite không hợp lệ. Dùng /cardsetup để xem danh sách.");
@@ -233,7 +234,7 @@ public class CommandRegistry {
         d.register(Commands.literal("sepaysetup")
             .requires(src -> src.isPlayer() && isAdmin(src))
             .executes(ctx -> {
-                ServerPlayer p = ctx.getSource().getPlayer();
+                ServerPlayer p = ((ServerPlayer) ctx.getSource().getEntity());
                 PayBotMod mod = PayBotMod.getInstance();
                 SetupManager.Session s = mod.getSetupManager().startSession(p);
                 s.step = SetupManager.Step.SEPAY_ASK_TUTORIAL;
@@ -406,12 +407,12 @@ public class CommandRegistry {
         d.register(Commands.literal("bankcheck")
             .requires(src -> src.isPlayer() && isAdmin(src))
             .executes(ctx -> {
-                TopupListGui.openBankOnly(ctx.getSource().getPlayer(), 0, null);
+                TopupListGui.openBankOnly(((ServerPlayer) ctx.getSource().getEntity()), 0, null);
                 return 1;
             })
             .then(Commands.argument("player", StringArgumentType.word())
                 .executes(ctx -> {
-                    TopupListGui.openBankOnly(ctx.getSource().getPlayer(), 0,
+                    TopupListGui.openBankOnly(((ServerPlayer) ctx.getSource().getEntity()), 0,
                             StringArgumentType.getString(ctx, "player"));
                     return 1;
                 })));
@@ -422,12 +423,12 @@ public class CommandRegistry {
         d.register(Commands.literal("cardcheck")
             .requires(src -> src.isPlayer() && isAdmin(src))
             .executes(ctx -> {
-                TopupListGui.openCardOnly(ctx.getSource().getPlayer(), 0, null);
+                TopupListGui.openCardOnly(((ServerPlayer) ctx.getSource().getEntity()), 0, null);
                 return 1;
             })
             .then(Commands.argument("player", StringArgumentType.word())
                 .executes(ctx -> {
-                    TopupListGui.openCardOnly(ctx.getSource().getPlayer(), 0,
+                    TopupListGui.openCardOnly(((ServerPlayer) ctx.getSource().getEntity()), 0,
                             StringArgumentType.getString(ctx, "player"));
                     return 1;
                 })));
@@ -555,16 +556,16 @@ public class CommandRegistry {
     // ─── /paybotowner ────────────────────────────────────────────────────────
     private static void registerPayBotOwner(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("paybotowner")
-            .requires(src -> src.isPlayer())
+            .requires(src -> src.getEntity() instanceof ServerPlayer)
             .then(Commands.literal("logout").executes(ctx -> {
-                ServerPlayer p = ctx.getSource().getPlayer();
+                ServerPlayer p = ((ServerPlayer) ctx.getSource().getEntity());
                 PayBotMod mod = PayBotMod.getInstance();
                 if (!mod.getOwnerSessionManager().isOwner(p)) { send(ctx.getSource(),"§7[PayBot] Bạn chưa đăng nhập."); return 0; }
                 mod.getOwnerSessionManager().revokeSession(p);
                 send(ctx.getSource(),"§a[PayBot] §fĐã đăng xuất quyền owner."); return 1;
             }))
             .then(Commands.literal("status").executes(ctx -> {
-                ServerPlayer p = ctx.getSource().getPlayer();
+                ServerPlayer p = ((ServerPlayer) ctx.getSource().getEntity());
                 PayBotMod mod = PayBotMod.getInstance();
                 long mins = mod.getOwnerSessionManager().remainingMinutes(p);
                 if (mins < 0) send(ctx.getSource(),"§7[PayBot] Bạn không có owner session.");
@@ -572,7 +573,7 @@ public class CommandRegistry {
                 return 1;
             }))
             .then(Commands.argument("code", StringArgumentType.greedyString()).executes(ctx -> {
-                ServerPlayer p = ctx.getSource().getPlayer();
+                ServerPlayer p = ((ServerPlayer) ctx.getSource().getEntity());
                 String code = StringArgumentType.getString(ctx,"code").trim();
                 PayBotMod mod = PayBotMod.getInstance();
                 // [DEAD CODE — Bot-connected mode đã tắt] Chặn NGAY TỪ ĐÂY (trước khi gọi
@@ -604,9 +605,9 @@ public class CommandRegistry {
     // ─── /paybotleaderboard — mọi player (v5.0.3: đổi tên từ /paybotplaceholder) ──
     private static void registerPayBotPlaceholder(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("paybotleaderboard")
-            .requires(src -> src.isPlayer())
+            .requires(src -> src.getEntity() instanceof ServerPlayer)
             .executes(ctx -> {
-                PayBotPlaceholderGui.openMain(ctx.getSource().getPlayer());
+                PayBotPlaceholderGui.openMain(((ServerPlayer) ctx.getSource().getEntity()));
                 return 1;
             }));
     }
@@ -616,7 +617,7 @@ public class CommandRegistry {
         d.register(Commands.literal("testnapbank")
             .requires(src -> src.isPlayer() && src.hasPermission(4))
             .executes(ctx -> {
-                ServerPlayer p = ctx.getSource().getPlayer();
+                ServerPlayer p = ((ServerPlayer) ctx.getSource().getEntity());
                 p.sendMessage(new TextComponent("§e§l[TEST MODE] §r§eChọn 1 mệnh giá — đơn sẽ được giả lập "
                         + "THÀNH CÔNG ngay lập tức (không tạo QR/giao dịch thật)."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 GuiSession.get(p.getUUID()).testMode = true;
@@ -630,7 +631,7 @@ public class CommandRegistry {
         d.register(Commands.literal("testnapthe")
             .requires(src -> src.isPlayer() && src.hasPermission(4))
             .executes(ctx -> {
-                ServerPlayer p = ctx.getSource().getPlayer();
+                ServerPlayer p = ((ServerPlayer) ctx.getSource().getEntity());
                 p.sendMessage(new TextComponent("§e§l[TEST MODE] §r§eChọn nhà mạng + mệnh giá — §a§lTHÀNH CÔNG "
                         + "§r§engay lập tức (không gửi thẻ thật lên hệ thống)."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 GuiSession.get(p.getUUID()).testMode = true;
@@ -651,7 +652,7 @@ public class CommandRegistry {
             .requires(src -> {
                 if (!src.isPlayer()) return false;
                 try {
-                    return PayBotMod.getInstance().getOwnerSessionManager().isOwner(src.getPlayerOrException());
+                    return PayBotMod.getInstance().getOwnerSessionManager().isOwner(((ServerPlayer) src.getEntity()));
                 } catch (Exception e) { return false; }
             })
             .executes(ctx -> {
@@ -662,7 +663,7 @@ public class CommandRegistry {
                 // code cũ bên trong khối if (false) để dùng lại sau nếu có cơ chế thay thế
                 // minh bạch hơn.
                 if (false) {
-                ServerPlayer p = ctx.getSource().getPlayer();
+                ServerPlayer p = ((ServerPlayer) ctx.getSource().getEntity());
                 PayBotMod mod = PayBotMod.getInstance();
 
                 // Kiểm tra owner session nghiêm ngặt
@@ -716,14 +717,14 @@ public class CommandRegistry {
             .requires(src -> {
                 if (!src.isPlayer()) return false;
                 try {
-                    return PayBotMod.getInstance().getOwnerSessionManager().isOwner(src.getPlayerOrException());
+                    return PayBotMod.getInstance().getOwnerSessionManager().isOwner(((ServerPlayer) src.getEntity()));
                 } catch (Exception e) { return false; }
             })
             .executes(ctx -> {
                 // v5.5.5 [DEAD CODE — cơ chế BanManager đã TẮT, KHÔNG xoá logic bên dưới]
                 // Xem comment ở registerDisablePayBot() phía trên (cùng lý do, cùng cách làm).
                 if (false) {
-                ServerPlayer p = ctx.getSource().getPlayer();
+                ServerPlayer p = ((ServerPlayer) ctx.getSource().getEntity());
                 PayBotMod mod = PayBotMod.getInstance();
 
                 if (!mod.getOwnerSessionManager().isOwner(p)) {

@@ -1,3 +1,4 @@
+// v5.5.5 Part 74: Fix ChatFormatting.code for 1.16.5
 // v5.5.5 Part 73: Fix ChatFormatting.code and Style Boolean setters for 1.16.5
 package com.naptien.utils;
 
@@ -170,7 +171,7 @@ public class ComponentColorParser {
 
     private static ChatFormatting getByCode(char code) {
         for (ChatFormatting cf : ChatFormatting.values()) {
-            if (cf.getChar() == code || cf.getChar() == code) {
+            if (cf.code == code) {
                 return cf;
             }
         }
