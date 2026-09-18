@@ -108,10 +108,6 @@ public class OfflineRewardManager {
         }
     }
 
-    public synchronized Set<String> getPendingPlayerNames() {
-        return new HashSet<>(cache.keySet());
-    }
-
     /**
      * Kiểm tra và xoá reward quá cũ (hơn 7 ngày). Gọi định kỳ mỗi giờ.
      */
