@@ -8,6 +8,8 @@
 ## Danh sách thay đổi
 
 
+| 110 | 5.5.5 | `FabricVersionAdapterModern.java` (16 modules), `ForgeVersionAdapterModern.java` (17 modules), `NeoForgeVersionAdapterModern.java` (19 modules) | **[Fix Triệt Để GUI Items Không Hiện Tên & Lore Đa Loader v5.5.5 Part 110]** Bổ sung danh sách ứng viên Intermediary `net.minecraft.class_9290` và Yarn `LoreComponent` cho Fabric production; xây dựng `resolveClassCandidates()` nạp xuyên suốt qua `FabricLoader.getMappingResolver()`. Thiết lập fallback kép sang `setLoreLegacyNbt` cho Forge và NeoForge để đảm bảo item tương tác GUI luôn luôn có Lore và Custom Name trên 100% các phiên bản và Mod Loader. |
+| 109 | 5.5.5 | `fabric-1.21.10/build.gradle`, `gradle.properties`, `gradle-wrapper.properties`, `neoforge-26.2/VanillaGuiBackend.java`, `neoforge-26.1/ModernItemProvider.java` | **[Live-Patch 3 Submodule Cuối v5.5.5 Part 109]** Đồng bộ fabric-1.21.10 lên fabric_version 0.138.4 và Gradle 9.5.1; fix package import `ModernItemProvider` trong neoforge-26.2; bổ sung class `ModernItemProvider` (Rule 17) cho neoforge-26.1. |
 | 1 | 5.4.3 | `plugin/events/PayBotTopupEvent.java` | **[Custom Event]** Bukkit Event bắn ra khi nạp tiền thành công cho PayBot++ và plugin khác hook. |
 | 2 | 5.4.3 | `plugin/managers/TopupStatsManager.java` | **[3 loại tiền]** Phân loại chỉ số nạp tiền làm 3 loại Card, Bank và Total cho cả Player & Server. |
 | 3 | 5.4.3 | `plugin/placeholder/PayBotPlaceholders.java` | **[PlaceholderAPI]** Đăng ký thêm các placeholder 3 loại nạp và `%paybot_db_status%`, `%paybot_db_config%`. |

@@ -275,18 +275,19 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
         // cùng fix, đã audit trước). Luôn dựng đúng wrapper ItemLore rồi mới set.
         Class<?> itemLoreClass = classForNameOrNull("net.minecraft.world.item.component.ItemLore");
         if (itemLoreClass == null) {
-            LOGGER.error("[NeoForgeModern] Không tìm thấy class ItemLore trên runtime này — không thể set lore đúng kiểu.");
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setLoreModern: thiếu class ItemLore", null);
+            LOGGER.warn("[NeoForgeModern] Không tìm thấy class ItemLore trên runtime này — tự động kích hoạt fallback Legacy NBT.");
+            setLoreLegacyNbt(stack, componentList);
             return;
         }
         Object wrapper = buildListWrapperInstance(itemLoreClass, componentList);
         if (wrapper == null) {
-            LOGGER.error("[NeoForgeModern] Có class ItemLore nhưng KHÔNG dựng được instance qua constructor/factory.");
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setLoreModern: buildListWrapperInstance trả về null", null);
+            LOGGER.warn("[NeoForgeModern] Có class ItemLore nhưng KHÔNG dựng được instance — tự động kích hoạt fallback Legacy NBT.");
+            setLoreLegacyNbt(stack, componentList);
             return;
         }
         if (!attemptLoreValue(stack, wrapper, "wrapper " + itemLoreClass.getName())) {
-            LOGGER.warn("[NeoForgeModern] KHÔNG set được lore bằng wrapper ItemLore — xem log debug-mode phía trên.");
+            LOGGER.warn("[NeoForgeModern] KHÔNG set được lore bằng wrapper ItemLore — tự động kích hoạt fallback Legacy NBT.");
+            setLoreLegacyNbt(stack, componentList);
         }
     }
 

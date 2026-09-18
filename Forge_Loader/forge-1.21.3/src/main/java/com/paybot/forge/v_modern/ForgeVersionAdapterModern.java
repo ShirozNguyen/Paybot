@@ -269,18 +269,19 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
         // wrapper ItemLore rồi mới set — không còn đường lưu sai kiểu.
         Class<?> itemLoreClass = classForNameOrNull("net.minecraft.world.item.component.ItemLore");
         if (itemLoreClass == null) {
-            LOGGER.error("[ForgeModern] Không tìm thấy class ItemLore trên runtime này — không thể set lore đúng kiểu.");
-            PayBotDebug.logSwallowed("ForgeVersionAdapterModern.setLoreModern: thiếu class ItemLore", null);
+            LOGGER.warn("[ForgeModern] Không tìm thấy class ItemLore trên runtime này — tự động kích hoạt fallback Legacy NBT.");
+            setLoreLegacyNbt(stack, componentList);
             return;
         }
         Object wrapper = buildListWrapperInstance(itemLoreClass, componentList);
         if (wrapper == null) {
-            LOGGER.error("[ForgeModern] Có class ItemLore nhưng KHÔNG dựng được instance qua constructor/factory.");
-            PayBotDebug.logSwallowed("ForgeVersionAdapterModern.setLoreModern: buildListWrapperInstance trả về null", null);
+            LOGGER.warn("[ForgeModern] Có class ItemLore nhưng KHÔNG dựng được instance — tự động kích hoạt fallback Legacy NBT.");
+            setLoreLegacyNbt(stack, componentList);
             return;
         }
         if (!attemptLoreValue(stack, wrapper, "wrapper " + itemLoreClass.getName())) {
-            LOGGER.warn("[ForgeModern] KHÔNG set được lore bằng wrapper ItemLore — xem log debug-mode phía trên.");
+            LOGGER.warn("[ForgeModern] KHÔNG set được lore bằng wrapper ItemLore — tự động kích hoạt fallback Legacy NBT.");
+            setLoreLegacyNbt(stack, componentList);
         }
     }
 

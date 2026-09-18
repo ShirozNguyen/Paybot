@@ -238,6 +238,19 @@ public class FabricVersionAdapterModern implements VersionAdapter {
 
     // ===================== TÊN + LORE =====================
 
+    private static final String[] LORE_CLASS_CANDIDATES = {
+        "net.minecraft.world.item.component.ItemLore",      // Mojang Official
+        "net.minecraft.class_9290",                         // Intermediary (Fabric Production THAT)
+        "net.minecraft.component.type.LoreComponent"        // Yarn (Fabric Dev)
+    };
+
+    private static final String[] CUSTOM_DATA_CLASS_CANDIDATES = {
+        "net.minecraft.world.item.component.CustomData",    // Mojang Official
+        "net.minecraft.class_9279",                         // Intermediary (Fabric Production THAT)
+        "net.minecraft.component.type.NbtComponent"         // Yarn (Fabric Dev)
+    };
+
+
     @Override
     public void setItemNameAndLore(ItemStack stack, String name, List<String> lore) {
         if (stack == null || stack.isEmpty()) return;
@@ -312,7 +325,7 @@ public class FabricVersionAdapterModern implements VersionAdapter {
         //
         // FIX: bỏ hẳn Phương án 1 — không còn đường nào để lưu sai kiểu nữa, luôn dựng đúng
         // ItemLore trước khi set.
-        Class<?> itemLoreClass = resolveClassEitherWay("net.minecraft.world.item.component.ItemLore");
+        Class<?> itemLoreClass = resolveClassCandidates(LORE_CLASS_CANDIDATES);
         if (itemLoreClass == null) {
             LOGGER.error("[FabricModern] Không tìm thấy class ItemLore trên runtime này — không thể set lore đúng kiểu.");
             PayBotDebug.logSwallowed("FabricVersionAdapterModern.setLore: thiếu class net.minecraft.world.item.component.ItemLore", null);
@@ -418,7 +431,7 @@ public class FabricVersionAdapterModern implements VersionAdapter {
         // tới. Khác với ItemLore (không có factory), CustomData CÓ static factory thật đã xác
         // nhận qua mapping: {@code public static CustomData of(CompoundTag)} — ưu tiên factory
         // này trước (buildTagWrapperInstance đã hỗ trợ, chỉ cần đổi thứ tự gọi bên dưới).
-        Class<?> customDataClass = resolveClassEitherWay("net.minecraft.world.item.component.CustomData");
+        Class<?> customDataClass = resolveClassCandidates(CUSTOM_DATA_CLASS_CANDIDATES);
         if (customDataClass == null) {
             LOGGER.error("[FabricModern] Không tìm thấy class CustomData trên runtime này — không thể set invoice-id đúng kiểu.");
             PayBotDebug.logSwallowed("FabricVersionAdapterModern.setInvoiceId: thiếu class net.minecraft.world.item.component.CustomData", null);
@@ -665,20 +678,36 @@ public class FabricVersionAdapterModern implements VersionAdapter {
     /** Thử Class.forName trực tiếp (chỉ hoạt động ở dev-env), rồi qua MappingResolver intermediary
      *  (chỉ hoạt động nếu tên truyền vào ĐÃ LÀ intermediary hợp lệ) — giữ như 1 phương án bổ sung
      *  trong chuỗi "thử nhiều phương án + xác minh đọc lại", không còn là điểm phụ thuộc duy nhất. */
-    private Class<?> resolveClassEitherWay(String nameOrIntermediary) {
+    private Class<?> resolveClassCandidates(String... candidates) {
+        net.fabricmc.loader.api.MappingResolver resolver = null;
         try {
-            return Class.forName(nameOrIntermediary);
-        } catch (Throwable ignored) {
-            // môi trường production Fabric sẽ luôn lỗi bước này (tên Mojang không load được) — dự kiến
-        }
-        try {
-            MappingResolver resolver = FabricLoader.getInstance().getMappingResolver();
-            String runtimeName = resolver.mapClassName("intermediary", nameOrIntermediary);
-            return Class.forName(runtimeName);
-        } catch (Throwable ignored) {
-            // dự kiến lỗi nếu nameOrIntermediary không thực sự là 1 ID intermediary hợp lệ
+            resolver = net.fabricmc.loader.api.FabricLoader.getInstance().getMappingResolver();
+        } catch (Throwable ignored) {}
+
+        for (String name : candidates) {
+            try {
+                return Class.forName(name);
+            } catch (Throwable ignored) {}
+
+            if (resolver != null) {
+                try {
+                    String runtimeName = resolver.mapClassName("intermediary", name);
+                    if (runtimeName != null && !runtimeName.isEmpty()) {
+                        return Class.forName(runtimeName);
+                    }
+                } catch (Throwable ignored) {}
+            }
+
+            try {
+                ClassLoader cl = net.fabricmc.loader.api.FabricLoader.getInstance().getClass().getClassLoader();
+                if (cl != null) return Class.forName(name, true, cl);
+            } catch (Throwable ignored) {}
         }
         return null;
+    }
+
+    private Class<?> resolveClassEitherWay(String nameOrIntermediary) {
+        return resolveClassCandidates(nameOrIntermediary);
     }
 
     private String safeToString(Object o) {
