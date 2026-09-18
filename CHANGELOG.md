@@ -1,3 +1,10 @@
+## [5.5.5 - Part 111] - 18/09/2026 13:55
+### Fixed & Improved
+- **Nâng Cấp Toàn Diện README.md — Dự Án PayBot Multi-Loader v5.5.5**:
+  - Khắc phục triệt để các vết merge conflict Markdown (`<<<<<<< HEAD`, `=======`, `>>>>>>>`) tồn đọng trên GitHub và Modrinth, chuẩn hóa 100% cú pháp GitHub Flavored Markdown (GFM).
+  - Tái cấu trúc trang giới thiệu trực quan, hiện đại: Làm nổi bật 7 ưu điểm cốt lõi của PayBot (100% Server-Side không bắt client cài mod, cơ chế chống trộm đồ GUI Anti-Theft Protection, hỗ trợ 8 nền tảng Loader từ 1.16 đến 26.x, VietQR Map Lock chống ghi đè, chế độ kép Standalone SePay / Bot Discord, hỗ trợ màu Hex/Gradient và đa luồng Folia).
+  - Tinh gọn bảng lệnh và quyền hạn, phân định rõ ràng giữa tài liệu giới thiệu và CHANGELOG kỹ thuật; bảo toàn 100% văn bản Thỏa thuận người dùng và Công khai dữ liệu song ngữ.
+
 ## [5.5.5 - Part 110] - 18/09/2026 13:40
 ### Fixed & Improved
 - **Vá Triệt Để & Toàn Diện Lỗi GUI Items Không Hiện Tên / Lore Trên TẤT CẢ Mod Loaders (Fabric, Forge, NeoForge)**:
