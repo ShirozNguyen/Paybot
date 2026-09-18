@@ -27,6 +27,8 @@ done/
 .architectury-transformer/
 scratch/
 test/
+tools/
+.agents/
 
 # IDE
 .idea/
@@ -54,3 +56,11 @@ croc-stdin-*
 
 # Modrinth Token
 .modrinth_token
+
+# Internal manifests & tokens
+build-targets.json
+jar-report.json
+feature-matrix.csv
+SHA256SUMS
+*.token
+.git_token_tmp
