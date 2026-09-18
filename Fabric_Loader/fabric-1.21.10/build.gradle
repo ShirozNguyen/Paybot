@@ -69,9 +69,7 @@ dependencies {
     mappings loom.officialMojangMappings()
 
     modImplementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
-    modApi("net.fabricmc.fabric-api:fabric-api:${project.fabric_version}") {
-        exclude group: 'net.fabricmc.fabric-api', module: 'fabric-data-generation-api-v1'
-    }
+    modApi "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     // Direct shaded libraries for Fabric & Quilt
     shadowBundle 'org.xerial:sqlite-jdbc:3.45.3.0'

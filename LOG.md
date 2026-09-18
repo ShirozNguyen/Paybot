@@ -2219,3 +2219,27 @@ Tách thành 4 class tiện ích đơn nhiệm thuần Java 100% trong `com.napt
 
 - **📌 Giữ nguyên phiên bản v5.5.5 toàn dự án theo yêu cầu của Shiroz.**
 
+---
+
+## Part 109: Live-Patching Biên Dịch Cho fabric-1.21.10, neoforge-26.1, neoforge-26.2
+
+> Thời gian: 18/09/2026 13:05  
+> Phiên bản: v5.5.5 (Part 109)
+
+### 1. Phân tích nguyên nhân gốc dựa trên log live
+- Trong khi GitHub Actions Run #69 đang biên dịch dải submodule độc lập:
+  + `fabric-1.21.10`: Bị lỗi do lệch chuẩn phiên bản `fabric_loader_version` (0.16.10 quá cũ) và `fabric_version` (0.134.1) so với phiên bản `fabric-1.21.11` (vốn đã build thành công 100% ra JAR 19.33 MB với loader 0.18.4 và Gradle 9.5.1).
+  + `neoforge-26.2`: Biên dịch báo lỗi `cannot find symbol: variable ModernItemProvider` do import nhầm package `com.paybot.utils.ModernItemProvider` trong khi class nằm ở `com.paybot.gui.ModernItemProvider`.
+  + `neoforge-26.1`: Thiếu file `ModernItemProvider.java` và class `VanillaGuiBackend.java` vẫn đang gọi trực tiếp `Items.GRAY_STAINED_GLASS_PANE` (không an toàn trên MC 26.1).
+
+### 2. Các hành động khắc phục trực tiếp (Live-Patch)
+1. **fabric-1.21.10**:
+   - Cập nhật `gradle.properties`: `fabric_loader_version = 0.18.4`, `fabric_version = 0.138.4+1.21.10`.
+   - Cập nhật `gradle/wrapper/gradle-wrapper.properties` sang `gradle-9.5.1-bin.zip`.
+   - Cập nhật `build.gradle`: Bỏ khối exclude data generation, chuẩn hóa `modApi "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"`.
+2. **neoforge-26.2**:
+   - Sửa import trong `VanillaGuiBackend.java` thành `import com.paybot.gui.ModernItemProvider;`.
+3. **neoforge-26.1**:
+   - Tạo mới class độc lập `com.paybot.gui.ModernItemProvider` (Rule 17).
+   - Sửa `VanillaGuiBackend.java` trong `neoforge-26.1`: import `com.paybot.gui.ModernItemProvider` và dùng `ModernItemProvider.createStack("gray_stained_glass_pane")`.
+

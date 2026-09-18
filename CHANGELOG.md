@@ -1,3 +1,17 @@
+## [5.5.5 - Part 109] - 18/09/2026 13:05
+### Fixed & Improved
+- **Khắc Phục Nóng Trực Tiếp (Live-Patch) Lỗi Biên Dịch 3 Submodule fabric-1.21.10, neoforge-26.1, neoforge-26.2**:
+  - **fabric-1.21.10**:
+    + Đồng bộ hóa toàn diện cấu hình theo mẫu thành công 100% của `fabric-1.21.11` (đã sinh JAR 19.33 MB).
+    + Nâng `fabric_loader_version = 0.18.4` và `fabric_version = 0.138.4+1.21.10` (bản phát hành chính thức mới nhất cho MC 1.21.10 trên Maven FabricMC).
+    + Chuyển Gradle wrapper lên `gradle-9.5.1-bin.zip` đồng bộ với hệ thống toolchain Loom 1.17.
+    + Loại bỏ khối loại trừ `fabric-data-generation-api-v1` gây xung đột cấu trúc dependency, sử dụng `modApi "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"`.
+  - **neoforge-26.2**:
+    + Khắc phục triệt để lỗi biên dịch `cannot find symbol: variable ModernItemProvider`: Sửa sai lệch package import trong `VanillaGuiBackend.java` từ `com.paybot.utils.ModernItemProvider` sang `com.paybot.gui.ModernItemProvider`.
+  - **neoforge-26.1**:
+    + Bổ sung class độc lập `ModernItemProvider.java` vào package `com.paybot.gui` (tuân thủ Rule 17).
+    + Cập nhật `VanillaGuiBackend.java` trong `neoforge-26.1`: import `com.paybot.gui.ModernItemProvider` và thay thế việc gọi trực tiếp `Items.GRAY_STAINED_GLASS_PANE` bằng `ModernItemProvider.createStack("gray_stained_glass_pane")` để tương thích hoàn hảo và an toàn trên MC 26.1.
+
 ## [5.5.5 - Part 108] - 18/09/2026 12:15
 ### Fixed & Improved
 - **Khắc Phục Triệt Để Lỗi Spam Hàng Chục Tiến Trình Java & OOM Crash (Đảm Bảo Tối Đa Hóa Công Suất CI)**:

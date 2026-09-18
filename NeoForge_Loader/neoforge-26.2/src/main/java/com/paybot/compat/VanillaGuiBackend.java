@@ -13,7 +13,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 
 import com.paybot.utils.ItemTagCompat;
-import com.paybot.utils.ModernItemProvider;
+import com.paybot.gui.ModernItemProvider;
 import com.paybot.utils.PayBotDebug;
 
 import java.lang.reflect.RecordComponent;
