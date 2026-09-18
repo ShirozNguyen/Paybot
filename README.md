@@ -2,20 +2,24 @@
 
 ### Hệ Thống Tích Hợp Thanh Toán Ngân Hàng (VietQR) & Thẻ Cào Tự Động Cho Minecraft
 
-[![Java 21](https://img.shields.io/badge/Java-21-orange.svg?style=for-the-badge&logo=openjdk)](https://www.oracle.com/java/)
-[![Gradle](https://img.shields.io/badge/Gradle-8.14%20|%209.5-02303A.svg?style=for-the-badge&logo=gradle)](https://gradle.org)
-[![Version](https://img.shields.io/badge/Version-v5.5.5-brightgreen.svg?style=for-the-badge)](https://modrinth.com/plugin/paybot)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+<!-- ===== BUILD WITH ===== -->
+[![Java 21](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/built-with/java21_46h.png)](https://www.oracle.com/java/)
+[![Gradle](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/built-with/gradle_46h.png)](https://gradle.org)
+[![Maven](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/built-with/maven_46h.png)](https://maven.apache.org)
 
+<!-- ===== SUPPORTED PLATFORMS ===== -->
 [![Paper](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/paper_vector.svg)](https://modrinth.com/plugin/paybot)
 [![Purpur](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/purpur_vector.svg)](https://modrinth.com/plugin/paybot)
-[![Folia](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/folia_vector.svg)](https://modrinth.com/plugin/paybot)
 [![Fabric](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/fabric_vector.svg)](https://modrinth.com/project/paybotmod)
 [![Quilt](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/quilt_vector.svg)](https://modrinth.com/project/paybotmod)
 [![Forge](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/forge_vector.svg)](https://modrinth.com/project/paybotmod)
 [![NeoForge](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/neoforge_vector.svg)](https://modrinth.com/project/paybotmod)
 
-**[💬 Discord Hỗ Trợ & Hướng Dẫn Cài Đặt](https://discord.gg/QdE5uNYqrV)** • **[📦 Official Addon (PayBot++)](https://modrinth.com/plugin/paybotpp)** • **[🌐 Hangar](https://hangar.papermc.io/TheRealShiroz/PayBot)** • **[☕ SpigotMC](https://www.spigotmc.org/resources/paybot.134369)**
+**[💬 Discord Hỗ Trợ & Hướng Dẫn Cài Đặt](https://discord.gg/QdE5uNYqrV)** 
+• **[📦 Official Addon (PayBot++)](https://modrinth.com/plugin/paybotpp)** 
+• **[🌐 Hangar](https://hangar.papermc.io/TheRealShiroz/PayBot)** 
+• **[☕ SpigotMC](https://www.spigotmc.org/resources/paybot.134369)**
+
 
 ---
 
