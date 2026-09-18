@@ -34,8 +34,8 @@ public class ChinhSuaGui {
     public static void open(ServerPlayer player) {
         PayBotMod mod = PayBotMod.getInstance();
         GuiBackend gui = GuiFactory.create(MenuType.GENERIC_9x6, player, "§6§lChỉnh sửa mệnh giá nạp");
-        gui.setSlot(4, new ItemStack(Items.YELLOW_STAINED_GLASS_PANE), "§6§l✦ Nạp Thẻ Cào ✦", null, null);
-        gui.setSlot(22, new ItemStack(Items.LIGHT_BLUE_STAINED_GLASS_PANE), "§b§l✦ Nạp Ngân Hàng ✦", null, null);
+        gui.setSlot(4, ModernItemProvider.createStack("yellow_stained_glass_pane"), "§6§l✦ Nạp Thẻ Cào ✦", null, null);
+        gui.setSlot(22, ModernItemProvider.createStack("light_blue_stained_glass_pane"), "§b§l✦ Nạp Ngân Hàng ✦", null, null);
         for (int i=0;i<DENOMS.length;i++) addDenomSlot(gui, player, mod, DENOMS[i], CARD_START+i, "card");
         for (int i=0;i<DENOMS.length;i++) addDenomSlot(gui, player, mod, DENOMS[i], BANK_START+i, "bank");
         gui.setSlot(CLOSE_SLOT, GuiUtil.getCloseItem(), "§c§lĐóng", List.of("§7Nhấn để đóng"), () -> gui.close());
@@ -59,7 +59,7 @@ public class ChinhSuaGui {
         }
         lore.add("§eClick để chỉnh sửa");
 
-        gui.setSlot(slot, new ItemStack(configured?Items.GREEN_WOOL:Items.RED_WOOL), label, lore, () -> {
+        gui.setSlot(slot, ModernItemProvider.createStack(configured ? "green_wool" : "red_wool"), label, lore, () -> {
             GuiSession s = GuiSession.get(player.getUUID());
             s.editDenom = denom; s.editType = type;
             s.stage = "card".equals(type) ? GuiSession.Stage.EDIT_WAIT_CMD_CARD : GuiSession.Stage.EDIT_WAIT_CMD_BANK;

@@ -137,10 +137,10 @@ public class TopupListGui {
         boolean isExpired  = LocalOrderManager.BANK_EXPIRED.equals(b.status);
 
         net.minecraft.world.item.Item icon;
-        if (isApproved) icon = Items.LIME_WOOL;
-        else if (isPaid) icon = Items.YELLOW_WOOL;
-        else if (isExpired) icon = Items.GRAY_WOOL;
-        else icon = Items.RED_WOOL;
+        if (isApproved) icon = ModernItemProvider.getItem("lime_wool");
+        else if (isPaid) icon = ModernItemProvider.getItem("yellow_wool");
+        else if (isExpired) icon = ModernItemProvider.getItem("gray_wool");
+        else icon = ModernItemProvider.getItem("red_wool");
 
         String time    = TIME_FMT.format(new Date(b.createdAt));
         String shortId = shorten(b.invoiceId, 12);
@@ -225,9 +225,9 @@ public class TopupListGui {
         boolean isApproved = LocalOrderManager.CARD_APPROVED.equals(c.status);
         boolean isFailed   = "2".equals(c.status) || "3".equals(c.status) || "100".equals(c.status);
 
-        net.minecraft.world.item.Item icon = isApproved ? Items.LIME_WOOL
-                                     : isFailed   ? Items.RED_WOOL
-                                                  : Items.ORANGE_WOOL;
+        net.minecraft.world.item.Item icon = isApproved ? ModernItemProvider.getItem("lime_wool")
+                                     : isFailed   ? ModernItemProvider.getItem("red_wool")
+                                                  : ModernItemProvider.getItem("orange_wool");
         String time = TIME_FMT.format(new Date(c.createdAt));
 
         List<String> lore = new ArrayList<>();

@@ -156,7 +156,7 @@ public class PayBotPlaceholderGui {
 
         GuiBackend gui = GuiFactory.create(MenuType.GENERIC_9x6, player, "§b§l📱 Bảng Xếp Hạng Nạp Thẻ Cào");
 
-        gui.setSlot(SP_STAT_SLOT, new ItemStack(Items.CYAN_WOOL), "§b§lTổng Nạp Thẻ Toàn Server", List.of(
+        gui.setSlot(SP_STAT_SLOT, ModernItemProvider.createStack("cyan_wool"), "§b§lTổng Nạp Thẻ Toàn Server", List.of(
                 "§a" + PayBotMod.formatVnd((int) total.cardTotal()) + " VND",
                 "§7" + total.cardCount() + " giao dịch đã duyệt"
         ), null);
@@ -398,9 +398,9 @@ public class PayBotPlaceholderGui {
         boolean failed   = "100".equals(status) || "2".equals(status) || "3".equals(status)
                         || LocalOrderManager.BANK_EXPIRED.equals(status);
 
-        net.minecraft.world.item.Item icon = approved ? Items.LIME_WOOL
-                                     : failed   ? Items.RED_WOOL
-                                                : Items.YELLOW_WOOL;
+        net.minecraft.world.item.Item icon = approved ? ModernItemProvider.getItem("lime_wool")
+                                     : failed   ? ModernItemProvider.getItem("red_wool")
+                                                : ModernItemProvider.getItem("yellow_wool");
 
         List<String> lore = new ArrayList<>();
         lore.add("§7Player  : §f" + pname);

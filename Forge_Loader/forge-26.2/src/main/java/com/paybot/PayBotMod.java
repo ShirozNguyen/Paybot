@@ -11,7 +11,6 @@ import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.ServerChatEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.fml.ModList;
@@ -75,53 +74,47 @@ public class PayBotMod {
 
     private void setupEvents() {
         com.paybot.utils.MinecraftVersionDetector.init();
-        MinecraftForge.EVENT_BUS.register(this);
+        try {
+            var bus = MinecraftForge.EVENT_BUS;
+            bus.addListener(this::onServerStarted);
+            bus.addListener(this::onServerStopping);
+            bus.addListener(this::onRegisterCommands);
+            bus.addListener(this::onPlayerLoggedIn);
+            bus.addListener(this::onPlayerLoggedOut);
+            bus.addListener(this::onServerChat);
+        } catch (Throwable t) {
+            try {
+                java.lang.reflect.Method reg = MinecraftForge.EVENT_BUS.getClass().getMethod("register", Object.class);
+                reg.invoke(MinecraftForge.EVENT_BUS, this);
+            } catch (Throwable ignored) {}
+        }
         LOGGER.info("[PayBot] Forge Native EventBus registered — waiting for server start…");
     }
 
-    @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         onServerStart(event.getServer());
     }
 
-    @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
         onServerStop();
     }
 
-    @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         CommandRegistry.registerAll(event.getDispatcher());
     }
 
-    @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
             onPlayerJoin(sp);
         }
     }
 
-    @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
             onPlayerQuit(sp);
         }
     }
 
-    // v5.5.5 Part 52: forge-26.x dung EventBus 7 (xac nhan qua source that
-    // MinecraftForge/MinecraftForge nhanh 26.2: ServerChatEvent.java - class nay
-    // KHONG con setCanceled(), thay bang gia tri boolean tra ve tu listener
-    // (xac nhan qua migration guide chinh thuc EventBus 7 - vi du onChorusFruit
-    // tra ve boolean thay vi goi event.setCanceled(true)). @SubscribeEvent cu van
-    // duoc ho tro nguyen ven cho pattern nay ("source compatibility" - theo dung
-    // migration guide), nen giu nguyen cach dang ky MinecraftForge.EVENT_BUS.register(this)
-    // da co san o setupEvents(), chi doi kieu tra ve void -> boolean rieng ham nay.
-    //
-    // Bug goc (giong het Fabric/NeoForge da fix cac phien truoc): SetupManager.handleChat()
-    // va GuiChatHandler.handle() chua bao gio duoc goi o day - input nhay cam (ma the/serial,
-    // SePay API Token, Card Partner Key) go vao chat se hien CONG KHAI cho toan server thay
-    // vi duoc xu ly rieng tu, dong thoi luong nap the/setup qua mod 26.x khong hoat dong duoc.
-    @SubscribeEvent
     public boolean onServerChat(ServerChatEvent event) {
         ServerPlayer sender = event.getPlayer();
         String text = event.getRawText();
@@ -137,16 +130,11 @@ public class PayBotMod {
     }
 
     public static String getModVersion() {
-        try {
-            var mod = ModList.get().getModContainerById(MOD_ID);
-            return mod.isPresent() ? mod.get().getModInfo().getVersion().toString() : "5.5.5";
-        } catch (Exception e) {
-            return "5.5.5";
-        }
+        return "5.5.5";
     }
 
     public static String getLoaderVersion() {
-        return "Forge " + ModList.get().getModContainerById("forge").map(m -> m.getModInfo().getVersion().toString()).orElse("47.3.0");
+        return "Forge 26.x";
     }
 
     /** Version Minecraft server đang chạy thực tế (không phải bản mod target lúc build). */

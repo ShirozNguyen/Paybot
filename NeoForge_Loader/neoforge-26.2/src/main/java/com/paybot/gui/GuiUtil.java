@@ -37,18 +37,19 @@ public class GuiUtil {
     }
 
     public static Item getTelcoWool(String telco) {
-        return switch (telco.toLowerCase()) {
-            case "viettel"      -> Items.RED_WOOL;
-            case "vinaphone"    -> Items.BLUE_WOOL;
-            case "mobifone"     -> Items.GREEN_WOOL;
-            case "zing"         -> Items.YELLOW_WOOL;
-            case "gate"         -> Items.CYAN_WOOL;
-            case "garena"       -> Items.ORANGE_WOOL;
-            case "vcoin"        -> Items.PURPLE_WOOL;
-            case "appota"       -> Items.PINK_WOOL;
-            case "vietnamobile" -> Items.LIGHT_BLUE_WOOL;
-            default             -> Items.WHITE_WOOL;
+        String color = switch (telco.toLowerCase()) {
+            case "viettel"      -> "red_wool";
+            case "vinaphone"    -> "blue_wool";
+            case "mobifone"     -> "green_wool";
+            case "zing"         -> "yellow_wool";
+            case "gate"         -> "cyan_wool";
+            case "garena"       -> "orange_wool";
+            case "vcoin"        -> "purple_wool";
+            case "appota"       -> "pink_wool";
+            case "vietnamobile" -> "light_blue_wool";
+            default             -> "white_wool";
         };
+        return ModernItemProvider.getItem(color);
     }
 
     public static Item getDenomItem(int denom) {

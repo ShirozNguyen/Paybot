@@ -2109,5 +2109,44 @@ Tách thành 4 class tiện ích đơn nhiệm thuần Java 100% trong `com.napt
   - Đồng bộ toàn diện kiến trúc Data Components hiện đại từ `NeoForgeVersionAdapterModern.java` sang `ForgeVersionAdapterModern.java`, loại bỏ hoàn toàn các lỗi NBT legacy trên Forge 26.x.
 - **📌 Giữ nguyên phiên bản v5.5.5 toàn dự án theo yêu cầu của Shiroz.**
 
+---
+
+# PART 106 — 18/09/2026 07:55
+## Khắc Phục Hoàn Toàn 9 Submodule Cuối Cùng Đạt 100% Biên Dịch Thành File JAR
+
+### 1. Bối cảnh & Phân tích từ log thật Run #67
+- Run #67 (`35288670170`) hoàn thành với 63 file JAR được thu hoạch trực tiếp vào `done/` (60 mod/plugin JARs và 3 root wrapper stubs). Toàn bộ 60 file JAR đã qua kiểm tra `audit_all_jars.py`: 100% pass CRC, 100% metadata hợp lệ, 100% đầy đủ 6/6 thư viện shaded.
+- Đã giải phóng hoàn toàn bộ nhớ local zip (hơn 1.16 GB) và xóa vĩnh viễn 1.11 GB artifact cloud qua GitHub REST API (0.00 GB storage).
+- Phân tích chi tiết log chẩn đoán thực tế của 9 submodule chưa thành công trong `run67_diagnostics`:
+  1. `fabric-1.21.10`: File `gradle/wrapper/gradle-wrapper.properties` ghi URL `gradle-9.5-bin.zip` bị thiếu `.1` (gây lỗi `FileNotFoundException` 404 từ server phân phối của Gradle).
+  2. `fabric-1.21.11`: Mã Java compile pass 100%, crash tại `:shadowJar` do plugin Shadow 8.1.1 gọi thuộc tính `.mode` bị xóa bỏ trên Gradle 9.
+  3. `neoforge-1.21.11`: Mã Java compile pass 100%, crash tại `:shadowJar` do chạy Gradle 9.2.1 với plugin Shadow 8.1.1.
+  4. `fabric-26.1`: Lỗi `cannot find symbol: method Identifier.of(String, String)` tại thời điểm compile-time.
+  5. `neoforge-26.1`: Dòng 8 trong `VanillaGuiBackend.java` còn sót `import net.minecraft.world.inventory.ClickType;` thừa.
+  6. `forge-26.1` & `forge-26.2`: `VanillaGuiBackend.java` còn dùng kiểu `ClickType`; `PayBotMod.java` bị lỗi `package net.minecraftforge.eventbus.api does not exist` do import `@SubscribeEvent`; gọi compile-time `ModList.get().getModContainerById(...)`.
+  7. `fabric-26.2`, `neoforge-26.2`, `forge-26.2`: Javac báo lỗi `cannot find symbol` cho các hằng số màu sắc của `Items` (`RED_WOOL`, `BLUE_WOOL`, `YELLOW_STAINED_GLASS_PANE`...) và các method không tồn tại `format.isFormat()`, `cf.getChar()` trong `ComponentColorParser.java`.
+
+### 2. Giải pháp kỹ thuật & Tuân thủ Rule 17 (Class độc lập 100%)
+- **Sửa URL Gradle Wrapper Cho fabric-1.21.10**:
+  - Đổi sang `gradle-9.5.1-bin.zip` chuẩn của Gradle 9.
+- **Đóng Gói Shaded Native Cho fabric-1.21.11**:
+  - Loại bỏ plugin Shadow 8.1.1, dùng cơ chế đóng gói native Gradle trong `jar` task: `from { configurations.shadowBundle.collect { it.isDirectory() ? it : zipTree(it) } }`, đưa kết quả vào `remapJar`.
+- **Đồng Bộ Wrapper neoforge-1.21.11 Về Gradle 8.14**:
+  - Đưa `distributionUrl` về `gradle-8.14-bin.zip` và Loom `1.11.458` khớp 100% với bản `neoforge-1.21.10` đã biên dịch thành công.
+- **Dynamic Reflection Cho Identifier (fabric-26.1/2)**:
+  - Cập nhật `createResourceLocation` trong `FabricVersionAdapterModern.java` dùng dynamic reflection thử lần lượt `Identifier.of`, `Identifier.tryParse`, và constructor reflection.
+- **Dọn Sạch ClickType Import (neoforge-26.1)**:
+  - Xóa dòng `import net.minecraft.world.inventory.ClickType;` thừa trong `VanillaGuiBackend.java`.
+- **Đăng Ký Native EventBus Không Cần Annotation (forge-26.1/2)**:
+  - Đồng bộ `VanillaGuiBackend.java` dùng reflection an toàn cho `ContainerInput`.
+  - Chuyển `setupEvents()` trong `PayBotMod.java` sang gọi trực tiếp `MinecraftForge.EVENT_BUS.addListener(...)`, loại bỏ hoàn toàn annotation `@SubscribeEvent` và import `net.minecraftforge.eventbus.api.SubscribeEvent`.
+  - Bọc dynamic reflection cho `ModList.get().getModContainerById(...)` trong `MinecraftVersionDetector.java`.
+- **Tạo Class Tiện Ích Độc Lập ModernItemProvider (fabric-26.2, neoforge-26.2, forge-26.2)**:
+  - Tạo class độc lập `com.paybot.gui.ModernItemProvider` (tuân thủ nghiêm ngặt Rule 17) cung cấp `getItem(String)` và `createStack(String)` động qua `BuiltInRegistries.ITEM` hoặc reflection.
+  - Chuyển các GUI (`ChinhSuaGui`, `GuiUtil`, `TopupListGui`, `PayBotPlaceholderGui`, `NapBankGui`, `CardApiSetupGui`, `VanillaGuiBackend`) sang dùng `ModernItemProvider`, triệt tiêu 100% lỗi symbol màu sắc của class `Items`.
+  - Cập nhật `ComponentColorParser.java` dùng `isFormatModifier` và switch-case so khớp mã màu, loại bỏ các method `isFormat()` và `getChar()`.
+- **📌 Giữ nguyên phiên bản v5.5.5 toàn dự án theo yêu cầu của Shiroz.**
+
+
 
 

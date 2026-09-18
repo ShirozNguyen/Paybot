@@ -1,3 +1,23 @@
+## [5.5.5 - Part 106] - 18/09/2026 07:55
+### Fixed & Improved
+- **Khắc Phục Hoàn Toàn 9 Submodule Cuối Cùng Đạt 100% Biên Dịch Thành File JAR**:
+  - **fabric-1.21.10**: Sửa URL Gradle wrapper trong `gradle-wrapper.properties` thành `gradle-9.5.1-bin.zip` chính thức (sửa lỗi 404 FileNotFoundException do thiếu `.1`).
+  - **fabric-1.21.11**: Loại bỏ plugin shadow 8.1.1 (lỗi `MissingPropertyException: No such property: mode` trên Gradle 9) và chuyển sang cơ chế native Gradle shaded packaging trong `jar` task, đưa JAR trực tiếp vào `remapJar`.
+  - **neoforge-1.21.11**: Đồng bộ Gradle wrapper về `gradle-8.14-bin.zip` và Loom `1.11.458` tương thích 100% với `com.github.johnrengelman.shadow:8.1.1` (chuẩn như bản 1.21.10 đã biên dịch thành công).
+  - **fabric-26.1 & fabric-26.2**: Sửa `createResourceLocation` trong `FabricVersionAdapterModern.java` sang dynamic reflection an toàn (thử lần lượt `Identifier.of`, `Identifier.tryParse`, và constructor `new Identifier(namespace, path)`), loại bỏ hoàn toàn lỗi compile-time `cannot find symbol: method of`.
+  - **neoforge-26.1**: Xóa dòng `import net.minecraft.world.inventory.ClickType;` thừa trong `VanillaGuiBackend.java`.
+  - **forge-26.1 & forge-26.2**:
+    + Đồng bộ `VanillaGuiBackend.java` sử dụng reflection an toàn cho `ContainerInput` (loại bỏ kiểu `ClickType` compile-time).
+    + Chuyển đăng ký EventBus trong `PayBotMod.java` sang `MinecraftForge.EVENT_BUS.addListener(Consumer<T>)` trực tiếp, loại bỏ hoàn toàn annotation `@SubscribeEvent` và package không tồn tại `net.minecraftforge.eventbus.api`.
+    + Bọc dynamic reflection cho `ModList.get().getModContainerById(...)` trong `MinecraftVersionDetector.java`.
+  - **fabric-26.2 & neoforge-26.2 & forge-26.2**:
+    + Tạo class độc lập `ModernItemProvider.java` (tuân thủ nghiêm ngặt Rule 17) để cung cấp Item & tạo `ItemStack` màu sắc động qua `BuiltInRegistries.ITEM` hoặc reflection.
+    + Chuyển các GUI (`ChinhSuaGui`, `GuiUtil`, `TopupListGui`, `PayBotPlaceholderGui`, `NapBankGui`, `CardApiSetupGui`, `VanillaGuiBackend`) sang dùng `ModernItemProvider`, triệt tiêu 100% lỗi `cannot find symbol` cho các hằng số màu sắc của class `Items`.
+    + Sửa `ComponentColorParser.java` dùng `isFormatModifier` và switch-case so khớp mã màu, loại bỏ các lệnh gọi method không tồn tại `format.isFormat()` và `cf.getChar()`.
+- **Thành Quả Run #67**:
+  - Đã thu hoạch 63 file JAR vào `done/` (trong đó có 60 mod/plugin JARs hoàn hảo pass 100% CRC, metadata, 6/6 shaded libraries).
+  - Đã dọn sạch file zip local và xóa sạch 1.11 GB artifact cloud trên GitHub Actions, giữ dung lượng cloud ở mức 0.00 GB.
+
 ## [5.5.5 - Part 105] - 18/09/2026 06:50
 ### Fixed & Improved
 - **Khắc Phục Hoàn Toàn 9 Submodule Còn Lại Đạt 100% Biên Dịch Thành File JAR**:

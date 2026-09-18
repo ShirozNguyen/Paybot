@@ -44,7 +44,7 @@ public class NapBankGui {
 
         GuiBackend gui = GuiFactory.create(screenType, player, "§b§l✦ Nạp Ngân Hàng — Chọn mệnh giá ✦");
 
-        gui.setSlot(4, new ItemStack(Items.LIGHT_BLUE_STAINED_GLASS_PANE), "§b§l✦ Nạp Ngân Hàng ✦", null, null);
+        gui.setSlot(4, ModernItemProvider.createStack("light_blue_stained_glass_pane"), "§b§l✦ Nạp Ngân Hàng ✦", null, null);
 
         int itemsPerRow = Math.min(denoms.length, 9);
         int offset = (9 - itemsPerRow) / 2;

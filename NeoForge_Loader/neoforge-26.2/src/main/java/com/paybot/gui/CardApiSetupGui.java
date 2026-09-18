@@ -52,8 +52,8 @@ public class CardApiSetupGui {
             String pkey = creds[1];
             boolean active     = site.equals(mod.getConfig().getString("card-api.site",""));
             boolean configured = !pid.isEmpty() && !pkey.isEmpty();
-            
-            ItemStack item = new ItemStack(active?Items.LIME_STAINED_GLASS_PANE:configured?Items.YELLOW_STAINED_GLASS_PANE:Items.RED_STAINED_GLASS_PANE);
+            String pane = active ? "lime_stained_glass_pane" : configured ? "yellow_stained_glass_pane" : "red_stained_glass_pane";
+            ItemStack item = ModernItemProvider.createStack(pane);
             String label = (active?"§a★ ":"§7")+"§l"+site;
             
             List<String> lore = new ArrayList<>();

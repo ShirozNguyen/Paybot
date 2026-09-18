@@ -70,9 +70,18 @@ public class MinecraftVersionDetector {
         } catch (Throwable ignored) {}
 
         try {
-            var mcMod = net.minecraftforge.fml.ModList.get().getModContainerById("minecraft");
-            if (mcMod.isPresent()) {
-                return mcMod.get().getModInfo().getVersion().toString();
+            Object ml = Class.forName("net.minecraftforge.fml.ModList").getMethod("get").invoke(null);
+            for (java.lang.reflect.Method m : ml.getClass().getMethods()) {
+                if (m.getName().equals("getModContainerById") && m.getParameterCount() == 1) {
+                    Object opt = m.invoke(ml, "minecraft");
+                    if (opt instanceof java.util.Optional<?> o && o.isPresent()) {
+                        Object container = o.get();
+                        java.lang.reflect.Method getInfo = container.getClass().getMethod("getModInfo");
+                        Object info = getInfo.invoke(container);
+                        java.lang.reflect.Method getVer = info.getClass().getMethod("getVersion");
+                        return getVer.invoke(info).toString();
+                    }
+                }
             }
         } catch (Throwable ignored) {}
 

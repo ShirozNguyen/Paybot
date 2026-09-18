@@ -633,17 +633,23 @@ public class FabricVersionAdapterModern implements VersionAdapter {
 
     private Identifier createResourceLocation(String namespace, String path) {
         try {
-            return Identifier.of(namespace, path);
+            java.lang.reflect.Method mOf = Identifier.class.getMethod("of", String.class, String.class);
+            return (Identifier) mOf.invoke(null, namespace, path);
         } catch (Throwable t1) {
             try {
-                for (Constructor<?> ctor : Identifier.class.getDeclaredConstructors()) {
-                    Class<?>[] p = ctor.getParameterTypes();
-                    if (p.length == 2 && p[0] == String.class && p[1] == String.class) {
-                        ctor.setAccessible(true);
-                        return (Identifier) ctor.newInstance(namespace, path);
+                java.lang.reflect.Method mParse = Identifier.class.getMethod("tryParse", String.class);
+                return (Identifier) mParse.invoke(null, namespace + ":" + path);
+            } catch (Throwable t2) {
+                try {
+                    for (Constructor<?> ctor : Identifier.class.getDeclaredConstructors()) {
+                        Class<?>[] p = ctor.getParameterTypes();
+                        if (p.length == 2 && p[0] == String.class && p[1] == String.class) {
+                            ctor.setAccessible(true);
+                            return (Identifier) ctor.newInstance(namespace, path);
+                        }
                     }
-                }
-            } catch (Throwable ignored) {}
+                } catch (Throwable ignored) {}
+            }
         }
         return null;
     }

@@ -97,7 +97,7 @@ public class ComponentColorParser {
                         root.append(Component.literal(currentText.toString()).withStyle(currentStyle));
                         currentText.setLength(0);
                     }
-                    if (format.isFormat()) {
+                    if (isFormatModifier(format)) {
                         currentStyle = applyFormat(currentStyle, format);
                     } else if (format == ChatFormatting.RESET) {
                         currentStyle = Style.EMPTY;
@@ -166,13 +166,41 @@ public class ComponentColorParser {
         return sb.toString();
     }
 
+    private static boolean isFormatModifier(ChatFormatting format) {
+        return format == ChatFormatting.OBFUSCATED
+                || format == ChatFormatting.BOLD
+                || format == ChatFormatting.STRIKETHROUGH
+                || format == ChatFormatting.UNDERLINE
+                || format == ChatFormatting.ITALIC;
+    }
+
     private static ChatFormatting getByCode(char code) {
-        for (ChatFormatting cf : ChatFormatting.values()) {
-            if (cf.getChar() == code) {
-                return cf;
-            }
-        }
-        return null;
+        char lower = Character.toLowerCase(code);
+        return switch (lower) {
+            case '0' -> ChatFormatting.BLACK;
+            case '1' -> ChatFormatting.DARK_BLUE;
+            case '2' -> ChatFormatting.DARK_GREEN;
+            case '3' -> ChatFormatting.DARK_AQUA;
+            case '4' -> ChatFormatting.DARK_RED;
+            case '5' -> ChatFormatting.DARK_PURPLE;
+            case '6' -> ChatFormatting.GOLD;
+            case '7' -> ChatFormatting.GRAY;
+            case '8' -> ChatFormatting.DARK_GRAY;
+            case '9' -> ChatFormatting.BLUE;
+            case 'a' -> ChatFormatting.GREEN;
+            case 'b' -> ChatFormatting.AQUA;
+            case 'c' -> ChatFormatting.RED;
+            case 'd' -> ChatFormatting.LIGHT_PURPLE;
+            case 'e' -> ChatFormatting.YELLOW;
+            case 'f' -> ChatFormatting.WHITE;
+            case 'k' -> ChatFormatting.OBFUSCATED;
+            case 'l' -> ChatFormatting.BOLD;
+            case 'm' -> ChatFormatting.STRIKETHROUGH;
+            case 'n' -> ChatFormatting.UNDERLINE;
+            case 'o' -> ChatFormatting.ITALIC;
+            case 'r' -> ChatFormatting.RESET;
+            default  -> null;
+        };
     }
 
     private static Style applyFormat(Style style, ChatFormatting format) {

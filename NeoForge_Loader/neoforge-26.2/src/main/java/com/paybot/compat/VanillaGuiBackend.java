@@ -172,7 +172,7 @@ public class VanillaGuiBackend implements GuiBackend {
 
     @Override
     public void fillGlass() {
-        ItemStack glass = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
+        ItemStack glass = ModernItemProvider.createStack("gray_stained_glass_pane");
         ItemTagCompat.setItemNameAndLore(glass, " ", null);
 
         for (int i = 0; i < size; i++) {

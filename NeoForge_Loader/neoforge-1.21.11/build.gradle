@@ -12,7 +12,7 @@
 // — đây chính là lỗi Part 44 sửa.
 
 plugins {
-    id 'dev.architectury.loom' version '1.14.476'
+    id 'dev.architectury.loom' version '1.11.458'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'java'
 }
