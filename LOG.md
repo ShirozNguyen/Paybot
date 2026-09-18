@@ -2275,3 +2275,43 @@ Tách thành 4 class tiện ích đơn nhiệm thuần Java 100% trong `com.napt
      + Gửi tín hiệu Cancel và Delete run cũ nhằm tiết kiệm quota.
      + Commit và Push Part 114 lên branch `main` để workflow mới thừa hưởng trọn vẹn cache đã lưu.
 4. **📌 Tiếp tục duy trì phiên bản v5.5.5 toàn dự án theo yêu cầu của Shiroz.**
+
+
+---
+
+# PART 115 — 18/09/2026 21:00
+## Triển Khai Phase 0 & Phase 1 Của Master Technical Specification: Khởi Tạo Target Manifest (build-targets.json), Ma Trận Tính Năng (feature-matrix.csv), Bộ Công Cụ Kiểm Toán JAR & Chuẩn Hóa CI Manifest-Driven
+
+### 1. Bối cảnh & Phát hiện kiểm toán thực tế (Phase 0 Preflight)
+- Kiểm tra toàn bộ cấu trúc repository `ShirozNguyen/Paybot` đối chiếu với **PAYBOT — MASTER TECHNICAL SPECIFICATION**:
+  + Tổng số thư mục module thực tế trên ổ đĩa là **102 module** (42 Fabric, 40 Forge, 19 NeoForge, 1 Plugin).
+  + Phát hiện điểm bất cập lớn tại `.github/workflows/build.yml`: CI cũ hard-code các danh sách module và in ra thông báo giả định "ALL 102 MODULES BUILT SUCCESSFULLY (100%)", trong khi thực tế chỉ có 68 module được kích hoạt build (43 root + 26 independent), còn 34 module đang ở trạng thái `SOURCE_ONLY` hoặc `UNSUPPORTED`.
+  + Phát hiện 1 file JAR bị hỏng trong thư mục `done/`: `PayBot-Mod-NeoForge-1.20.3-5.5.5.jar` bị truncated đúng 2MB (validZip=False).
+  + Phát hiện 3 file dummy wrapper JAR rỗng (`Fabric_Loader-5.5.5.jar`, `Forge_Loader-5.5.5.jar`, `NeoForge_Loader-5.5.5.jar`) có kích thước 261 bytes không mang giá trị mod.
+
+### 2. Các hành động kỹ thuật đã triển khai (Part 115 — Tuân thủ Rule 17)
+1. **Khởi tạo Single Source of Truth (`build-targets.json` & `feature-matrix.csv`)**:
+   - `build-targets.json`: Khai báo chi tiết 102 target với các trường chuẩn: `id`, `loader`, `minecraft`, `project`, `buildMode`, `java`, `gradle`, `toolchain`, `loaderVersion`, `apiVersion`, `expectedJar`, `supportStatus`.
+   - `feature-matrix.csv`: Thiết lập ma trận đánh giá 20 cột tính năng theo đúng Mục 74 của Master Spec.
+2. **Xây dựng Bộ Công Cụ Kiểm Toán Chuyên Biệt (Thư mục `tools/` - Tuân thủ Rule 17)**:
+   - `tools/target_auditor.py`:
+     * `TargetManifestReader`: Đọc và phân tích JSON manifest.
+     * `SettingsGradleAuditor`: Phân tích `settings.gradle`.
+     * `FileSystemAuditor`: Quét kiểm tra sự tồn tại trên ổ đĩa (kết quả: 100% 102 target đều tồn tại hợp lệ).
+     * `AuditReportFormatter`: Xuất bảng tổng kết trực quan.
+   - `tools/jar_validator.py`:
+     * `ZipIntegrityChecker`: Kiểm tra tính toàn vẹn vật lý của ZIP (chống file corrupt/truncated).
+     * `JarBytecodeInspector`: Quét bytecode xác minh class entrypoint tồn tại thực tế.
+     * `FabricMetadataParser`, `BukkitMetadataParser`, `ForgeMetadataParser`: Kiểm toán cú pháp các descriptor metadata (`fabric.mod.json`, `plugin.yml`, `mods.toml`).
+     * `ChecksumGenerator`: Tính mã băm SHA-256 và sinh file chuẩn `SHA256SUMS`.
+     * `JarValidatorCoordinator`: Điều phối và xuất báo cáo `jar-report.json`.
+   - `tools/ci_builder.py`:
+     * `ManifestTargetFilter`: Lọc các module độc lập từ manifest.
+     * `SubmoduleGradleExecutor`: Chạy `./gradlew build` độc lập cho từng target.
+     * `JarHarvester`: Thu hoạch JAR sạch, tự động loại bỏ các dummy wrapper JAR < 1KB.
+     * `CIBuildReporter`: Báo cáo kết quả trung thực (TOTAL, SUCCESS, FAILED, SKIPPED).
+3. **Cải tiến CI Workflow (`.github/workflows/build.yml`)**:
+   - Thay thế 157 dòng shell script lặp lại bằng quy trình gọi tự động thông qua manifest runner.
+   - Bổ sung bước kiểm toán JAR & metadata descriptors.
+   - Thu gom và đính kèm đầy đủ `jar-report.json`, `SHA256SUMS`, `feature-matrix.csv`, `build-targets.json` vào diagnostic artifact.
+   - Xóa bỏ thông điệp giả định 102 modules 100%, bảo đảm nguyên tắc báo cáo trung thực theo Mục 77 & 78 của Master Spec.

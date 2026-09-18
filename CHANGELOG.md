@@ -997,3 +997,21 @@ Sau khi audit sâu toàn bộ 3 module theo yêu cầu (kiểm tra từng class,
   - Thiết lập thuộc tính `if: always()` cho toàn bộ các bước build submodule độc lập và bước `Harvest Root Modules JARs` trong `.github/workflows/build.yml`.
   - Đảm bảo pipeline luôn luôn thu hoạch 100% JAR sinh ra và gom đầy đủ log chẩn đoán, không bao giờ bị gián đoạn hay skip các bước độc lập tiếp theo.
   - Tiếp tục duy trì cơ chế tự động giải phóng dung lượng artifact trên GitHub Actions sau khi tải về thành công.
+
+
+---
+
+## v5.5.5 Part 115 — 2026-09-18
+
+**⚡ Khởi Động Triển Khai Master Technical Specification & Tái Cấu Trúc Hệ Thống Build/CI Theo Manifest:**
+- **Triển khai Phase 0 (Inventory) & P0 Single Source of Truth**:
+  - Tạo file đặc tả toàn diện `build-targets.json` chuẩn hóa 102 target trên toàn bộ repository (Fabric, Forge, NeoForge, Paper Plugin).
+  - Phân loại rõ ràng 4 trạng thái cấu hình: `root` (43 targets), `independent` (26 targets), `source_only` (27 targets), `unsupported` (6 targets).
+  - Tạo bảng ma trận tính năng 20 khía cạnh `feature-matrix.csv` theo chuẩn Mục 74 của Master Spec.
+- **Tuân thủ Tuyệt đối Rule 17 (Kiến trúc phân tách Class độc lập 100%)**:
+  - `tools/target_auditor.py`: Phân chia 4 class độc lập (`TargetManifestReader`, `SettingsGradleAuditor`, `FileSystemAuditor`, `AuditReportFormatter`) để kiểm toán đối chiếu manifest với filesystem và `settings.gradle`.
+  - `tools/jar_validator.py`: Phân chia 8 class độc lập (`ZipIntegrityChecker`, `JarBytecodeInspector`, `FabricMetadataParser`, `BukkitMetadataParser`, `ForgeMetadataParser`, `ChecksumGenerator`, `JarValidatorCoordinator`) để kiểm tra toàn vẹn ZIP, metadata descriptors, class bytecode entrypoint, tự động sinh `jar-report.json` và `SHA256SUMS`.
+  - `tools/ci_builder.py`: Phân chia 4 class độc lập (`ManifestTargetFilter`, `SubmoduleGradleExecutor`, `JarHarvester`, `CIBuildReporter`) phục vụ chạy build độc lập dựa theo `build-targets.json`.
+- **Chuẩn hóa CI Workflow (.github/workflows/build.yml - Mục 76, 77, 78)**:
+  - Loại bỏ hoàn toàn các vòng lặp shell hard-code và xóa bỏ dòng echo giả định "ALL 102 MODULES BUILT (100%)".
+  - Chuyển sang mô hình Manifest-Driven CI: Đọc danh sách build từ `build-targets.json`, chạy kiểm toán JAR & metadata tự động, xuất báo cáo chẩn đoán trung thực.

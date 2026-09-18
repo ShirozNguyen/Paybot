@@ -25,6 +25,8 @@ done/
 *.zip
 *.tar.gz
 .architectury-transformer/
+scratch/
+test/
 
 # IDE
 .idea/
