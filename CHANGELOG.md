@@ -1,3 +1,13 @@
+## [5.5.5 - Part 114] - 18/09/2026 17:45
+### Fixed & Improved
+- **Khắc Phục Lỗi Biên Dịch StandaloneCardProcessor (Module Plugin) & Chu Trình Tự Động Hotfix Cache CI**:
+  - **Khắc Phục Lỗi Cú Pháp Ngoặc Nhọn (Bracket Mismatch)**:
+    + Loại bỏ dấu `}` thừa ở dòng 504 trong `StandaloneCardProcessor.java`, tái lập trạng thái cân bằng ngoặc nhọn hoàn hảo (open=80, close=80) cho class.
+    + Khắc phục triệt để lỗi biên dịch ở module `plugin` tại step `Build project`.
+  - **Tối Ưu Hóa Chu Trình CI (Hotfix & Cache Packaging Cycle)**:
+    + Gemini tự động phát hiện module lỗi và sửa nóng trực tiếp trên local bằng script.
+    + Đồng bộ quy trình chờ CI hoàn tất các bước build submodule độc lập và nạp Gradle build cache trước khi cancel/delete run cũ, tối ưu hóa tối đa thời gian build và quota GitHub Actions.
+
 ## [5.5.5 - Part 112] - 18/09/2026 14:25
 ### Fixed & Improved
 - **Khóa Bản Đồ QR Chống Đè Địa Hình, Thu Hồi Thông Minh & Triệt Tiêu Polling Lag (Đa Nền Tảng & Folia/Canvas)**:

@@ -36,7 +36,8 @@ public class QRMapPickupListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEntityPickup(EntityPickupItemEvent event) {
-        if (!(event.getEntity() instanceof Player player)) return;
+        if (!(event.getEntity() instanceof Player)) return;
+        Player player = (Player) event.getEntity();
 
         ItemStack item = event.getItem().getItemStack();
         if (item == null || item.getType() != VersionCompat.getMapMaterial()) return;

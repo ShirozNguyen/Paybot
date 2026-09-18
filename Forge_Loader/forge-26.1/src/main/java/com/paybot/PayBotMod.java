@@ -121,16 +121,12 @@ public class PayBotMod {
         String text = event.getRawText();
         if (com.paybot.gui.GuiSession.isAnyoneWaiting(sender.getUUID())
                 && com.paybot.gui.GuiChatHandler.handle(sender, text)) {
-            try {
-                event.setCanceled(true);
-            } catch (Throwable ignored) {}
+            com.paybot.compat.EventCancelHelper.cancel(event);
             return;
         }
         if (setupManager != null && setupManager.isInSession(sender)
                 && setupManager.handleChat(sender, text)) {
-            try {
-                event.setCanceled(true);
-            } catch (Throwable ignored) {}
+            com.paybot.compat.EventCancelHelper.cancel(event);
             return;
         }
     }

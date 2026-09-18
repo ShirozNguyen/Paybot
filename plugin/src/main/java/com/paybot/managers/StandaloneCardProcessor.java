@@ -501,4 +501,3 @@ public class StandaloneCardProcessor {
         return String.valueOf(denom);
     }
 }
-}
