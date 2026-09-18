@@ -1683,4 +1683,40 @@ public class DatabaseManager {
             return false;
         }
     }
+
+    /**
+     * Đóng toàn bộ kết nối Database (MySQL & SQLite) an toàn khi tắt plugin (onDisable).
+     */
+    public synchronized void close() {
+        try {
+            if (conn != null && !conn.isClosed()) {
+                conn.close();
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("[PayBot] Lỗi khi đóng kết nối MySQL: " + e.getMessage());
+        }
+        try {
+            if (bankConn != null && !bankConn.isClosed()) {
+                bankConn.close();
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("[PayBot] Lỗi khi đóng kết nối bank SQLite: " + e.getMessage());
+        }
+        try {
+            if (cardConn != null && !cardConn.isClosed()) {
+                cardConn.close();
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("[PayBot] Lỗi khi đóng kết nối card SQLite: " + e.getMessage());
+        }
+        try {
+            if (rewardConn != null && !rewardConn.isClosed()) {
+                rewardConn.close();
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("[PayBot] Lỗi khi đóng kết nối reward SQLite: " + e.getMessage());
+        }
+        plugin.getLogger().info("[PayBot] Đã đóng toàn bộ kết nối CSDL an toàn.");
+    }
 }
+

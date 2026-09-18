@@ -20,7 +20,7 @@ plugins {
 // java.toolchain{} bên dưới GIỮ NGUYÊN từ Part 49 (đã tự ghi đè Java 25 từ trước). Lưu ý: dòng
 // 'version = project.neoforge_version' trong khối neoForge{} bên dưới KHÁC với 'version' của
 // Gradle project (mod_version) — 2 khái niệm độc lập, không đụng nhau.
-version = '5.5.5'
+version = '5.5.6'
 group = 'com.paybot'
 
 repositories {
