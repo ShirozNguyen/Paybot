@@ -11,6 +11,7 @@ import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.ServerChatEvent;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.fml.ModList;
@@ -75,13 +76,7 @@ public class PayBotMod {
     private void setupEvents() {
         com.paybot.utils.MinecraftVersionDetector.init();
         try {
-            var bus = MinecraftForge.EVENT_BUS;
-            bus.addListener(this::onServerStarted);
-            bus.addListener(this::onServerStopping);
-            bus.addListener(this::onRegisterCommands);
-            bus.addListener(this::onPlayerLoggedIn);
-            bus.addListener(this::onPlayerLoggedOut);
-            bus.addListener(this::onServerChat);
+            MinecraftForge.EVENT_BUS.register(this);
         } catch (Throwable t) {
             try {
                 java.lang.reflect.Method reg = MinecraftForge.EVENT_BUS.getClass().getMethod("register", Object.class);
@@ -91,42 +86,53 @@ public class PayBotMod {
         LOGGER.info("[PayBot] Forge Native EventBus registered — waiting for server start…");
     }
 
+    @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         onServerStart(event.getServer());
     }
 
+    @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
         onServerStop();
     }
 
+    @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         CommandRegistry.registerAll(event.getDispatcher());
     }
 
+    @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
             onPlayerJoin(sp);
         }
     }
 
+    @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp) {
             onPlayerQuit(sp);
         }
     }
 
-    public boolean onServerChat(ServerChatEvent event) {
+    @SubscribeEvent
+    public void onServerChat(ServerChatEvent event) {
         ServerPlayer sender = event.getPlayer();
         String text = event.getRawText();
         if (com.paybot.gui.GuiSession.isAnyoneWaiting(sender.getUUID())
                 && com.paybot.gui.GuiChatHandler.handle(sender, text)) {
-            return true;
+            try {
+                event.setCanceled(true);
+            } catch (Throwable ignored) {}
+            return;
         }
         if (setupManager != null && setupManager.isInSession(sender)
                 && setupManager.handleChat(sender, text)) {
-            return true;
+            try {
+                event.setCanceled(true);
+            } catch (Throwable ignored) {}
+            return;
         }
-        return false;
     }
 
     public static String getModVersion() {

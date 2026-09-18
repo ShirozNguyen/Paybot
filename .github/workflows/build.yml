@@ -122,8 +122,8 @@ jobs:
               echo ">>> [SUCCESS] $mod built successfully"
               find "$mod/build/libs" -type f -name "*.jar" ! -name "*-dev.jar" ! -name "*-shadow.jar" ! -name "*-sources.jar" | while read -r f; do
                 case "$mod" in
-                  */Fabric_Loader/*) cp "$f" Done/Fabric_Quilt/ 2>/dev/null || true ;;
-                  */NeoForge_Loader/*) cp "$f" Done/NeoForge/ 2>/dev/null || true ;;
+                  *Fabric_Loader*) cp "$f" Done/Fabric_Quilt/ 2>/dev/null || true ;;
+                  *NeoForge_Loader*) cp "$f" Done/NeoForge/ 2>/dev/null || true ;;
                 esac
                 cp "$f" artifacts/ 2>/dev/null || true
               done

@@ -26,7 +26,6 @@
 //     hơn ModDevGradle — đây là điểm nhiều khả năng cần Shiroz tự thêm nếu build lỗi thiếu runs.
 plugins {
     id 'net.minecraftforge.gradle' version '7.0.25'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'java'
 }
 
@@ -89,19 +88,16 @@ processResources {
     }
 }
 
-shadowJar {
+jar {
+    archiveClassifier = null
+    from {
+        configurations.shadowBundle.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     exclude "architectury.common.json"
     exclude "org/slf4j/**"
-
-    configurations = [project.configurations.shadowBundle]
-    archiveClassifier = "dev-shadow"
-}
-
-// v5.5.5 Part 50: KHÔNG remapJar — theo đúng logic no-remap chung của cả 3 loader ở 26.x.
-jar {
-    archiveClassifier = "dev"
 }
 
 tasks.named("assemble") {
-    dependsOn shadowJar
+    dependsOn jar
 }

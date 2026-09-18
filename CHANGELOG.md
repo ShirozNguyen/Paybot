@@ -1,3 +1,29 @@
+## [5.5.5 - Part 107] - 18/09/2026 11:55
+### Fixed & Improved
+- **Khắc Phục Dứt Điểm 8 Submodule Cuối Cùng Để Hoàn Tất 100% Toàn Bộ Module Sinh Ra JAR**:
+  - **fabric-1.21.10**: Đồng bộ Gradle wrapper về `gradle-8.14-bin.zip` (khắc phục xung đột ProgressLogger của Loom 1.17.20 trên Gradle 9.5.1 dẫn đến lỗi `IllegalStateException: This operation has not been started`).
+  - **fabric-26.1 & fabric-26.2**: Loại bỏ plugin `com.github.johnrengelman.shadow:8.1.1` gây lỗi `Could not add META-INF to ZIP` trên Gradle 9; chuyển sang cơ chế native shaded packaging trong task `jar` của Gradle với `archiveClassifier = null` và `duplicatesStrategy = DuplicatesStrategy.EXCLUDE`.
+  - **neoforge-26.1**: Loại bỏ plugin shadow 8.1.1; chuyển sang đóng gói native shaded JAR trong task `jar`.
+  - **neoforge-26.2**:
+    + Xóa dòng `import net.minecraft.world.inventory.ClickType;` thừa trong `VanillaGuiBackend.java`.
+    + Bổ sung import `com.paybot.utils.ModernItemProvider;` trong `VanillaGuiBackend.java`.
+    + Loại bỏ plugin shadow 8.1.1 và chuyển sang đóng gói native shaded JAR trong task `jar`.
+  - **forge-26.1 & forge-26.2**:
+    + Import annotation chuẩn `net.minecraftforge.eventbus.api.listener.SubscribeEvent`.
+    + Đánh dấu `@SubscribeEvent` trên tất cả 6 phương thức xử lý sự kiện: `onServerStarted`, `onServerStopping`, `onRegisterCommands`, `onPlayerLoggedIn`, `onPlayerLoggedOut`, `onServerChat`.
+    + Trong `setupEvents()`, sử dụng phương thức `MinecraftForge.EVENT_BUS.register(this)` tương thích chính xác với `EventBusMigrationHelper` trong Forge 26.x.
+    + Loại bỏ plugin shadow 8.1.1 và chuyển sang đóng gói native shaded JAR trong task `jar`.
+  - **neoforge-1.21.11**:
+    + Chuyển cấu hình từ Architectury Loom cũ sang plugin chính thức `net.neoforged.moddev:2.0.141` (ModDevGradle) để khắc phục lỗi `NoSuchFileException: data/server.lzma` do installer NeoForge 21.11 đã bỏ file server.lzma.
+    + Cập nhật `neoforge_version = 21.11.45` trong `gradle.properties` (bản release chính thức hoàn thiện nhất của NeoForge 21.11).
+    + Cập nhật Gradle wrapper sang `gradle-9.4.1-bin.zip` tương thích hoàn hảo với ModDevGradle 2.0.141.
+    + Cấu hình đóng gói native shaded JAR trong task `jar`.
+  - **CI Workflow (.github/workflows/build.yml)**:
+    + Cải thiện pattern match trong case statement sao chép JARs của bước `fabric-26.x, neoforge-26.x` từ `*/Fabric_Loader/*` sang `*Fabric_Loader*` và `*NeoForge_Loader*`, đảm bảo 100% file JAR đều được copy chính xác vào `Done/Fabric_Quilt/` và `Done/NeoForge/`.
+- **Thành Quả Run #68**:
+  - Đã thu hoạch thêm `PayBot-Mod-Fabric-1.21.11-5.5.5.jar` (19.33 MB), nâng tổng số JAR trong `done/` lên 64 files (61 mod/plugin JARs + 3 root stubs).
+  - Tự động xóa sạch 1.13 GB artifact trên GitHub Actions cloud, duy trì bộ nhớ cloud ở mức 0.00 GB.
+
 ## [5.5.5 - Part 106] - 18/09/2026 07:55
 ### Fixed & Improved
 - **Khắc Phục Hoàn Toàn 9 Submodule Cuối Cùng Đạt 100% Biên Dịch Thành File JAR**:

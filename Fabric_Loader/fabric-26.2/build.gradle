@@ -14,7 +14,6 @@
 // muốn hợp nhất lại cách quản lý dependency chung, có thể đổi lại.
 plugins {
     id 'net.fabricmc.fabric-loom' version '1.15.+'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'java'
 }
 
@@ -88,20 +87,16 @@ processResources {
     }
 }
 
-shadowJar {
+jar {
+    archiveClassifier = null
+    from {
+        configurations.shadowBundle.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     exclude "architectury.common.json"
     exclude "org/slf4j/**"
-
-    configurations = [project.configurations.shadowBundle]
-    archiveClassifier = "dev-shadow"
-}
-
-// v5.5.5 Part 48: KHÔNG còn remapJar — bước migrate chính thức thứ 4 của Fabric (remapJar -> jar).
-// 26.1 không obfuscation nên không còn gì để remap; shadowJar chính là artifact cuối cùng.
-jar {
-    archiveClassifier = "dev"
 }
 
 tasks.named("assemble") {
-    dependsOn shadowJar
+    dependsOn jar
 }

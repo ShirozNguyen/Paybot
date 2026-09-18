@@ -1,32 +1,17 @@
-// neoforge-modern/build.gradle — v5.5.5 Part 44
-//
-// MC 1.20.2 - 1.21.11. Từ 1.20.2, NeoForge tách hẳn khỏi coordinate "net.neoforged:forge"
-// (chỉ dùng cho giai đoạn chuyển tiếp ở 1.20.1) sang coordinate CHÍNH THỨC riêng
-// "net.neoforged:neoforge" — Architectury Loom dùng config `neoForge` (F hoa) cho coordinate
-// mới này, khác hẳn config `forge` dùng ở forge-legacy/forge-modern.
-//
-// Biên dịch nhắm ĐÚNG 1.21.1 — khớp NGUYÊN VĂN log Shiroz gửi ("NeoForge mod loading,
-// version 21.1.248, for MC 1.21.1"). Trước đây (module neoforge/ cũ) lỡ dùng coordinate
-// 1.20.1 ("net.neoforged:forge:1.20.1-47.1.106") khiến NeoForge thật từ chối load thẳng
-// ("File ... is for Minecraft Forge or an older version of NeoForge, and cannot be loaded")
-// — đây chính là lỗi Part 44 sửa.
+// neoforge-1.21.11/build.gradle — v5.5.5 Part 107
+// Chuyển sang plugin chính thức net.neoforged.moddev (ModDevGradle) 2.0.141
+// Do NeoForge 21.11 không có data/server.lzma trong installer nên Loom cũ bị crash NoSuchFileException.
 
 plugins {
-    id 'dev.architectury.loom' version '1.11.458'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'net.neoforged.moddev' version '2.0.141'
     id 'java'
 }
 
-// PayBot v5.5.5 Part 66: module này giờ là project Gradle HOÀN TOÀN ĐỘC LẬP (xem
-// settings.gradle cùng thư mục) — KHÔNG còn nằm trong allprojects{} của root build.gradle
-// nữa, nên PHẢI tự khai lại version/group/repositories/toolchain/dependencies{minecraft}
-// y hệt logic root (trước đây thừa hưởng tự động qua allprojects{}). Xem LOG.md Part 66.
 version = '5.5.5'
 group = 'com.paybot'
 
 repositories {
     mavenCentral()
-    maven { url = 'https://maven.architectury.dev/' }
     maven { url = 'https://maven.neoforged.net/releases/' }
 }
 
@@ -41,13 +26,12 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 21
 }
 
-dependencies {
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-}
-
 base {
     archivesName = "PayBot-Mod-NeoForge-1.21.11"
+}
+
+neoForge {
+    version = project.neoforge_version
 }
 
 configurations {
@@ -60,9 +44,7 @@ configurations {
 }
 
 dependencies {
-    neoForge "net.neoforged:neoforge:${project.neoforge_version}"
-
-    // Cùng danh sách thư viện shade như forge-legacy/forge-modern (đảm bảo nhất quán)
+    // Thư viện shaded trực tiếp
     shadowBundle 'org.xerial:sqlite-jdbc:3.45.3.0'
     shadowBundle 'com.mysql:mysql-connector-j:8.4.0'
     shadowBundle 'com.zaxxer:HikariCP:5.1.0'
@@ -80,22 +62,16 @@ processResources {
     }
 }
 
-shadowJar {
-    exclude "architectury.common.json"
-    // v5.5.5 Part 44: loại trừ slf4j đóng gói theo HikariCP (xem giải thích ở forge-legacy) —
-    // NeoForge cũng chạy JPMS chặt như Forge nên đây LÀ lỗi thật, không chỉ phòng ngừa.
-    exclude "org/slf4j/**"
-
-    configurations = [project.configurations.shadowBundle]
-    archiveClassifier = "dev-shadow"
-}
-
-remapJar {
-    input.set shadowJar.archiveFile
-    dependsOn shadowJar
-    archiveClassifier = null
-}
-
 jar {
-    archiveClassifier = "dev"
+    archiveClassifier = null
+    from {
+        configurations.shadowBundle.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    exclude "architectury.common.json"
+    exclude "org/slf4j/**"
+}
+
+tasks.named("assemble") {
+    dependsOn jar
 }

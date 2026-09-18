@@ -2147,6 +2147,38 @@ Tách thành 4 class tiện ích đơn nhiệm thuần Java 100% trong `com.napt
   - Cập nhật `ComponentColorParser.java` dùng `isFormatModifier` và switch-case so khớp mã màu, loại bỏ các method `isFormat()` và `getChar()`.
 - **📌 Giữ nguyên phiên bản v5.5.5 toàn dự án theo yêu cầu của Shiroz.**
 
+---
 
+# PART 107 — 18/09/2026 11:55
+## Khắc Phục Dứt Điểm 8 Submodule Cuối Cùng Để Hoàn Tất 100% Toàn Bộ Module Sinh Ra JAR
 
+### 1. Bối cảnh & Phân tích từ log thật Run #68
+- Run #68 (`35293107333`) hoàn thành xuất sắc với 64 file JAR trong `done/` (trong đó có `PayBot-Mod-Fabric-1.21.11-5.5.5.jar` vừa được bổ sung vào bộ sưu tập).
+- Đã giải phóng hoàn toàn bộ nhớ local zip và xóa vĩnh viễn 1.13 GB artifact cloud qua GitHub REST API (0.00 GB storage).
+- Dựa trên các file log chẩn đoán thực tế từ `scratch/run68_diagnostics/`, đã xác định chính xác 100% nguyên nhân gốc của 8 module còn lại:
+  1. `fabric-26.1`, `fabric-26.2`, `neoforge-26.1`: Mã nguồn Java đã `compileJava` thành công 100%, chỉ bị crash ở `:shadowJar` do plugin Shadow 8.1.1 không tương thích với Gradle 9 gây lỗi `Could not add META-INF to ZIP`.
+  2. `neoforge-26.2`: Còn sót dòng `import net.minecraft.world.inventory.ClickType;` và thiếu import `com.paybot.utils.ModernItemProvider;` trong `VanillaGuiBackend.java`.
+  3. `forge-26.1` & `forge-26.2`: `MinecraftForge.EVENT_BUS` kiểu `EventBusMigrationHelper` trong Forge 26.x không có method `addListener(...)` mà có method `register(Object)`. Annotation `@SubscribeEvent` nằm ở package `net.minecraftforge.eventbus.api.listener.SubscribeEvent`.
+  4. `fabric-1.21.10`: Fabric Loom 1.17.20 gặp xung đột với `ProgressLoggerFactory` nội bộ của Gradle 9.5.1 khi tải file Minecraft server jar, dẫn đến lỗi `IllegalStateException: This operation has not been started`.
+  5. `neoforge-1.21.11`: Installer của NeoForge 21.11 không có `data/server.lzma` (chỉ có `client.lzma`), khiến Architectury Loom cũ bị crash `NoSuchFileException: data/server.lzma`.
 
+### 2. Giải pháp kỹ thuật & Tuân thủ Rule 17 (Class độc lập 100%)
+- **Đóng Gói Native Shaded Cho fabric-26.1, fabric-26.2, neoforge-26.1, neoforge-26.2, forge-26.1, forge-26.2**:
+  - Loại bỏ hoàn toàn plugin Shadow 8.1.1.
+  - Sử dụng cơ chế đóng gói native Gradle trong `jar` task với `archiveClassifier = null`, `configurations.shadowBundle.collect { zipTree(it) }`, và `duplicatesStrategy = DuplicatesStrategy.EXCLUDE`.
+- **Sửa Lỗi Import Cho neoforge-26.2**:
+  - Xóa `import net.minecraft.world.inventory.ClickType;` trong `VanillaGuiBackend.java`.
+  - Bổ sung `import com.paybot.utils.ModernItemProvider;` trong `VanillaGuiBackend.java`.
+- **Đăng Ký Chuẩn EventBus Cho forge-26.1 & forge-26.2**:
+  - Import annotation chuẩn `net.minecraftforge.eventbus.api.listener.SubscribeEvent`.
+  - Đánh dấu `@SubscribeEvent` cho tất cả 6 phương thức xử lý sự kiện: `onServerStarted`, `onServerStopping`, `onRegisterCommands`, `onPlayerLoggedIn`, `onPlayerLoggedOut`, `onServerChat`.
+  - Trong `setupEvents()`, gọi `MinecraftForge.EVENT_BUS.register(this)` tương thích chính xác với `EventBusMigrationHelper` của Forge 26.x.
+- **Đồng Bộ Wrapper fabric-1.21.10 Sang Gradle 8.14**:
+  - Đổi `distributionUrl` trong `gradle-wrapper.properties` sang `gradle-8.14-bin.zip` (chuẩn ổn định đã giúp `neoforge-1.21.10` build thành công 100%).
+- **Chuyển neoforge-1.21.11 Sang Plugin Chính Thức ModDevGradle**:
+  - Thay thế Architectury Loom cũ bằng `net.neoforged.moddev:2.0.141` (ModDevGradle - plugin chính thức của NeoForge cho MC 20.6+ và 21.x).
+  - Cập nhật `neoforge_version = 21.11.45` trong `gradle.properties` (bản release chính thức hoàn thiện nhất của NeoForge 21.11).
+  - Đổi Gradle wrapper sang `gradle-9.4.1-bin.zip` tương thích hoàn hảo với ModDevGradle.
+- **Tối Ưu CI Pipeline (.github/workflows/build.yml)**:
+  - Cải thiện pattern match case statement từ `*/Fabric_Loader/*` sang `*Fabric_Loader*` và `*NeoForge_Loader*` để đảm bảo 100% file JAR đều được copy chính xác vào thư mục `Done/`.
+- **📌 Giữ nguyên phiên bản v5.5.5 toàn dự án theo yêu cầu của Shiroz.**

@@ -14,7 +14,6 @@
 // trước khi coi module này dùng được — khả năng cao cần chỉnh sửa thêm so với những gì viết ở đây.
 plugins {
     id 'net.neoforged.moddev' version '2.0.141'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'java'
 }
 
@@ -84,23 +83,16 @@ processResources {
     }
 }
 
-shadowJar {
-    exclude "architectury.common.json"
-    // v5.5.5 Part 49: giữ loại trừ slf4j như neoforge-1.21.11 — HikariCP kéo theo slf4j-api
-    // transitive, JPMS của NeoForge (kể cả bản 26.1) nhiều khả năng vẫn chặt như trước, chưa
-    // có lý do gì để tin điều này đã đổi ở 26.1 (không phải phần primer nhắc tới).
-    exclude "org/slf4j/**"
-
-    configurations = [project.configurations.shadowBundle]
-    archiveClassifier = "dev-shadow"
-}
-
-// v5.5.5 Part 49: KHÔNG còn remapJar — ModDevGradle cho 26.1 không remap (giống Fabric Loom
-// no-remap). shadowJar là artifact cuối cùng trực tiếp.
 jar {
-    archiveClassifier = "dev"
+    archiveClassifier = null
+    from {
+        configurations.shadowBundle.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    exclude "architectury.common.json"
+    exclude "org/slf4j/**"
 }
 
 tasks.named("assemble") {
-    dependsOn shadowJar
+    dependsOn jar
 }
