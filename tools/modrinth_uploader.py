@@ -40,10 +40,11 @@ class ModrinthConfigLoader:
             "api_url": "https://api.modrinth.com/v2"
         }
 
-        # Nếu có file token bí mật .modrinth_token
-        token_file = Path(".modrinth_token")
-        if token_file.exists() and not config["token"]:
-            config["token"] = token_file.read_text(encoding="utf-8").strip()
+        # Nếu có file token bí mật trong scratch/ hoặc root
+        token_files = [Path("scratch/.modrinth_token"), Path(".modrinth_token")]
+        for tf in token_files:
+            if tf.exists() and not config["token"]:
+                config["token"] = tf.read_text(encoding="utf-8").strip()
 
         # Nếu có file modrinth.json
         cfg_file = Path(self.config_path)
