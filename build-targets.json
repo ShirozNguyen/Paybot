@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "version": "5.5.5",
-  "part": "115",
+  "version": "5.5.6",
+  "part": "117",
   "description": "PayBot Master Build Targets Manifest — Single Source of Truth for all 102 targets",
   "summary": {
     "totalTargets": 102,
@@ -64,7 +64,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.28.5+1.14",
-      "expectedJar": "PayBot-Mod-Fabric-1.14.4-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.14.4-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -78,7 +78,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.28.5+1.15",
-      "expectedJar": "PayBot-Mod-Fabric-1.15-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.15-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -92,7 +92,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.28.5+1.15",
-      "expectedJar": "PayBot-Mod-Fabric-1.15.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.15.1-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -106,7 +106,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.28.5+1.15",
-      "expectedJar": "PayBot-Mod-Fabric-1.15.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.15.2-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -120,7 +120,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.42.0+1.16",
-      "expectedJar": "PayBot-Mod-Fabric-1.16.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.16.1-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -134,7 +134,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.42.0+1.16",
-      "expectedJar": "PayBot-Mod-Fabric-1.16.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.16.2-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -148,7 +148,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.42.0+1.16",
-      "expectedJar": "PayBot-Mod-Fabric-1.16.3-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.16.3-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -162,7 +162,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.42.0+1.16",
-      "expectedJar": "PayBot-Mod-Fabric-1.16.4-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.16.4-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -176,7 +176,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.42.0+1.16",
-      "expectedJar": "PayBot-Mod-Fabric-1.16.5-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.16.5-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -190,7 +190,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.46.1+1.17",
-      "expectedJar": "PayBot-Mod-Fabric-1.17.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.17.1-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -204,7 +204,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.46.6+1.18",
-      "expectedJar": "PayBot-Mod-Fabric-1.18-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.18-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -218,7 +218,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.46.6+1.18",
-      "expectedJar": "PayBot-Mod-Fabric-1.18.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.18.1-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -232,7 +232,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.77.0+1.18.2",
-      "expectedJar": "PayBot-Mod-Fabric-1.18.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.18.2-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -246,7 +246,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.58.0+1.19",
-      "expectedJar": "PayBot-Mod-Fabric-1.19-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.19-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -260,7 +260,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.58.5+1.19.1",
-      "expectedJar": "PayBot-Mod-Fabric-1.19.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.19.1-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -274,7 +274,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.77.0+1.19.2",
-      "expectedJar": "PayBot-Mod-Fabric-1.19.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.19.2-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -288,7 +288,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.76.1+1.19.3",
-      "expectedJar": "PayBot-Mod-Fabric-1.19.3-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.19.3-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -302,7 +302,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.87.2+1.19.4",
-      "expectedJar": "PayBot-Mod-Fabric-1.19.4-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.19.4-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -316,7 +316,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.83.0+1.20",
-      "expectedJar": "PayBot-Mod-Fabric-1.20-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.20-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -330,7 +330,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.92.9+1.20.1",
-      "expectedJar": "PayBot-Mod-Fabric-1.20.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.20.1-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -344,7 +344,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.91.6+1.20.2",
-      "expectedJar": "PayBot-Mod-Fabric-1.20.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.20.2-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -358,7 +358,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.91.1+1.20.3",
-      "expectedJar": "PayBot-Mod-Fabric-1.20.3-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.20.3-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -372,7 +372,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.16.0",
       "apiVersion": "0.97.3+1.20.4",
-      "expectedJar": "PayBot-Mod-Fabric-1.20.4-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.20.4-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -386,7 +386,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.97.8+1.20.5",
-      "expectedJar": "PayBot-Mod-Fabric-1.20.5-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.20.5-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -400,7 +400,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.100.8+1.20.6",
-      "expectedJar": "PayBot-Mod-Fabric-1.20.6-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.20.6-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -414,7 +414,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.102.0+1.21",
-      "expectedJar": "PayBot-Mod-Fabric-1.21-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.21-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -428,7 +428,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.116.15+1.21.1",
-      "expectedJar": "PayBot-Mod-Fabric-1.21.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.21.1-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -442,7 +442,7 @@
       "toolchain": "net.fabricmc.fabric-loom-remap:1.17.20",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.138.4+1.21.10",
-      "expectedJar": "PayBot-Mod-Fabric-1.21.10-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.21.10-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -456,7 +456,7 @@
       "toolchain": "net.fabricmc.fabric-loom-remap:1.17.20",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.141.6+1.21.11",
-      "expectedJar": "PayBot-Mod-Fabric-1.21.11-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.21.11-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -470,7 +470,7 @@
       "toolchain": "dev.architectury.loom:1.9.436",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.106.1+1.21.2",
-      "expectedJar": "PayBot-Mod-Fabric-1.21.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.21.2-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -484,7 +484,7 @@
       "toolchain": "dev.architectury.loom:1.9.436",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.114.1+1.21.3",
-      "expectedJar": "PayBot-Mod-Fabric-1.21.3-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.21.3-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -498,7 +498,7 @@
       "toolchain": "dev.architectury.loom:1.10.455",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.119.4+1.21.4",
-      "expectedJar": "PayBot-Mod-Fabric-1.21.4-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.21.4-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -512,7 +512,7 @@
       "toolchain": "dev.architectury.loom:1.10.455",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.128.2+1.21.5",
-      "expectedJar": "PayBot-Mod-Fabric-1.21.5-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.21.5-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -526,7 +526,7 @@
       "toolchain": "dev.architectury.loom:1.10.455",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.128.2+1.21.6",
-      "expectedJar": "PayBot-Mod-Fabric-1.21.6-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.21.6-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -540,7 +540,7 @@
       "toolchain": "dev.architectury.loom:1.10.455",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.129.0+1.21.7",
-      "expectedJar": "PayBot-Mod-Fabric-1.21.7-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.21.7-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -554,7 +554,7 @@
       "toolchain": "dev.architectury.loom:1.10.455",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.136.1+1.21.8",
-      "expectedJar": "PayBot-Mod-Fabric-1.21.8-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.21.8-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -568,7 +568,7 @@
       "toolchain": "dev.architectury.loom:1.11.458",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.134.1+1.21.9",
-      "expectedJar": "PayBot-Mod-Fabric-1.21.9-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-1.21.9-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -582,7 +582,7 @@
       "toolchain": "net.fabricmc.fabric-loom:1.10.+",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.155.2+26.1.2",
-      "expectedJar": "PayBot-Mod-Fabric-26.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-26.1-5.5.6.jar",
       "supportStatus": "EXPERIMENTAL"
     },
     {
@@ -596,7 +596,7 @@
       "toolchain": "net.fabricmc.fabric-loom:1.10.+",
       "loaderVersion": "0.18.4",
       "apiVersion": "0.158.0+26.2",
-      "expectedJar": "PayBot-Mod-Fabric-26.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Fabric-26.2-5.5.6.jar",
       "supportStatus": "EXPERIMENTAL"
     },
     {
@@ -652,7 +652,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "28.2.26",
       "apiVersion": "28.2.26",
-      "expectedJar": "PayBot-Mod-Forge-1.14.4-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.14.4-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -666,7 +666,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "29.0.4",
       "apiVersion": "29.0.4",
-      "expectedJar": "PayBot-Mod-Forge-1.15-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.15-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -680,7 +680,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "30.0.51",
       "apiVersion": "30.0.51",
-      "expectedJar": "PayBot-Mod-Forge-1.15.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.15.1-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -694,7 +694,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "31.2.57",
       "apiVersion": "31.2.57",
-      "expectedJar": "PayBot-Mod-Forge-1.15.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.15.2-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -708,7 +708,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "32.0.108",
       "apiVersion": "32.0.108",
-      "expectedJar": "PayBot-Mod-Forge-1.16.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.16.1-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -722,7 +722,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "33.0.61",
       "apiVersion": "33.0.61",
-      "expectedJar": "PayBot-Mod-Forge-1.16.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.16.2-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -736,7 +736,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "34.1.42",
       "apiVersion": "34.1.42",
-      "expectedJar": "PayBot-Mod-Forge-1.16.3-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.16.3-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -750,7 +750,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "35.1.37",
       "apiVersion": "35.1.37",
-      "expectedJar": "PayBot-Mod-Forge-1.16.4-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.16.4-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -764,7 +764,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "36.2.34",
       "apiVersion": "36.2.34",
-      "expectedJar": "PayBot-Mod-Forge-1.16.5-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.16.5-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -778,7 +778,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "37.1.1",
       "apiVersion": "37.1.1",
-      "expectedJar": "PayBot-Mod-Forge-1.17.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.17.1-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -792,7 +792,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "38.0.17",
       "apiVersion": "38.0.17",
-      "expectedJar": "PayBot-Mod-Forge-1.18-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.18-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -806,7 +806,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "39.1.2",
       "apiVersion": "39.1.2",
-      "expectedJar": "PayBot-Mod-Forge-1.18.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.18.1-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -820,7 +820,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "40.3.0",
       "apiVersion": "40.3.0",
-      "expectedJar": "PayBot-Mod-Forge-1.18.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.18.2-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -834,7 +834,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "41.1.0",
       "apiVersion": "41.1.0",
-      "expectedJar": "PayBot-Mod-Forge-1.19-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.19-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -848,7 +848,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "42.0.9",
       "apiVersion": "42.0.9",
-      "expectedJar": "PayBot-Mod-Forge-1.19.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.19.1-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -862,7 +862,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "43.5.0",
       "apiVersion": "43.5.0",
-      "expectedJar": "PayBot-Mod-Forge-1.19.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.19.2-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -876,7 +876,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "44.1.23",
       "apiVersion": "44.1.23",
-      "expectedJar": "PayBot-Mod-Forge-1.19.3-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.19.3-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -890,7 +890,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "45.4.0",
       "apiVersion": "45.4.0",
-      "expectedJar": "PayBot-Mod-Forge-1.19.4-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.19.4-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -904,7 +904,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "46.0.14",
       "apiVersion": "46.0.14",
-      "expectedJar": "PayBot-Mod-Forge-1.20-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.20-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -918,7 +918,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "47.4.10",
       "apiVersion": "47.4.10",
-      "expectedJar": "PayBot-Mod-Forge-1.20.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.20.1-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -932,7 +932,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "48.1.0",
       "apiVersion": "48.1.0",
-      "expectedJar": "PayBot-Mod-Forge-1.20.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.20.2-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -946,7 +946,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "49.0.2",
       "apiVersion": "49.0.2",
-      "expectedJar": "PayBot-Mod-Forge-1.20.3-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.20.3-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -960,7 +960,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "49.2.0",
       "apiVersion": "49.2.0",
-      "expectedJar": "PayBot-Mod-Forge-1.20.4-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.20.4-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -974,7 +974,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "50.2.1",
       "apiVersion": "50.2.1",
-      "expectedJar": "PayBot-Mod-Forge-1.20.6-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.20.6-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -988,7 +988,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "51.0.33",
       "apiVersion": "51.0.33",
-      "expectedJar": "PayBot-Mod-Forge-1.21-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.21-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -1002,7 +1002,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "52.1.0",
       "apiVersion": "52.1.0",
-      "expectedJar": "PayBot-Mod-Forge-1.21.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.21.1-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -1016,7 +1016,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "60.1.12",
       "apiVersion": "60.1.12",
-      "expectedJar": "PayBot-Mod-Forge-1.21.10-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.21.10-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -1030,7 +1030,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "61.2.0",
       "apiVersion": "61.2.0",
-      "expectedJar": "PayBot-Mod-Forge-1.21.11-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.21.11-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -1044,7 +1044,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "53.1.2",
       "apiVersion": "53.1.2",
-      "expectedJar": "PayBot-Mod-Forge-1.21.3-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.21.3-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -1058,7 +1058,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "54.1.6",
       "apiVersion": "54.1.6",
-      "expectedJar": "PayBot-Mod-Forge-1.21.4-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.21.4-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -1072,7 +1072,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "55.1.13",
       "apiVersion": "55.1.13",
-      "expectedJar": "PayBot-Mod-Forge-1.21.5-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.21.5-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -1086,7 +1086,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "56.0.9",
       "apiVersion": "56.0.9",
-      "expectedJar": "PayBot-Mod-Forge-1.21.6-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.21.6-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -1100,7 +1100,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "57.0.3",
       "apiVersion": "57.0.3",
-      "expectedJar": "PayBot-Mod-Forge-1.21.7-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.21.7-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -1114,7 +1114,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "58.1.0",
       "apiVersion": "58.1.0",
-      "expectedJar": "PayBot-Mod-Forge-1.21.8-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.21.8-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -1128,7 +1128,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "59.0.5",
       "apiVersion": "59.0.5",
-      "expectedJar": "PayBot-Mod-Forge-1.21.9-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-1.21.9-5.5.6.jar",
       "supportStatus": "SOURCE_ONLY"
     },
     {
@@ -1142,7 +1142,7 @@
       "toolchain": "net.minecraftforge.gradle:7.0.+",
       "loaderVersion": "64.1.0",
       "apiVersion": "64.1.0",
-      "expectedJar": "PayBot-Mod-Forge-26.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-26.1-5.5.6.jar",
       "supportStatus": "EXPERIMENTAL"
     },
     {
@@ -1156,7 +1156,7 @@
       "toolchain": "net.minecraftforge.gradle:7.0.+",
       "loaderVersion": "65.1.0",
       "apiVersion": "65.1.0",
-      "expectedJar": "PayBot-Mod-Forge-26.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-Forge-26.2-5.5.6.jar",
       "supportStatus": "EXPERIMENTAL"
     },
     {
@@ -1170,7 +1170,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "20.2.93",
       "apiVersion": "20.2.93",
-      "expectedJar": "PayBot-Mod-NeoForge-1.20.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.20.2-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1184,7 +1184,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "20.3.8-beta",
       "apiVersion": "20.3.8-beta",
-      "expectedJar": "PayBot-Mod-NeoForge-1.20.3-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.20.3-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1198,7 +1198,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "20.4.248",
       "apiVersion": "20.4.248",
-      "expectedJar": "PayBot-Mod-NeoForge-1.20.4-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.20.4-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1212,7 +1212,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "20.5.21-beta",
       "apiVersion": "20.5.21-beta",
-      "expectedJar": "PayBot-Mod-NeoForge-1.20.5-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.20.5-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1226,7 +1226,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "20.6.135",
       "apiVersion": "20.6.135",
-      "expectedJar": "PayBot-Mod-NeoForge-1.20.6-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.20.6-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1240,7 +1240,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "21.0.167",
       "apiVersion": "21.0.167",
-      "expectedJar": "PayBot-Mod-NeoForge-1.21-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.21-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1254,7 +1254,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "21.1.248",
       "apiVersion": "21.1.248",
-      "expectedJar": "PayBot-Mod-NeoForge-1.21.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.21.1-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1268,7 +1268,7 @@
       "toolchain": "dev.architectury.loom:1.11.458",
       "loaderVersion": "21.10.1-beta",
       "apiVersion": "21.10.1-beta",
-      "expectedJar": "PayBot-Mod-NeoForge-1.21.10-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.21.10-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1282,7 +1282,7 @@
       "toolchain": "dev.architectury.loom:1.7.435",
       "loaderVersion": "21.11.45",
       "apiVersion": "21.11.45",
-      "expectedJar": "PayBot-Mod-NeoForge-1.21.11-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.21.11-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1296,7 +1296,7 @@
       "toolchain": "dev.architectury.loom:1.9.436",
       "loaderVersion": "21.2.1-beta",
       "apiVersion": "21.2.1-beta",
-      "expectedJar": "PayBot-Mod-NeoForge-1.21.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.21.2-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1310,7 +1310,7 @@
       "toolchain": "dev.architectury.loom:1.9.436",
       "loaderVersion": "21.3.76",
       "apiVersion": "21.3.76",
-      "expectedJar": "PayBot-Mod-NeoForge-1.21.3-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.21.3-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1324,7 +1324,7 @@
       "toolchain": "dev.architectury.loom:1.10.455",
       "loaderVersion": "21.4.136",
       "apiVersion": "21.4.136",
-      "expectedJar": "PayBot-Mod-NeoForge-1.21.4-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.21.4-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1338,7 +1338,7 @@
       "toolchain": "dev.architectury.loom:1.10.455",
       "loaderVersion": "21.5.66-beta",
       "apiVersion": "21.5.66-beta",
-      "expectedJar": "PayBot-Mod-NeoForge-1.21.5-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.21.5-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1352,7 +1352,7 @@
       "toolchain": "dev.architectury.loom:1.10.455",
       "loaderVersion": "21.6.1-beta",
       "apiVersion": "21.6.1-beta",
-      "expectedJar": "PayBot-Mod-NeoForge-1.21.6-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.21.6-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1366,7 +1366,7 @@
       "toolchain": "dev.architectury.loom:1.10.455",
       "loaderVersion": "21.7.1-beta",
       "apiVersion": "21.7.1-beta",
-      "expectedJar": "PayBot-Mod-NeoForge-1.21.7-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.21.7-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1380,7 +1380,7 @@
       "toolchain": "dev.architectury.loom:1.10.455",
       "loaderVersion": "21.8.1-beta",
       "apiVersion": "21.8.1-beta",
-      "expectedJar": "PayBot-Mod-NeoForge-1.21.8-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.21.8-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1394,7 +1394,7 @@
       "toolchain": "dev.architectury.loom:1.11.458",
       "loaderVersion": "21.9.1-beta",
       "apiVersion": "21.9.1-beta",
-      "expectedJar": "PayBot-Mod-NeoForge-1.21.9-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-1.21.9-5.5.6.jar",
       "supportStatus": "BUILDABLE"
     },
     {
@@ -1408,7 +1408,7 @@
       "toolchain": "net.neoforged.moddev:2.0.79",
       "loaderVersion": "26.1.2.97",
       "apiVersion": "26.1.2.97",
-      "expectedJar": "PayBot-Mod-NeoForge-26.1-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-26.1-5.5.6.jar",
       "supportStatus": "EXPERIMENTAL"
     },
     {
@@ -1422,7 +1422,7 @@
       "toolchain": "net.neoforged.moddev:2.0.79",
       "loaderVersion": "26.2.0.64",
       "apiVersion": "26.2.0.64",
-      "expectedJar": "PayBot-Mod-NeoForge-26.2-5.5.5.jar",
+      "expectedJar": "PayBot-Mod-NeoForge-26.2-5.5.6.jar",
       "supportStatus": "EXPERIMENTAL"
     },
     {
@@ -1436,7 +1436,7 @@
       "toolchain": "none (gradle-java)",
       "loaderVersion": "N/A",
       "apiVersion": "N/A",
-      "expectedJar": "PayBot-Plugin-5.5.5.jar",
+      "expectedJar": "PayBot-Plugin-5.5.6.jar",
       "supportStatus": "PRODUCTION_READY"
     }
   ]

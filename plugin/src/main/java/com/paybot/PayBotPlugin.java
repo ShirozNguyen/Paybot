@@ -584,6 +584,10 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        // 1. Dừng HTTP server trước để không nhận thêm request mới (Mục 41, 66 Master Spec)
+        if (pluginHttpServer != null) pluginHttpServer.stop();
+
+        // 2. Hủy các scheduled tasks và background pollers
         cancelTask(offlineCheckTask);
         cancelTask(autoRewardPollTask);
         cancelTask(offlineTtlTask);
@@ -592,12 +596,14 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
         cancelTask(standaloneBankPollTask);
         cancelTask(sePayApiPollTask); // v5.0.0 Phase B
         cancelTask(configWatcherTask);
-        if (pluginHttpServer != null) pluginHttpServer.stop();
-        if (ownerSessionManager != null) ownerSessionManager.shutdown();
-        // v5.1.0: đóng DB sạch sẽ trước khi plugin dừng
-        if (databaseManager != null) databaseManager.close();
-        // v5.5.5 Part 93: Hủy toàn bộ task của plugin trên mọi scheduler (Folia/Canvas/Paper/Purpur/Spigot)
         SchedulerUtils.cancelAllTasks(this);
+
+        // 3. Đóng session manager
+        if (ownerSessionManager != null) ownerSessionManager.shutdown();
+
+        // 4. Đóng CSDL sau cùng khi không còn task hay request nào đang chạy
+        if (databaseManager != null) databaseManager.close();
+
         getLogger().info("[PayBot] Plugin stopped.");
     }
 

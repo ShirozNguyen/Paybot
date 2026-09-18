@@ -3,6 +3,7 @@ package com.paybot.managers;
 
 import com.paybot.PayBotPlugin;
 import com.paybot.utils.SchedulerUtils;
+import com.paybot.utils.SecuritySanitizer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -152,15 +153,17 @@ public final class RewardDispatcher {
      * Build lệnh cuối cùng từ template thô.
      */
     public static String buildFinalCmd(String rawCmdTemplate, String playerName, String rewardAmt) {
+        String safePlayer = SecuritySanitizer.sanitizePlayerName(playerName);
+        String safeAmt    = SecuritySanitizer.sanitizeAmount(rewardAmt);
         String cmd = rawCmdTemplate.replaceAll("\"([^\"]*)\"", "$1").trim();
-        cmd = cmd.replace("[playername]", playerName)   // placeholder chuẩn (plugin)
-                 .replace("{player}",     playerName)    // placeholder chuẩn (bot Discord)
-                 .replace("[amount]",     rewardAmt)      // placeholder chuẩn
-                 .replace("{amount}",     rewardAmt)      // alias bot Discord
-                 .replace("[So luong]",   rewardAmt)      // backward compat
-                 .replace("[Số lượng]",   rewardAmt)      // backward compat
-                 .replace("playername",   playerName)     // backward compat (bare)
-                 .replace("amount",       rewardAmt);      // backward compat (bare)
+        cmd = cmd.replace("[playername]", safePlayer)   // placeholder chuẩn (plugin)
+                 .replace("{player}",     safePlayer)    // placeholder chuẩn (bot Discord)
+                 .replace("[amount]",     safeAmt)       // placeholder chuẩn
+                 .replace("{amount}",     safeAmt)       // alias bot Discord
+                 .replace("[So luong]",   safeAmt)       // backward compat
+                 .replace("[Số lượng]",   safeAmt)       // backward compat
+                 .replace("playername",   safePlayer)    // backward compat (bare)
+                 .replace("amount",       safeAmt);      // backward compat (bare)
         if (cmd.startsWith("/")) cmd = cmd.substring(1);
         return cmd;
     }

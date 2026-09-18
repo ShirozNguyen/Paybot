@@ -31,10 +31,11 @@ public class LocalOrderManager {
 
     // ─── Status constants ─────────────────────────────────────────────────────
 
-    public static final String BANK_PENDING  = "PENDING";
-    public static final String BANK_PAID     = "PAID";
-    public static final String BANK_APPROVED = "APPROVED";
-    public static final String BANK_EXPIRED  = "EXPIRED";
+    public static final String BANK_PENDING   = "PENDING";
+    public static final String BANK_PAID      = "PAID";
+    public static final String BANK_APPROVED  = "APPROVED";
+    public static final String BANK_EXPIRED   = "EXPIRED";
+    public static final String BANK_UNDERPAID = "UNDERPAID";
 
     public static final String CARD_PROCESSING  = "99";
     public static final String CARD_SUCCESS      = "1";
@@ -173,7 +174,13 @@ public class LocalOrderManager {
 
     public List<BankOrder> getPendingBankOrders() {
         return bankOrders.values().stream()
-                .filter(o -> !BANK_APPROVED.equals(o.status) && !BANK_EXPIRED.equals(o.status))
+                .filter(o -> !BANK_APPROVED.equals(o.status) && !BANK_EXPIRED.equals(o.status) && !BANK_UNDERPAID.equals(o.status))
+                .collect(Collectors.toList());
+    }
+
+    public List<BankOrder> getUnderpaidBankOrders() {
+        return bankOrders.values().stream()
+                .filter(o -> BANK_UNDERPAID.equals(o.status))
                 .collect(Collectors.toList());
     }
 

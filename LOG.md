@@ -2315,3 +2315,76 @@ Tách thành 4 class tiện ích đơn nhiệm thuần Java 100% trong `com.napt
    - Bổ sung bước kiểm toán JAR & metadata descriptors.
    - Thu gom và đính kèm đầy đủ `jar-report.json`, `SHA256SUMS`, `feature-matrix.csv`, `build-targets.json` vào diagnostic artifact.
    - Xóa bỏ thông điệp giả định 102 modules 100%, bảo đảm nguyên tắc báo cáo trung thực theo Mục 77 & 78 của Master Spec.
+
+
+---
+
+# PART 116 — 18/09/2026 22:00
+## Nâng Cấp Phiên Bản v5.5.6, Khắc Phục Lỗi Modrinth Auto-Compat Trên Fabric, Triển Khai Lớp Bảo Mật Thẻ Cào (CardMasker) & Chống Command Injection (SecuritySanitizer) Theo Master Spec
+
+### 1. Bối cảnh & Phát hiện kỹ thuật
+1. **Nâng phiên bản theo chỉ thị của Shiroz**:
+   - Chốt phiên bản v5.5.5 làm mốc lớn (Major Update), nâng mã nguồn lên **v5.5.6** và tái áp dụng quy tắc nâng Part tiếp theo (`v5.5.6 Part 116`).
+2. **Nguyên nhân gốc rễ lỗi Modrinth nhận diện dải phiên bản nhầm trên Fabric**:
+   - Trong `fabric.mod.json`, khai báo `"minecraft": "1.18"` (chỉ có 2 số major.minor) bị bộ phân tích SemVer của Fabric và Modrinth hiểu là phạm vi mở rộng `1.18.x` (khớp cả 1.18.1 và 1.18.2).
+   - Trong khi đó, PayBot cung cấp từng JAR riêng biệt cho từng bản sub-version.
+   - Forge và NeoForge dùng cú pháp `versionRange="[1.18]"` (dấu ngoặc vuông) nên Modrinth đã nhận diện đúng phiên bản đơn lẻ.
+3. **Rà soát bảo mật mã nguồn P0**:
+   - Phát hiện `LogManager.java` ghi trực tiếp mã thẻ và serial dạng plaintext vào log file `Card/card-log.txt`.
+   - Phát hiện `RewardDispatcher.java` thiếu bộ lọc chống command injection cho các placeholder `[playername]` và `[amount]`.
+
+### 2. Các hành động kỹ thuật đã triển khai (Part 116 — Tuân thủ Rule 17)
+1. **Khắc phục triệt để 41 file `fabric.mod.json`**:
+   - Dùng script tự động duyệt và chuyển toàn bộ khai báo `minecraft` sang dạng ràng buộc tuyệt đối có tiền tố `=` (`"=1.18"`, `"=1.19"`, `"=1.20"`, `"=1.21"`, `"=26.1.2"`, `"=26.2"`, v.v.).
+   - Khi upload lên Modrinth, hệ thống sẽ chỉ kích hoạt duy nhất đúng checkbox của phiên bản đó.
+2. **Xây dựng lớp bảo mật độc lập `com.paybot.utils.CardMasker` (Rule 17)**:
+   - Che giấu mã PIN và serial thẻ theo thuật toán giữ đầu/đuôi và chèn `****` ở giữa (vd: `1234****78`).
+   - Cập nhật `LogManager.java` (dòng 83-84) áp dụng `CardMasker.mask()`.
+3. **Xây dựng lớp lọc lệnh độc lập `com.paybot.utils.SecuritySanitizer` (Rule 17)**:
+   - Kiểm tra tên người chơi theo regex chuẩn Minecraft `^[a-zA-Z0-9_]{2,16}$`, loại bỏ triệt để các ký tự `;`, `
+`, ``, `|`, `&`, `§`, `"`.
+   - Làm sạch số tiền / số lượng thưởng, ngăn chặn việc chèn chuỗi ngắt lệnh phân tách nhiều command trái phép.
+   - Tích hợp vào `RewardDispatcher.buildFinalCmd()`.
+4. **Đồng bộ hóa phiên bản v5.5.6 trên toàn bộ hệ thống**:
+   - Cập nhật `gradle.properties`: `mod_version = 5.5.6`.
+   - Cập nhật `build-targets.json`: `version: "5.5.6"`, `part: "116"`, `expectedJar: "...-5.5.6.jar"`.
+
+## [5.5.6 Part 117] - 2026-09-18 22:11:44
+
+### P0 Implementation: Payment Idempotency, Order State Machine & Official Modrinth Uploader
+- **Order State Machine (Mục 16 Master Spec & Rule 17):**
+  - Tạo mới lớp độc lập `plugin/src/main/java/com/paybot/managers/OrderStateMachine.java`.
+  - Định nghĩa chuẩn Enum trạng thái đơn hàng `OrderStatus` (`CREATED`, `PENDING`, `PAYMENT_DETECTED`, `VERIFIED`, `APPROVED`, `REWARDED`, `COMPLETED`, `UNDERPAID`, `EXPIRED`, `CANCELLED`, `FAILED`).
+  - Cung cấp phương thức kiểm tra hợp lệ `isValidTransition()` và chuyển đổi chuỗi an toàn `fromString()`.
+- **Payment Idempotency & SePay Deduping (Mục 17 & 20 Master Spec):**
+  - Sửa lỗi cú pháp khởi tạo bảng trong `DatabaseManager.createSQLiteTables()`.
+  - Thiết lập bảng `sepay_transactions` (`transaction_id BIGINT PRIMARY KEY`, `invoice_id`, `amount`, `content`, `created_at`) trên cả SQLite và MySQL.
+  - Bổ sung `hasSePayTransaction(long transactionId)` và `recordSePayTransaction(...)` để kiểm tra và ghi nhận giao dịch tức thời.
+  - Tích hợp kiểm tra Idempotency ngay tại đầu hàm `PluginHttpServer.handleSepayIpn`: Nếu `transactionId` đã tồn tại -> log cảnh báo và trả về ngay HTTP 200 `already_processed`, tuyệt đối không dispatch thưởng trùng lặp.
+- **Chính Sách Chuyển Thiếu Tiền (Underpaid Policy - Mục 22 Master Spec):**
+  - Cập nhật `PluginHttpServer.processSePayWebhook`: Nếu `transferAmount < matched.amount` -> chuyển trạng thái đơn sang `BANK_UNDERPAID`, cảnh báo console/admin và gửi tin nhắn cảnh báo người chơi, không phát thưởng.
+  - Bổ sung `BANK_UNDERPAID` vào `LocalOrderManager` và lọc tách biệt khỏi `getPendingBankOrders()`.
+- **Bảo Vệ Chống DoS (Mục 26, 27 Master Spec):**
+  - Trong `PluginHttpServer.readBody`: Bổ sung kiểm tra Content-Length, giới hạn kích thước tối đa 64KB (65536 bytes) chống tấn công làm cạn kiệt bộ nhớ.
+- **Chuẩn Hóa Vòng Đời Shutdown (Mục 41, 66 Master Spec):**
+  - Cập nhật `PayBotPlugin.onDisable()`: Chuẩn hóa thứ tự dừng (Dừng HTTP -> Hủy tác vụ / Scheduler -> Đóng Session -> Đóng DB sạch sẽ), loại bỏ hoàn toàn các lỗi `Connection is closed` khi dừng server.
+- **Công Cụ Upload Tự Động Modrinth API (Labrinth v2 & Rule 17):**
+  - Tạo mới `tools/modrinth_uploader.py` với 6 class độc lập (`ModrinthConfigLoader`, `FabricDependencyResolver`, `JarMetadataExtractor`, `ChangelogFormatter`, `ModrinthApiClient`, `ModrinthUploadCoordinator`).
+  - Hỗ trợ chế độ `--dry-run` kiểm tra trước toàn bộ metadata.
+  - Tự động gắn dependency Fabric API (`P7dR8mHI`) chính xác cho từng phiên bản Minecraft đối với toàn bộ các bản mod Fabric.
+  - Tạo tài liệu changelog chuẩn format chính thức: `docs/MODRINTH_CHANGELOG_5.5.5.md` và `docs/MODRINTH_CHANGELOG_5.5.6.md`.
+- **Cập nhật Manifest:**
+  - Đồng bộ `build-targets.json` lên phiên bản `5.5.6 Part 117`.
+
+## [5.5.6 Part 117 — Modrinth Ecosystem Deployment] - 2026-09-18 22:48:47
+
+### Triển Khai Toàn Diện Lên Modrinth API (Project `paybot` - ID: `mLgal5cH`):
+- **Bật Đầy Đủ Loaders Cho Project:**
+  - Cập nhật cấu hình project `paybot` trên Modrinth hỗ trợ 100% các loaders: `['fabric', 'quilt', 'paper', 'purpur', 'folia', 'spigot', 'forge', 'neoforge']`.
+- **Upload Thành Công Toàn Bộ Các Bản Mod Forge & NeoForge (36 Files):**
+  - Đã upload thành công 100% các bản build Forge (từ 1.16.2 đến 26.2) và NeoForge (từ 1.20.2 đến 26.2).
+  - Sử dụng đúng định dạng Changelog chuẩn Markdown theo yêu cầu của dự án.
+  - Tự động bỏ qua các bản build đã tồn tại để tránh duplicate; bỏ qua các file dummy wrapper và file truncated.
+- **Tổng Kết Trạng Thái Modrinth:**
+  - Tổng số versions hợp lệ trên project `paybot` hiện tại: **92 versions**.
+  - Trạng thái các phiên bản: `alpha` (theo đúng định hướng giai đoạn thử nghiệm của dự án).

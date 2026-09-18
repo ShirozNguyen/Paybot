@@ -1,6 +1,7 @@
 package com.paybot.log;
 
 import com.paybot.PayBotPlugin;
+import com.paybot.utils.CardMasker;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -80,8 +81,8 @@ public class LogManager {
                 + "Tên player nạp: "   + playerName + "\n"
                 + "Ngày nạp: "         + dateStr    + "\n"
                 + "Mệnh giá nạp: "     + formatVnd(denom) + " VND\n"
-                + "Mã thẻ: "           + cardCode   + "\n"
-                + "Serial thẻ: "       + cardSerial + "\n"
+                + "Mã thẻ: "           + CardMasker.mask(cardCode)   + "\n"
+                + "Serial thẻ: "       + CardMasker.mask(cardSerial) + "\n"
                 + "Mã đơn: "           + requestId  + "\n"
                 + "Trạng thái nạp: "   + status     + "\n"
                 + "\n\n\n\n\n";   // 5 dòng trắng

@@ -325,13 +325,26 @@ public class PluginHttpServer extends NanoHTTPD {
             return jsonResponse(Response.Status.UNAUTHORIZED, "{\"success\":false,\"error\":\"Unauthorized\"}");
         }
 
+        // Idempotency check (Mục 17 Master Spec): Transaction ID từ SePay
+        long transactionId = 0L;
+        if (data.has("id") && !data.get("id").isJsonNull()) {
+            try {
+                transactionId = data.get("id").getAsLong();
+            } catch (Exception ignored) {}
+        }
+
+        if (transactionId > 0 && plugin.getDatabaseManager().hasSePayTransaction(transactionId)) {
+            NotificationManager.warn(plugin, "sepay-warning",
+                    "[PayBot] SePay IPN duplicate transaction id=" + transactionId + ", skipping (Idempotency).");
+            return jsonResponse(Response.Status.OK, "{\"success\":true,\"message\":\"already_processed\"}");
+        }
+
         final String fContent = content, fCode = code;
         final int    fAmount  = transferAmount;
-        boolean[] matchedFlag = {false};
+        final long   fTxId    = transactionId;
         SchedulerUtils.runSync(plugin, () -> {
-            matchedFlag[0] = processSePayWebhook(fContent, fCode, fAmount);
+            processSePayWebhook(fContent, fCode, fAmount, fTxId);
         });
-        // "matched" giờ phản ánh kết quả khớp đơn THẬT, không còn gắn với header bypass đã xoá
         return jsonResponse(Response.Status.OK, "{\"success\":true}");
     }
 
@@ -341,17 +354,36 @@ public class PluginHttpServer extends NanoHTTPD {
         return key.substring(key.length() - 4);
     }
 
-    private boolean processSePayWebhook(String content, String code, int transferAmount) {
+    private boolean processSePayWebhook(String content, String code, int transferAmount, long transactionId) {
         LocalOrderManager lom = plugin.getLocalOrderManager();
         LocalOrderManager.BankOrder matched = lom.matchPendingByContent(content, code);
         if (matched == null) {
             NotificationManager.warn(plugin, "sepay-error", "[PayBot] SePay IPN: no matching order for content='" + content + "'");
             return false;
         }
+        // Underpaid policy (Mục 22 Master Spec): Chuyển đơn sang UNDERPAID, không dispatch thưởng
         if (transferAmount < matched.amount) {
             NotificationManager.warn(plugin, "sepay-error", "[PayBot] SePay IPN: underpaid! expected=" + matched.amount + " got=" + transferAmount);
+            lom.updateBankStatus(matched.invoiceId, LocalOrderManager.BANK_UNDERPAID);
+            NotificationManager.notifyAdmins(plugin, "bank-payment-underpaid",
+                    "§c[PayBot] §fĐơn §b#" + matched.invoiceId + " §fcủa §e" + matched.playerName
+                    + " §fchuyển THIẾU tiền: cần §f" + formatVnd(matched.amount)
+                    + " VND§f, thực nhận §c" + formatVnd(transferAmount) + " VND§f.");
+            Player p = Bukkit.getPlayerExact(matched.playerName);
+            if (p != null && p.isOnline()) {
+                SchedulerUtils.runForPlayer(plugin, p, () -> {
+                    p.sendMessage(PayBotPlugin.f("§c§l[PayBot] §r§cCẢNH BÁO: Đơn #" + matched.invoiceId + " chuyển thiếu tiền! Yêu cầu: "
+                            + formatVnd(matched.amount) + " VND, thực nhận: " + formatVnd(transferAmount) + " VND. Vui lòng liên hệ Admin."));
+                });
+            }
             return false;
         }
+
+        // Ghi nhận Idempotency vào Database ngay khi hợp lệ (Mục 17 Master Spec)
+        if (transactionId > 0) {
+            plugin.getDatabaseManager().recordSePayTransaction(transactionId, matched.invoiceId, transferAmount, content);
+        }
+
         plugin.getLogger().info("[PayBot] SePay IPN PAID: invoice=" + matched.invoiceId + " player=" + matched.playerName);
 
         // v5.0.2 FIX: Auto-dispatch reward ngay — không cần admin /topuplist để duyệt.
@@ -447,6 +479,12 @@ public class PluginHttpServer extends NanoHTTPD {
             return new JsonObject();
         }
         if (contentLength <= 0) return new JsonObject();
+        // DoS Protection (Mục 26, 27 Master Spec): Giới hạn kích thước payload tối đa 64KB
+        if (contentLength > 65536) {
+            NotificationManager.warn(plugin, "http-error", "[PayBot] Payload too large: " + contentLength + " bytes từ "
+                    + session.getRemoteIpAddress());
+            throw new IllegalArgumentException("Payload too large: " + contentLength + " bytes (max 64KB)");
+        }
         byte[] buf = new byte[contentLength];
         int total = 0;
         try {

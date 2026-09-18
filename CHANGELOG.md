@@ -1015,3 +1015,48 @@ Sau khi audit sâu toàn bộ 3 module theo yêu cầu (kiểm tra từng class,
 - **Chuẩn hóa CI Workflow (.github/workflows/build.yml - Mục 76, 77, 78)**:
   - Loại bỏ hoàn toàn các vòng lặp shell hard-code và xóa bỏ dòng echo giả định "ALL 102 MODULES BUILT (100%)".
   - Chuyển sang mô hình Manifest-Driven CI: Đọc danh sách build từ `build-targets.json`, chạy kiểm toán JAR & metadata tự động, xuất báo cáo chẩn đoán trung thực.
+
+
+---
+
+## v5.5.6 Part 116 — 2026-09-18
+
+**⚡ Nâng Cấp Phiên Bản v5.5.6, Khắc Phục Triệt Để Lỗi Ràng Buộc Phiên Bản Modrinth & Triển Khai Các Hạng Mục P0 Bảo Mật:**
+- **Nâng phiên bản dự án lên v5.5.6**:
+  - Cập nhật `gradle.properties`: `mod_version = 5.5.6` (chốt mốc 5.5.5 làm mốc Major Update công khai).
+  - Cập nhật `build-targets.json` sang version `5.5.6` Part `116` và chuẩn hóa toàn bộ tên file `expectedJar` tương ứng.
+- **Khắc phục lỗi Modrinth tự động nhận diện nhầm dải phiên bản Minecraft (Fabric)**:
+  - Cập nhật toàn bộ 41 file `fabric.mod.json` trong `Fabric_Loader/` sử dụng toán tử ràng buộc chính xác tuyệt đối (`"=1.18"`, `"=1.19"`, `"=1.20"`, `"=1.21"`, `"=26.1.2"`, `"=26.2"`).
+  - Ngăn chặn hoàn toàn việc Modrinth coi chuỗi "1.18" là wildcard range và tự động gắn nhầm JAR 1.18 cho cả 1.18.1 và 1.18.2.
+  - Xác nhận Forge và NeoForge đã sử dụng đúng cú pháp đóng ngoặc vuông chuẩn Maven (`versionRange="[1.18]"`).
+- **Tuân thủ Tuyệt đối Rule 17 (Class chuyên trách độc lập 100%)**:
+  - `com.paybot.utils.CardMasker`: Class độc lập chuyên trách che giấu thông tin nhạy cảm của thẻ cào (mã PIN và serial dạng `1234****78`) trước khi ghi log hoặc hiển thị (Mục 36, 100).
+  - `com.paybot.utils.SecuritySanitizer`: Class độc lập chuyên trách lọc sạch tên người chơi (`^[a-zA-Z0-9_]{2,16}$`) và số tiền, loại bỏ toàn bộ ký tự ngắt lệnh (`;`, `
+`, ``, `|`, `&`), triệt tiêu rủi ro Command Injection (Mục 30).
+- **Tăng cường an toàn dòng tiền & Logging**:
+  - Cập nhật `LogManager.java`: Áp dụng `CardMasker.mask()` cho `cardCode` và `cardSerial`, không bao giờ lưu trữ mã thẻ nguyên vẹn ra file đĩa.
+  - Cập nhật `RewardDispatcher.java`: Áp dụng `SecuritySanitizer` trong `buildFinalCmd()` trước khi dispatch lệnh console hoặc giao thưởng.
+  - Rà soát `DatabaseManager.java`: Đảm bảo `executor.shutdownNow()` giải phóng luồng hoàn toàn trong `tryConnectMySQL()`.
+
+## [5.5.6-part-117] - 2026-09-18 22:11:44
+
+### Added
+- Created `OrderStateMachine.java` implementing technical spec section 16 for strict order lifecycle transitions.
+- Created `sepay_transactions` table in both SQLite and MySQL with `transaction_id PRIMARY KEY` for payment idempotency.
+- Added `hasSePayTransaction()` and `recordSePayTransaction()` to `DatabaseManager`.
+- Added 64KB request body size guard in `PluginHttpServer.readBody` for DoS protection (spec sections 26, 27).
+- Added `BANK_UNDERPAID` status and underpaid policy handling in `PluginHttpServer` and `LocalOrderManager`.
+- Created official Modrinth API uploader tool `tools/modrinth_uploader.py` adhering to Rule 17 with automated Fabric API dependency mapping.
+- Added official Modrinth changelog templates `docs/MODRINTH_CHANGELOG_5.5.5.md` and `docs/MODRINTH_CHANGELOG_5.5.6.md`.
+
+### Fixed
+- Fixed SQL syntax error in `DatabaseManager.createSQLiteTables()` around `offline_rewards` and `sepay_transactions` table creation.
+- Reordered graceful teardown sequence in `PayBotPlugin.onDisable()` to prevent thread leaks and database closed errors.
+- Updated `build-targets.json` to v5.5.6 Part 117.
+
+## [5.5.6-part-117-modrinth] - 2026-09-18 22:48:47
+
+### Added
+- Completed official automated deployment of all missing Forge and NeoForge mod JARs to Modrinth under project `paybot` (ID: `mLgal5cH`).
+- Configured project `paybot` to support all major loaders: Fabric, Quilt, Paper, Purpur, Folia, Spigot, Forge, and NeoForge.
+- Total active releases on Modrinth reached 92 versions.

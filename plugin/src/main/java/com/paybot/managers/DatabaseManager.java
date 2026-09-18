@@ -610,6 +610,17 @@ public class DatabaseManager {
                     ")");
             try { st.execute("CREATE INDEX idx_reward_player ON offline_rewards(player_name)"); } catch (SQLException ignored) {}
         }
+
+        // Tạo bảng sepay_transactions trên bankConn (Idempotency - Mục 17 của Master Spec)
+        try (Statement st = bankConn.createStatement()) {
+            st.execute("CREATE TABLE IF NOT EXISTS sepay_transactions (" +
+                    "transaction_id BIGINT PRIMARY KEY, " +
+                    "invoice_id VARCHAR(128) NOT NULL, " +
+                    "amount INT NOT NULL, " +
+                    "content TEXT DEFAULT '', " +
+                    "created_at BIGINT NOT NULL" +
+                    ")");
+        }
     }
 
     private void createMySQLTables() throws SQLException {
@@ -649,6 +660,14 @@ public class DatabaseManager {
                     "type VARCHAR(64) DEFAULT 'card', " +
                     "invoice_id VARCHAR(128) DEFAULT '', " +
                     "discord_uid VARCHAR(128) DEFAULT '', " +
+                    "created_at BIGINT NOT NULL" +
+                    ")" + suffix);
+
+            st.execute("CREATE TABLE IF NOT EXISTS sepay_transactions (" +
+                    "transaction_id BIGINT PRIMARY KEY, " +
+                    "invoice_id VARCHAR(128) NOT NULL, " +
+                    "amount INT NOT NULL, " +
+                    "content TEXT DEFAULT '', " +
                     "created_at BIGINT NOT NULL" +
                     ")" + suffix);
 
@@ -846,6 +865,44 @@ public class DatabaseManager {
             plugin.getLogger().warning(tag + " getAllBankOrders lỗi: " + e.getMessage());
         }
         return list;
+    }
+
+    /**
+     * Ghi nhận giao dịch SePay vào CSDL để đảm bảo tính Idempotent (Mục 17 của Master Spec).
+     * @return true nếu ghi nhận thành công, false nếu giao dịch đã tồn tại (chống trùng tuyệt đối).
+     */
+    public synchronized boolean recordSePayTransaction(long transactionId, String invoiceId, int amount, String content) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : bankConn;
+        if (c == null) return false;
+        String sql = "INSERT INTO sepay_transactions (transaction_id, invoice_id, amount, content, created_at) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, transactionId);
+            ps.setString(2, invoiceId != null ? invoiceId : "");
+            ps.setInt(3, amount);
+            ps.setString(4, content != null ? content : "");
+            ps.setLong(5, System.currentTimeMillis());
+            ps.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Kiểm tra xem giao dịch SePay đã từng được xử lý hay chưa.
+     */
+    public synchronized boolean hasSePayTransaction(long transactionId) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : bankConn;
+        if (c == null) return false;
+        String sql = "SELECT 1 FROM sepay_transactions WHERE transaction_id=? LIMIT 1";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, transactionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            return false;
+        }
     }
 
     /** Kiểm tra xem invoice_id đã từng tồn tại trong CSDL chưa (dùng cho chống trùng mã nạp). */
@@ -1592,5 +1649,38 @@ public class DatabaseManager {
         return String.format(Locale.ROOT,
             "{\"useMySQL\":%b,\"host\":\"%s\",\"port\":%d,\"database\":\"%s\",\"username\":\"%s\",\"password\":\"%s\",\"useSSL\":%b}",
             use, host, port, db, user, pass, ssl);
+    }
+    // ─── SePay Transactions (Idempotency - Mục 17 Master Spec) ─────────────
+
+    public boolean hasSePayTransaction(long transactionId) {
+        String sql = "SELECT 1 FROM sepay_transactions WHERE transaction_id = ? LIMIT 1";
+        Connection c = useMySQL ? conn : bankConn;
+        if (c == null) return false;
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, transactionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().warning("[PayBot] DB error checking sepay_transaction: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean recordSePayTransaction(long transactionId, String invoiceId, int amount, String content) {
+        String sql = "INSERT INTO sepay_transactions (transaction_id, invoice_id, amount, content, created_at) VALUES (?, ?, ?, ?, ?)";
+        Connection c = useMySQL ? conn : bankConn;
+        if (c == null) return false;
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, transactionId);
+            ps.setString(2, invoiceId != null ? invoiceId : "");
+            ps.setInt(3, amount);
+            ps.setString(4, content != null ? content : "");
+            ps.setLong(5, System.currentTimeMillis());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            plugin.getLogger().warning("[PayBot] DB recordSePayTransaction failed: " + e.getMessage());
+            return false;
+        }
     }
 }

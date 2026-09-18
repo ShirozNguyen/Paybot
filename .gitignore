@@ -51,3 +51,6 @@ croc-stdin-*
 # Always keep Gradle Wrapper JARs across all modules
 !**/gradle/wrapper/gradle-wrapper.jar
 !gradle/wrapper/gradle-wrapper.jar
+
+# Modrinth Token
+.modrinth_token
