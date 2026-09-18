@@ -1,3 +1,12 @@
+## [5.5.5 - Part 108] - 18/09/2026 12:15
+### Fixed & Improved
+- **Khắc Phục Triệt Để Lỗi Spam Hàng Chục Tiến Trình Java & OOM Crash (Đảm Bảo Tối Đa Hóa Công Suất CI)**:
+  - **Phân định rõ ràng giữa Máy Local và GitHub Actions (CI)**:
+    + **Trên CI (GitHub Actions)**: Giữ nguyên 100% cấu hình hiệu năng cực đại trong `PayBot/gradle.properties` (`-Xmx8192m`, `org.gradle.workers.max=8`, `org.gradle.parallel=true`, `caching=true`) để tối đa hóa công suất build của runner cloud.
+    + **Trên Máy Local (Dev Machine)**: Áp dụng cơ chế User-level Property Override của Gradle thông qua `C:\Users\Administrator\.gradle\gradle.properties` (có độ ưu tiên cao hơn project properties nhưng không commit lên Git). Khống chế tài nguyên máy local ở mức an toàn: `org.gradle.daemon=false` (chống zombie daemon ngầm), `org.gradle.jvmargs=-Xmx1536m -XX:MaxMetaspaceSize=512m`, và `org.gradle.workers.max=2`.
+  - **Dập tắt tiến trình ngầm & Dọn dẹp rác**: Tiêu diệt toàn bộ tiến trình `java.exe` zombie chiếm bộ nhớ; dọn sạch 12 file rác crash dump JVM (`hs_err_pid*.log`, `replay_pid*.log`).
+  - **Khống chế Extension IDE**: Cập nhật cả User settings (`Antigravity IDE/User/settings.json`) và Workspace settings (`.vscode/settings.json`): đặt `"java.server.launchMode": "LightWeight"`, vô hiệu hóa auto-import/auto-build, loại trừ submodules khỏi scan ngầm.
+
 ## [5.5.5 - Part 107] - 18/09/2026 11:55
 ### Fixed & Improved
 - **Khắc Phục Dứt Điểm 8 Submodule Cuối Cùng Để Hoàn Tất 100% Toàn Bộ Module Sinh Ra JAR**:

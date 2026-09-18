@@ -2182,3 +2182,40 @@ Tách thành 4 class tiện ích đơn nhiệm thuần Java 100% trong `com.napt
 - **Tối Ưu CI Pipeline (.github/workflows/build.yml)**:
   - Cải thiện pattern match case statement từ `*/Fabric_Loader/*` sang `*Fabric_Loader*` và `*NeoForge_Loader*` để đảm bảo 100% file JAR đều được copy chính xác vào thư mục `Done/`.
 - **📌 Giữ nguyên phiên bản v5.5.5 toàn dự án theo yêu cầu của Shiroz.**
+
+---
+
+# PART 108 — 18/09/2026 12:15
+## Khắc Phục Triệt Để Lỗi Spam Hàng Chục Tiến Trình Java & OOM Crash Khi Mở Workspace/Đoạn Chat
+
+### 1. Bối cảnh & Điều tra thực tế
+- Khi mở workspace `PayBot` hoặc các đoạn chat lớn (điển hình là đoạn chat *Reading Markdown Files*), hệ thống bị mở ngầm liên tục từ 20 đến hơn 30 tiến trình Java (`java.exe`), dẫn đến việc ngốn cạn kiệt RAM và sụp đổ hệ thống (OOM Crash).
+- Kiểm tra thực tế trên hệ thống phát hiện:
+  + Có tới 24 tiến trình Java đang chạy ngầm, trong đó 11 tiến trình là `GradleDaemon 8.8` và 13 tiến trình là Eclipse JDT Language Server / GradleServer.
+  + Thư mục gốc dự án xuất hiện liên tục 8 file `hs_err_pid*.log` và 4 file `replay_pid*.log`. Nội dung log crash ghi rõ: `Out of Memory Error (os_windows.cpp:3732), Native memory allocation (mmap) failed. Error detail: G1 virtual space`.
+  + Nguyên nhân gốc: File `gradle.properties` đang cấu hình `org.gradle.jvmargs=-Xmx8192m -XX:MaxMetaspaceSize=2048m` và `org.gradle.workers.max=8` (dành cho máy 32GB RAM). Trong khi máy tính hiện tại là Intel Core i3-4005U, RAM 11GB. Khi IDE gọi Gradle phân tích hơn 100 submodule loader, GradleDaemon xin cấp 8GB RAM -> Crash OOM -> Extension host tưởng daemon bị đơ nên tiếp tục spawn lại -> Vòng lặp crash/respawn tạo ra hàng chục tiến trình Java ngầm.
+
+### 2. Các giải pháp đã triển khai dứt điểm
+1. **Dập tắt toàn bộ tiến trình Java & dọn dẹp file rác**:
+   - Dừng toàn bộ 24 tiến trình `java.exe` zombie đang chiếm dụng RAM.
+   - Xóa toàn bộ 12 file crash dump JVM (`hs_err_pid*.log`, `replay_pid*.log`) ở thư mục gốc.
+   - Xóa sạch cache workspace storage cũ bị lỗi OOM của Red Hat Java.
+2. **Khống chế Gradle phân cấp (Tối đa hóa CI, bảo vệ máy Local)**:
+   - **Trên CI (GitHub Actions)**: Giữ nguyên 100% cấu hình hiệu năng cực đại trong `PayBot/gradle.properties`:
+     + `org.gradle.jvmargs=-Xmx8192m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC ...`
+     + `org.gradle.parallel=true`
+     + `org.gradle.workers.max=8`
+     + `org.gradle.caching=true`
+     -> Đảm bảo khi build trên GitHub Actions cloud runner, công suất build luôn đạt mức tối đa 100%.
+   - **Trên Máy Local (Dev Machine)**: Tạo file ghi đè toàn cục `C:\Users\Administrator\.gradle\gradle.properties` (chuẩn Gradle Property Precedence cao hơn file project, nhưng không commit lên Git):
+     + `org.gradle.daemon=false` (không duy trì daemon ngầm trong RAM sau khi chạy).
+     + `org.gradle.jvmargs=-Xmx1536m -XX:MaxMetaspaceSize=512m` (an toàn, không chiếm hết RAM máy 11GB).
+     + `org.gradle.workers.max=2` (phù hợp CPU 4 luồng).
+     -> Đảm bảo trên máy local không bao giờ bị OOM hay tràn RAM.
+3. **Khống chế Extension IDE (Antigravity IDE User Settings & Workspace Settings)**:
+   - Đặt `"java.server.launchMode": "LightWeight"` ở cả cấu hình toàn cục IDE và workspace PayBot (chỉ dùng syntax highlight nhẹ, không bao giờ tự import toàn bộ subprojects, không chạy Standard Language Server nặng).
+   - Vô hiệu hóa auto-import và auto-detect: `"java.autobuild.enabled": false`, `"java.import.gradle.enabled": false`, `"java.gradle.buildServer.enabled": "off"`, `"gradle.autoDetect": "off"`, `"gradle.nestedProjects": false`.
+   - Mở rộng `java.import.exclusions` để loại trừ toàn bộ các thư mục loaders, build, và cache.
+
+- **📌 Giữ nguyên phiên bản v5.5.5 toàn dự án theo yêu cầu của Shiroz.**
+
