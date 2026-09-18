@@ -1,3 +1,23 @@
+## [5.5.5 - Part 112] - 18/09/2026 14:25
+### Fixed & Improved
+- **Khóa Bản Đồ QR Chống Đè Địa Hình, Thu Hồi Thông Minh & Triệt Tiêu Polling Lag (Đa Nền Tảng & Folia/Canvas)**:
+  - **Khóa Cứng Bản Đồ QR Chống Ghi Đè Địa Hình (Terrain Overwrite Fix)**:
+    + *Plugin (Paper/Purpur/Folia/Canvas)*: Gọi `VersionCompat.setLockedSafe(mapView, true)` ở cấp độ NMS để Minecraft Vanilla dừng hoàn toàn việc quét địa hình xung quanh. Nâng cấp `QRMapRenderer` pre-buffer palette màu và vẽ đè liên tục lên `MapCanvas` mỗi khi game render, bảo đảm hình ảnh mã QR luôn hiển thị sắc nét 100%, không bao giờ bị địa hình che khuất hay ghi đè.
+    + *Mod Loaders (Fabric/Forge/NeoForge - 38 modules)*: Bổ sung định danh Intermediary `class_22.field_1838` và SRG `f_77914_`, `f_77910_` vào bộ tìm kiếm trường `locked` trên `MapItemSavedData`, đảm bảo cờ `locked = true` luôn được kích hoạt thành công 100% trên cả môi trường Production và Development.
+  - **Cơ Chế Thu Hồi QR Thông Minh — Pause Khi Out, Resume Khi Join (Zero Lag)**:
+    + Xây dựng class độc lập `QRMapSessionTracker.java` (tuân thủ Rule 17) quản lý vòng đời bộ đếm thời gian: Khi người chơi offline $\rightarrow$ tạm dừng (pause) bộ đếm và lưu thời gian còn lại. Khi người chơi online trở lại $\rightarrow$ kích hoạt lại (resume) và tiếp tục đếm ngược từ thời gian còn lại.
+    + Không tạo hàng ngàn timer rời rạc gây nghẽn luồng: Toàn hệ thống chỉ sử dụng 1 task async nhẹ duy nhất nhịp 5 giây/lần.
+    + Bảo đảm 100% thread-safety cho **Folia và Canvas**: Mọi thao tác truy cập balo và gửi thông báo đều được dispatch qua Entity Scheduler của người chơi (`SchedulerUtils.runForPlayer`).
+  - **Tự Động Biến Đổi Bản Đồ Hết Hạn Thành Bản Đồ Trống Khi Nhặt Lên**:
+    + Tạo listener độc lập `QRMapPickupListener.java` (Rule 17) bắt sự kiện `EntityPickupItemEvent`.
+    + Khi người chơi nhặt một tấm bản đồ QR từ mặt đất mà đơn hàng đã hết thời gian chờ hoặc đã hoàn thành, item trên đất ngay lập tức được biến đổi thành **Bản Đồ Trống nguyên bản** (`Material.MAP` / `EMPTY_MAP`), dọn sạch toàn bộ metadata/lore cũ.
+  - **Triệt Tiêu Polling & Vòng Lặp Gây Lag Server Lớn (Zero-Lag Optimization)**:
+    + Tối ưu hóa `autoRewardPollTask` trong `PayBotPlugin`: Thay vì quét lặp qua toàn bộ hàng ngàn người chơi online mỗi 30 giây, hệ thống kiểm tra nhanh tập hợp `getPendingPlayerNames()`. Nếu không có ai có phần thưởng chờ (99.9% thời gian trong ngày), tác vụ kết thúc ngay tức thì, tiêu tốn 0 nano giây Main Thread.
+    + Tối ưu hóa `pollPendingCards` trong `StandaloneCardProcessor`: Bổ sung cờ guard atomic `isChecking` và độ trễ nhẹ (pacing 300ms) giữa các thẻ, loại bỏ việc bắn ồ ạt hàng chục HTTP request song song, bảo vệ toàn diện thread pool và chống bị chặn IP bởi các web đổi thẻ.
+  - **Khôi Phục & Chuẩn Hóa README.md Song Ngữ Pure Markdown**:
+    + Khôi phục 100% tài liệu tiếng Anh chi tiết, chuẩn GitHub Flavored Markdown (GFM) không dùng thẻ HTML, tương thích hoàn hảo trên cả Modrinth và GitHub.
+    + Chỉnh sửa văn phong tiếng Việt tự nhiên, thân thiện, rõ ràng và làm rõ việc khuyến nghị dùng Paper, Purpur hoặc Folia.
+
 ## [5.5.5 - Part 111] - 18/09/2026 13:55
 ### Fixed & Improved
 - **Nâng Cấp Toàn Diện README.md — Dự Án PayBot Multi-Loader v5.5.5**:

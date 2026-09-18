@@ -41,6 +41,7 @@ public class StandaloneCardProcessor {
 
     private final PayBotPlugin plugin;
     private final Gson gson = new Gson();
+    private final java.util.concurrent.atomic.AtomicBoolean isChecking = new java.util.concurrent.atomic.AtomicBoolean(false);
 
     public StandaloneCardProcessor(PayBotPlugin plugin) {
         this.plugin = plugin;
@@ -203,26 +204,35 @@ public class StandaloneCardProcessor {
     // ─── Poll định kỳ cho PROCESSING cards ───────────────────────────────────
 
     public void pollPendingCards() {
-        List<LocalOrderManager.CardOrder> pending =
-                plugin.getLocalOrderManager().getProcessingCardOrders();
-        if (pending.isEmpty()) return;
+        if (!isChecking.compareAndSet(false, true)) return;
+        SchedulerUtils.runAsync(plugin, () -> {
+            try {
+                List<LocalOrderManager.CardOrder> pending =
+                        plugin.getLocalOrderManager().getProcessingCardOrders();
+                if (pending.isEmpty()) return;
 
-        for (LocalOrderManager.CardOrder order : pending) {
-            SchedulerUtils.runAsync(plugin, () -> {
-                JsonObject result = callCheckApiWithRetry(
-                        order.requestId, order.telco, order.denom, order.cardCode, order.cardSerial);
-                if (result == null) return; // Mạng lỗi, thử lần sau
-
-                String newStatus  = result.has("status")  ? result.get("status").getAsString()  : "";
-                String newMessage = result.has("message") ? result.get("message").getAsString() : "";
-                if (newStatus.isEmpty() || newStatus.equals(order.status)) return;
-
-                plugin.getLocalOrderManager().updateCardStatus(order.requestId, newStatus, newMessage);
-                if (!LocalOrderManager.CARD_PROCESSING.equals(newStatus)) {
-                    notifyCardResult(order.requestId, order.playerName, order.denom, newStatus, newMessage);
+                for (LocalOrderManager.CardOrder order : pending) {
+                    try {
+                        JsonObject result = callCheckApiWithRetry(
+                                order.requestId, order.telco, order.denom, order.cardCode, order.cardSerial);
+                        if (result != null) {
+                            String newStatus  = result.has("status")  ? result.get("status").getAsString()  : "";
+                            String newMessage = result.has("message") ? result.get("message").getAsString() : "";
+                            if (!newStatus.isEmpty() && !newStatus.equals(order.status)) {
+                                plugin.getLocalOrderManager().updateCardStatus(order.requestId, newStatus, newMessage);
+                                if (!LocalOrderManager.CARD_PROCESSING.equals(newStatus)) {
+                                    notifyCardResult(order.requestId, order.playerName, order.denom, newStatus, newMessage);
+                                }
+                            }
+                        }
+                        // Pacing 300ms giữa mỗi thẻ để tránh spam API đối tác và không nghẽn thread
+                        Thread.sleep(300L);
+                    } catch (Throwable ignored) {}
                 }
-            });
-        }
+            } finally {
+                isChecking.set(false);
+            }
+        });
     }
 
     // ─── Card API calls với retry ─────────────────────────────────────────────
@@ -490,4 +500,5 @@ public class StandaloneCardProcessor {
         if (denom >= 1_000    && denom % 1_000    == 0) return (denom / 1_000) + "k";
         return String.valueOf(denom);
     }
+}
 }

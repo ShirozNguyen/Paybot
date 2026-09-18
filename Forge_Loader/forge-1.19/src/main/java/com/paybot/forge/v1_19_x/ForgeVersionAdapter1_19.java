@@ -143,7 +143,7 @@ public class ForgeVersionAdapter1_19 implements VersionAdapter {
         if (reflectionInit) return;
         reflectionInit = true;
 
-        String[] nameCandidates = {"locked", "f_77906_", "field_1838"};
+        String[] nameCandidates = {"locked", "field_1838", "f_77914_", "f_77910_", "f_77906_"};
         for (String name : nameCandidates) {
             try {
                 Field f = MapItemSavedData.class.getDeclaredField(name);

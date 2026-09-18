@@ -87,6 +87,13 @@ public class OfflineRewardManager {
         return cache.containsKey(playerName.toLowerCase());
     }
 
+    /**
+     * Trả về tập hợp tên người chơi đang có phần thưởng chờ (dùng để tối ưu zero-lag cho autoRewardPollTask).
+     */
+    public Set<String> getPendingPlayerNames() {
+        return new HashSet<>(cache.keySet());
+    }
+
     public synchronized void removeReward(String playerName, String rewardId) {
         db.deleteOfflineReward(rewardId);
         // Invalidate cache

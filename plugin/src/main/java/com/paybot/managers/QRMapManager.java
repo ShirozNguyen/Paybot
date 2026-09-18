@@ -222,7 +222,7 @@ public class QRMapManager implements Listener {
                         mapView.removeRenderer(r);
                     }
                     mapView.addRenderer(new QRMapRenderer(finalImage));
-                    VersionCompat.setTrackingPositionSafe(mapView, false);
+                    VersionCompat.setLockedSafe(mapView, true);
                     mapView.setScale(MapView.Scale.NORMAL);
 
                     ItemStack mapItem = new ItemStack(VersionCompat.getMapMaterial());
@@ -246,25 +246,12 @@ public class QRMapManager implements Listener {
                             "[PayBot] Đã tạo QR cho " + player.getName() + " (invoice=" + invoiceId + ")");
 
                     final String fInvoiceId = invoiceId;
-                    // [Part 45] 2 tầng bắt buộc: nếu đặt cả delay 30' lên entity-scheduler
-                    // của player (Folia) thì task sẽ bị HUỶ nếu player logout giữa chừng
-                    // (entity "retired") — khác hành vi Bukkit scheduler gốc (luôn chạy
-                    // đúng giờ). Nên: delay đặt trên Global Region Scheduler (không phụ
-                    // thuộc entity, luôn chạy đúng 30'), rồi mới dispatch phần đụng
-                    // inventory/message qua entity-scheduler của player khi tới giờ.
-                    SchedulerUtils.runSyncLater(plugin, () -> {
-                        if (!player.isOnline()) return;
-                        SchedulerUtils.runForPlayer(plugin, player, () -> {
-                            boolean removed = removeQRMap(player, fInvoiceId);
-                            if (removed) {
-                                player.sendMessage(PayBotPlugin.f("§c[PayBot] §fQR chuyển khoản đã hết hạn (30 phút)! Dùng /napbank lại nếu cần. ⏰"));
-                                plugin.getLogger().info("QR map hết hạn: player=" + player.getName() + " invoice=" + fInvoiceId);
-                                SchedulerUtils.runAsync(plugin, () ->
-                                    plugin.getBotHttpClient().notifyNapBankExpired(fInvoiceId)
-                                );
-                            }
-                        });
-                    }, 20L * 60 * 30); // 36000 ticks = 30 phút
+                    // v5.5.5 Part 112: Chuyển giao quản lý vòng đời bộ đếm sang QRMapSessionTracker (Rule 17)
+                    // Hỗ trợ tạm dừng (pause) khi player offline và tiếp tục (resume) khi join lại.
+                    // Đếm ngược qua 1 task nhẹ tập trung, không gây lag trên server lớn (Folia/Canvas thread-safe).
+                    if (plugin.getQrMapSessionTracker() != null) {
+                        plugin.getQrMapSessionTracker().startSession(player, fInvoiceId, mapView.getId(), 1800L);
+                    }
 
                 } catch (Exception e) {
                     NotificationManager.warn(plugin, "qr-create-fail", "[PayBot] Lỗi tạo QR map item: " + e.getMessage());
@@ -343,6 +330,9 @@ public class QRMapManager implements Listener {
                 }
                 inv.setItem(i, null);
                 removed = true;
+                if (plugin.getQrMapSessionTracker() != null) {
+                    plugin.getQrMapSessionTracker().stopSession(invoiceId);
+                }
                 break;
             }
         }
@@ -369,18 +359,41 @@ public class QRMapManager implements Listener {
 
     public static class QRMapRenderer extends MapRenderer {
         private final BufferedImage image;
-        private volatile boolean rendered = false;
+        private byte[] paletteBuffer = null;
 
         public QRMapRenderer(BufferedImage image) {
             super(false);
             this.image = image;
+            initPalette();
+        }
+
+        @SuppressWarnings("deprecation")
+        private void initPalette() {
+            try {
+                byte[] buf = new byte[128 * 128];
+                for (int x = 0; x < 128; x++) {
+                    for (int y = 0; y < 128; y++) {
+                        buf[y * 128 + x] = org.bukkit.map.MapPalette.matchColor(new Color(image.getRGB(x, y), true));
+                    }
+                }
+                this.paletteBuffer = buf;
+            } catch (Throwable t) {
+                this.paletteBuffer = null;
+            }
         }
 
         @Override
         public void render(MapView view, MapCanvas canvas, Player player) {
-            if (rendered) return;
-            canvas.drawImage(0, 0, image);
-            rendered = true;
+            // Luôn luôn phủ đè toàn bộ pixel QR lên canvas để ngăn chặn địa hình vanilla quét đè
+            if (paletteBuffer != null) {
+                for (int x = 0; x < 128; x++) {
+                    for (int y = 0; y < 128; y++) {
+                        canvas.setPixel(x, y, paletteBuffer[y * 128 + x]);
+                    }
+                }
+            } else {
+                canvas.drawImage(0, 0, image);
+            }
         }
     }
 }

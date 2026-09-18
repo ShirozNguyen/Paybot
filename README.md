@@ -27,40 +27,37 @@ Dự án được xây dựng với kiến trúc **100% Server-Side Multi-Loader
 
 ---
 
-## 🌟 Ưu Điểm Vượt Trội (Key Highlights)
+## 🌟 Tính Năng Nổi Bật
 
-### 🛡️ 1. 100% Server-Side (Không Cần Cài Mod Ở Phía Client)
-* Người chơi sử dụng **Minecraft Vanilla thuần** (hoặc bất kỳ client launcher nào như Lunar, Badlion, TLauncher, Prism, Feather...) đều có thể tham gia và nạp tiền bình thường.
-* Client không cần cài đặt thêm mod, không cần resource pack, không bị giới hạn phiên bản.
+### 🛡️ 1. Hoạt Động Hoàn Toàn Phía Server (100% Server-Side)
+* Người chơi dùng **Minecraft nguyên bản (Vanilla)** hay bất cứ launcher nào (Lunar, Badlion, TLauncher, Prism...) đều vào server và nạp tiền được ngay.
+* Người chơi **không cần cài thêm mod** hay resource pack, vào là trải nghiệm được luôn.
 
-### 🔒 2. Cơ Chế Chống Trộm & Dupe Đồ GUI Độc Quyền (GUI Anti-Theft Protection)
-* Được trang bị bộ lọc bảo mật đa tầng, khóa chặt và vô hiệu hóa **100% các thủ thuật gian lận / rút trộm item** từ menu GUI:
-  - ❌ Chặn **Shift + Click** rút đồ về kho cá nhân (`QUICK_MOVE`).
-  - ❌ Chặn **Double Click** vào vật phẩm tương tự trên Hotbar để gom đồ (`PICKUP_ALL`).
-  - ❌ Chặn **Phím số Hotbar (1-9, F)** để tráo đổi item (`SWAP`).
-  - ❌ Chặn **Phím Drop (Q / Ctrl+Q)** vứt item GUI ra đất (`THROW`).
-  - ❌ Chặn **Chuột giữa (Middle Click)** nhân bản item (`CLONE`).
-  - ❌ Chặn **Kéo rê chuột** phân tán item (`DRAG`).
-* Tự động ép đồng bộ tức thì (`sendAllDataToRemote()`) để dập tắt mọi hiển thị ảo của cheat/hack client.
+### 🔒 2. Chống Gian Lận & Giữ An Toàn Tuyệt Đối Cho Menu (GUI)
+* Tự động bảo vệ các vật phẩm trong giao diện menu nạp tiền, chặn đứng mọi thao tác lấy trộm hay dupe đồ:
+  - ❌ Chặn kéo rê chuột, bấm chuột giữa hoặc dùng phím tắt Hotbar (1-9, F) để tráo đồ.
+  - ❌ Chặn phím vứt đồ (Q) và Shift + Click rút đồ từ menu về túi.
+  - ❌ Tự động đồng bộ ngay lập tức để người chơi không bị kẹt đồ ảo hay lợi dụng hack client.
 
-### 🌐 3. Tương Thích Đa Nền Tảng Siêu Rộng (8 Nền Tảng Loader)
-* Hỗ trợ đồng thời: **Paper, Purpur, Spigot, Folia, Fabric, Quilt, Forge, NeoForge**.
-* Kiến trúc phân tách theo từng bản Minecraft (Granular Multi-Submodules): Mỗi phiên bản Minecraft chạy đúng bytecode tối ưu nhất, không bị lỗi mapping hay phụ thuộc chéo.
+### 🌐 3. Hỗ Trợ Đa Dạng Các Nền Tảng Server
+* Chạy mượt mà trên: **Paper, Purpur, Folia, Fabric, Quilt, Forge và NeoForge**.
+* *(Lưu ý: Đối với hệ máy chủ Bukkit, PayBot tối ưu tốt nhất cho Paper, Purpur và Folia để đảm bảo hiệu năng và hỗ trợ đầy đủ các tính năng hiện đại).*
+* Từng bản cài đặt được tối ưu chuẩn xác cho phiên bản Minecraft tương ứng, giúp server vận hành nhẹ nhàng, ổn định.
 
-### 🗺️ 4. Bản Đồ VietQR Sắc Nét & Khóa Map Chống Ghi Đè (Map Lock)
-* Render hình ảnh mã VietQR thanh toán trực tiếp lên tấm Bản Đồ cầm tay của Minecraft với độ tương phản cao, quét mã siêu nhạy qua app ngân hàng.
-* Tích hợp cơ chế **Lock Map độc quyền**: Khóa cứng dữ liệu bản đồ, ngăn chặn hoàn toàn việc địa hình thế giới hoặc người chơi khác vô tình ghi đè làm hỏng hình ảnh QR.
+### 🗺️ 4. Bản Đồ VietQR Tiện Lợi & Khóa Hiển Thị Chống Đè Địa Hình
+* Tạo mã VietQR thanh toán rõ nét trực tiếp trên tấm Bản Đồ cầm tay, quét mã siêu nhanh bằng ứng dụng ngân hàng.
+* Tích hợp tính năng khóa bản đồ thông minh: Giữ cố định hình ảnh QR, tuyệt đối không bị địa hình thế giới xung quanh quét đè làm mất nét mã.
 
-### ⚡ 5. Vận Hành Kép Linh Hoạt: Standalone hoặc Bot Discord
-* **Chế độ Standalone (Độc lập)**: Tự động kết nối SePay API và cổng thẻ cào trực tiếp từ server Minecraft. **Không cần mở port router/firewall**, không bắt buộc phải có Bot Discord.
-* **Chế độ Bot Discord (Nâng cao)**: Kết nối với Bot Discord trung gian để quản lý đơn hàng tập trung, gửi thông báo nạp tiền qua Discord Webhook, và phân phối phần thưởng offline an toàn.
+### ⚡ 5. Linh Hoạt Vận Hành: Chạy Độc Lập Hoặc Kèm Discord Bot
+* **Chế độ Độc lập (Standalone)**: Tự động xử lý nạp ngân hàng qua SePay và cổng thẻ cào trực tiếp từ server. Cực kỳ đơn giản, **không cần mở port** mạng hay cấu hình firewall rườm rà.
+* **Chế độ Discord Bot**: Kết nối với bot Discord để thông báo giao dịch vào kênh riêng, duyệt đơn tiện lợi và tự động trao quà khi người chơi vào lại game.
 
-### 🎨 6. Đồ Họa & Màu Sắc Đẳng Cấp (Hex & Gradient)
-* Hỗ trợ đầy đủ định dạng mã màu: `&`, `§`, `#RRGGBB` và `<gradient:HEX1:HEX2>text</gradient>`.
-* Hệ thống hiển thị Tên và Lore mượt mà xuyên suốt từ thời kỳ NBT Tag (1.16 - 1.20.4) cho đến hệ thống Data Components hiện đại (1.20.5 - 1.21.11+).
+### 🎨 6. Màu Sắc Bắt Mắt & Giao Diện Thân Thiện
+* Hỗ trợ đầy đủ các mã màu hiện đại: từ mã màu truyền thống `&`, `§` cho tới mã màu Hex `#RRGGBB` và dải màu chuyển động Gradient cực đẹp.
+* Hiển thị sắc nét, đồng bộ chuẩn chỉnh trên tất cả các phiên bản Minecraft.
 
-### 🚀 7. Tương Thích Folia & Đa Luồng (Thread-Safety)
-* 100% tương thích kiến trúc phân vùng luồng của **Folia** và **Canvas**, đảm bảo không gây crash hay lag tick máy chủ.
+### 🚀 7. Tối Ưu Hiệu Năng & Tương Thích Folia
+* Tương thích hoàn toàn với cơ chế đa luồng của Folia/Canvas, xử lý nhẹ nhàng, không gây giật lag hay tụt TPS server.
 
 ---
 
@@ -156,11 +153,79 @@ PayBot chỉ truyền dữ liệu tới các cổng thanh toán bên thứ ba kh
 
 ---
 
-## 🔗 Liên Kết & Hỗ Trợ
+## 🇺🇸 PayBot - English Documentation
 
-* **Tác giả:** `TheRealShiroz`
-* **Discord Hỗ Trợ:** [https://discord.gg/QdE5uNYqrV](https://discord.gg/QdE5uNYqrV)
-* **Liên hệ trực tiếp:** [https://guns.lol/TheRealShiroz](https://guns.lol/TheRealShiroz)
+### 🌟 Key Highlights
+
+#### 🛡️ 1. 100% Server-Side (No Client Mod Required)
+* Players using pure **Vanilla Minecraft** or any launcher/client (Lunar, Badlion, TLauncher, Prism...) can join and top up immediately.
+* **No client-side mod or resource pack is needed**.
+
+#### 🔒 2. Anti-Theft & GUI Item Dupe Protection
+* Comprehensive inventory click and slot drag protection, blocking 100% of GUI theft or ghost item exploits:
+  - ❌ Blocks mouse drag, middle click (clone), and hotbar key swaps (1-9, F).
+  - ❌ Blocks drop key (Q) and shift-click quick move from menu interfaces.
+  - ❌ Automatically resynchronizes player inventory state immediately.
+
+#### 🌐 3. Broad Multi-Platform Support
+* Runs seamlessly on: **Paper, Purpur, Folia, Fabric, Quilt, Forge, and NeoForge**.
+* *(Note: For Bukkit-family servers, Paper, Purpur, or Folia is recommended to take full advantage of modern multithreading and color rendering).*
+* Granular builds optimized per Minecraft release for lightweight and stable performance.
+
+#### 🗺️ 4. In-Game VietQR Handheld Map & Anti-Overwrite Map Lock
+* Renders clear VietQR payment codes directly onto an in-game Minecraft Handheld Map, easily scannable via mobile banking apps.
+* Built-in intelligent **Map Lock**: Permanently prevents surrounding world terrain from scanning and overwriting the QR image.
+
+#### ⚡ 5. Dual Operating Modes: Standalone or Discord Bot
+* **Standalone Mode**: Connects directly to SePay and scratch card gateways from the Minecraft server. No open port or router firewall config needed.
+* **Discord Bot Mode**: Centralized transaction management, Discord Webhook notifications, and safe offline reward distribution.
+
+#### 🎨 6. Rich Colors & Modern Design (Hex & Gradient)
+* Full support for color formatting: traditional `&` and `§`, Hex `#RRGGBB`, and smooth `<gradient>` effects.
+* Symmetrical and clean typography across all Minecraft releases.
+
+#### 🚀 7. Folia & Thread-Safety Compliance
+* Fully compliant with Folia's regional multithreading model, ensuring smooth TPS and zero server crashes.
+
+---
+
+### 🎮 Commands & Permissions
+
+#### Player Commands (Default for everyone)
+| Command | Description |
+| :--- | :--- |
+| `/napbank` | Opens the bank deposit GUI with an auto-generated VietQR map |
+| `/napthe` | Opens the scratch card deposit GUI (telco, denomination, pin, serial) |
+| `/rewardclaim [confirm]` | View and claim pending offline deposit rewards upon logging in |
+| `/paybotplaceholder` | In-game deposit statistics panel (works even without PlaceholderAPI) |
+
+#### Admin Commands (`naptien.admin` or OP)
+| Command | Description |
+| :--- | :--- |
+| `/sepaysetup` | Quick interactive setup wizard with SePay API Token |
+| `/cardsetup` | Interactive wizard to configure card exchange APIs (TheSieuRe, GachThePro...) |
+| `/cardapisetup` | Quick GUI to toggle between card payment gateways |
+| `/chinhsuamenhgianap` | Denomination reward command customization GUI |
+| `/PayBotSetup` | System diagnostic overview of PayBot configurations and connectivity |
+| `/topuplist all` | View and approve pending deposit orders |
+| `/testnapbank [amount]` | Simulate a successful bank deposit to verify reward commands |
+| `/testnapthe [carrier] [denom]` | Simulate a successful card deposit to verify rewards and effects |
+| `/paybot reload` | Instantly reload configuration from `config.yml` |
+
+---
+
+### 🤖 Discord Bot (Optional Extended Automation)
+The companion Discord Bot serves as an optional middleware layer between Minecraft and payment providers:
+* Automatically forwards payment alerts and transaction receipts to dedicated Discord channels.
+* Queues offline rewards if the server is temporarily offline and delivers them safely when reconnected.
+
+---
+
+## 🔗 Liên Kết & Hỗ Trợ / Official Links
+
+* **Tác giả / Author:** `TheRealShiroz`
+* **Discord Community:** [https://discord.gg/QdE5uNYqrV](https://discord.gg/QdE5uNYqrV)
+* **Direct Contact:** [https://guns.lol/TheRealShiroz](https://guns.lol/TheRealShiroz)
 * **Modrinth Plugin:** [https://modrinth.com/plugin/paybot](https://modrinth.com/plugin/paybot)
 * **Modrinth Mod:** [https://modrinth.com/project/paybotmod](https://modrinth.com/project/paybotmod)
 * **SpigotMC:** [https://www.spigotmc.org/resources/paybot.134369](https://www.spigotmc.org/resources/paybot.134369)

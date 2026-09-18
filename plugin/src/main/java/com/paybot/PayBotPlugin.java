@@ -4,6 +4,7 @@ package com.paybot;
 import com.google.gson.JsonObject;
 import com.paybot.commands.*;
 import com.paybot.gui.GuiListener;
+import com.paybot.listeners.QRMapPickupListener;
 import com.paybot.log.LogManager;
 import com.paybot.managers.RewardEffectManager;
 import com.paybot.managers.*;
@@ -54,6 +55,8 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
     private CardManager             cardManager;
     private PluginHttpServer        pluginHttpServer;
     private QRMapManager            qrMapManager;
+    private QRMapSessionTracker     qrMapSessionTracker;
+    private QRMapPickupListener     qrMapPickupListener;
     private OfflineRewardManager    offlineRewardManager;
     private TopupStatsManager       topupStatsManager;
     private SetupManager            setupManager;
@@ -156,6 +159,8 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
     public void activateFull() {
         cardManager             = new CardManager(this);
         qrMapManager            = new QRMapManager(this);
+        qrMapSessionTracker     = new QRMapSessionTracker(this, qrMapManager);
+        qrMapPickupListener     = new QRMapPickupListener(this, qrMapSessionTracker);
         offlineRewardManager    = new OfflineRewardManager(this);
         topupStatsManager       = new TopupStatsManager(this); // v5.0.0 Phase B — PlaceholderAPI stats
         setupManager            = new SetupManager(this);
@@ -468,11 +473,18 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
         // (2) hỏi bot CÓ ĐIỀU KIỆN — CHỈ 1 LẦN GỌI DUY NHẤT cho TOÀN SERVER (không phải
         // 1 lần/player), tự bot trả rỗng nếu chẳng có gì mới. Đây không phải kiểu "spam"
         // đã bị xoá trước đó (poll-mọi-player-mọi-30s-vô-điều-kiện) — chỉ là 1 request nhẹ
-        // mỗi 30s tối đa, có server-id mới gọi (standalone/chưa connect thì khỏi gọi).
+        // v5.5.5 Part 112: Tối ưu zero-lag cho server lớn (hàng ngàn người chơi).
+        // Thay vì duyệt toàn bộ Bukkit.getOnlinePlayers() trên Main Thread mỗi 30s,
+        // hệ thống kiểm tra nhanh tập hợp pendingPlayerNames từ cache RAM.
+        // Nếu không có phần thưởng chờ (99.9% thời gian), task kết thúc ngay lập tức (0 nano giây Main Thread).
         autoRewardPollTask = SchedulerUtils.runAsyncTimer(this, () -> {
+            Set<String> pendingPlayers = offlineRewardManager.getPendingPlayerNames();
+            if (pendingPlayers.isEmpty()) return;
+
             SchedulerUtils.runSync(this, () -> {
-                for (Player p : Bukkit.getOnlinePlayers()) {
-                    if (offlineRewardManager.hasPendingRewards(p.getName())) {
+                for (String pName : pendingPlayers) {
+                    Player p = Bukkit.getPlayerExact(pName);
+                    if (p != null && p.isOnline()) {
                         processOfflineRewards(p);
                     }
                 }
@@ -1050,6 +1062,7 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
     public CardManager               getCardManager()                      { return cardManager; }
     public PluginHttpServer          getPluginHttpServer()                 { return pluginHttpServer; }
     public QRMapManager              getQRMapManager()                     { return qrMapManager; }
+    public QRMapSessionTracker       getQrMapSessionTracker()              { return qrMapSessionTracker; }
     public OfflineRewardManager      getOfflineRewardManager()             { return offlineRewardManager; }
     public TopupStatsManager         getTopupStatsManager()                { return topupStatsManager; }
     public SetupManager              getSetupManager()                     { return setupManager; }

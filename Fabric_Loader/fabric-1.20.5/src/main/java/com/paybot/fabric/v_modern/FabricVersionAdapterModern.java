@@ -581,16 +581,23 @@ public class FabricVersionAdapterModern implements VersionAdapter {
     }
 
     private Field findLockedField() {
-        try {
-            return MapItemSavedData.class.getDeclaredField("locked");
-        } catch (Throwable ignored) {
-            // không có field tên "locked" thật (production Fabric) — thử tiếp
+        String[] candidates = {"locked", "field_1838", "f_77914_", "f_77910_", "f_77906_"};
+        for (String name : candidates) {
+            try {
+                Field f = MapItemSavedData.class.getDeclaredField(name);
+                if (f.getType() == boolean.class) {
+                    f.setAccessible(true);
+                    return f;
+                }
+            } catch (Throwable ignored) {}
         }
         try {
             MappingResolver resolver = FabricLoader.getInstance().getMappingResolver();
             String runtimeName = resolver.mapFieldName("intermediary",
-                    "net.minecraft.world.level.saveddata.maps.MapItemSavedData", "field_1838", "Z");
-            return MapItemSavedData.class.getDeclaredField(runtimeName);
+                    "net.minecraft.class_22", "field_1838", "Z");
+            Field f = MapItemSavedData.class.getDeclaredField(runtimeName);
+            f.setAccessible(true);
+            return f;
         } catch (Throwable ignored) {
             // ID field_1838 chỉ là best-effort, có thể không đúng bản này — thử tiếp
         }

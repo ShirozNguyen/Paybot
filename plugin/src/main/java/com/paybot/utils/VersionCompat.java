@@ -282,6 +282,23 @@ public final class VersionCompat {
     }
 
     /**
+     * Khóa cứng MapView chống quét và cập nhật địa hình xung quanh của Vanilla Minecraft.
+     * Hỗ trợ gọi an toàn trên tất cả các nền tảng (Paper, Purpur, Folia, Canvas).
+     */
+    public static void setLockedSafe(MapView view, boolean locked) {
+        if (view == null) return;
+        try {
+            view.getClass().getMethod("setLocked", boolean.class).invoke(view, locked);
+        } catch (Throwable ignored) {}
+        try {
+            view.setTrackingPosition(false);
+        } catch (Throwable ignored) {}
+        try {
+            view.setUnlimitedTracking(false);
+        } catch (Throwable ignored) {}
+    }
+
+    /**
      * Map item material:
      * <ul>
      *   <li>1.13+ → {@code FILLED_MAP}
@@ -290,6 +307,17 @@ public final class VersionCompat {
      */
     public static Material getMapMaterial() {
         return PRE_FLAT ? Material.valueOf("MAP") : Material.valueOf("FILLED_MAP");
+    }
+
+    /**
+     * Empty map material (bản đồ trống chưa vẽ):
+     * <ul>
+     *   <li>1.13+ → {@code MAP}
+     *   <li>1.12  → {@code EMPTY_MAP}
+     * </ul>
+     */
+    public static Material getEmptyMapMaterial() {
+        return PRE_FLAT ? Material.valueOf("EMPTY_MAP") : Material.valueOf("MAP");
     }
 
     /**
