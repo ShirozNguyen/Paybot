@@ -1,6 +1,4 @@
-# 💎 PayBot Multi-Loader 💎
-
-### Hệ Thống Tích Hợp Thanh Toán Ngân Hàng (VietQR) & Thẻ Cào Tự Động Cho Minecraft
+# 💎 PayBot - Hệ Thống Nạp Tiền Dành Cho Server 💎
 
 <!-- ===== BUILD WITH ===== -->
 [![Java 21](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/built-with/java21_46h.png)](https://www.oracle.com/java/)
@@ -10,15 +8,19 @@
 <!-- ===== SUPPORTED PLATFORMS ===== -->
 [![Paper](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/paper_vector.svg)](https://modrinth.com/plugin/paybot)
 [![Purpur](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/purpur_vector.svg)](https://modrinth.com/plugin/paybot)
-[![Fabric](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/fabric_vector.svg)](https://modrinth.com/project/paybotmod)
 [![Quilt](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/quilt_vector.svg)](https://modrinth.com/project/paybotmod)
+<!-- ===== SUPPORTED PLATFORMS ===== -->
+[![Fabric](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/fabric_vector.svg)](https://modrinth.com/project/paybotmod)
 [![Forge](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/forge_vector.svg)](https://modrinth.com/project/paybotmod)
 [![NeoForge](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/neoforge_vector.svg)](https://modrinth.com/project/paybotmod)
 
 **[💬 Discord Hỗ Trợ & Hướng Dẫn Cài Đặt](https://discord.gg/QdE5uNYqrV)** 
+
 • **[📦 Official Addon (PayBot++)](https://modrinth.com/plugin/paybotpp)** 
-• **[🌐 Hangar](https://hangar.papermc.io/TheRealShiroz/PayBot)** 
+
 • **[☕ SpigotMC](https://www.spigotmc.org/resources/paybot.134369)**
+
+• **[🌐 Hangar](https://hangar.papermc.io/TheRealShiroz/PayBot)** 
 
 
 ---
