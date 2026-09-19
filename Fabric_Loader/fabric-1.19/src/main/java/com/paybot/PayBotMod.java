@@ -1,4 +1,4 @@
-﻿// v5.5.5 Part 78: Inferred lambda and robust reflection text extractor for ALLOW_CHAT_MESSAGE in fabric-1.19
+// v5.5.5 Part 78: Inferred lambda and robust reflection text extractor for ALLOW_CHAT_MESSAGE in fabric-1.19
 // v5.5.5 Part 77: Fix Fabric 1.19 ALLOW_CHAT_MESSAGE FilteredText API
 // v5.5.5 Part 74: Fix ALLOW_CHAT_MESSAGE lambda for fabric-1.19
 // v5.5.5 Part 73: Fix sendSuccess(component, false) in 1.19

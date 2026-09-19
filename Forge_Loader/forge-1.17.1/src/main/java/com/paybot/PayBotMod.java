@@ -1,4 +1,4 @@
-﻿// v5.5.5 Part 89: Tuong thich Minecraft 1.17.1 TextComponent va sendMessage(..., NIL_UUID) cho Forge 1.17.1
+// v5.5.5 Part 89: Tuong thich Minecraft 1.17.1 TextComponent va sendMessage(..., NIL_UUID) cho Forge 1.17.1
 // v5.5.5 Part 87: Use net.minecraftforge.fmlserverevents for Forge 1.17.1
 package com.paybot;
 

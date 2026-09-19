@@ -1,4 +1,4 @@
-﻿// v5.5.5 Part 61: SỬA LẠI Part 60 — cách cũ (khai 'dev.architectury.loom' version '1.13.469'
+// v5.5.5 Part 61: SỬA LẠI Part 60 — cách cũ (khai 'dev.architectury.loom' version '1.13.469'
 // riêng cho module này trong khi root vẫn khai '1.7.435' cho module khác) THẤT BẠI khi build thật
 // (Shiroz gửi log GitHub Actions): "Error resolving plugin [id: 'dev.architectury.loom', version:
 // '1.13.469'] > The request for this plugin could not be satisfied because the plugin is already

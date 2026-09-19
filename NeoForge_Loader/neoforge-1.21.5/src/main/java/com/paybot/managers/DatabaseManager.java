@@ -1,4 +1,4 @@
-﻿package com.paybot.managers;
+package com.paybot.managers;
 
 import com.paybot.PayBotMod;
 import com.paybot.config.PayBotConfig;

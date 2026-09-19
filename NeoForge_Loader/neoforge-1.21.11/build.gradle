@@ -1,4 +1,4 @@
-﻿// neoforge-1.21.11/build.gradle — v5.5.5 Part 107
+// neoforge-1.21.11/build.gradle — v5.5.5 Part 107
 // Chuyển sang plugin chính thức net.neoforged.moddev (ModDevGradle) 2.0.141
 // Do NeoForge 21.11 không có data/server.lzma trong installer nên Loom cũ bị crash NoSuchFileException.
 

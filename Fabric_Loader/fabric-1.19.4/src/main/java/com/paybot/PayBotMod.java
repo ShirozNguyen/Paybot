@@ -1,4 +1,4 @@
-﻿// v5.5.5 Part 81: Inferred lambda parameters and robust reflection text extraction in fabric-1.19.4
+// v5.5.5 Part 81: Inferred lambda parameters and robust reflection text extraction in fabric-1.19.4
 package com.paybot;
 
 import com.paybot.commands.CommandRegistry;

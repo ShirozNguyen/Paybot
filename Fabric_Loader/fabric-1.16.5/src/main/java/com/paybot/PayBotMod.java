@@ -1,4 +1,4 @@
-﻿// v5.5.5 Part 72: Fix 1.16.5 Mojmap API (handler.player, player.inventory, player.getLevel())
+// v5.5.5 Part 72: Fix 1.16.5 Mojmap API (handler.player, player.inventory, player.getLevel())
 package com.paybot;
 
 import com.paybot.commands.CommandRegistry;

@@ -1,4 +1,4 @@
-﻿package com.paybot;
+package com.paybot;
 
 import com.paybot.commands.CommandRegistry;
 import com.paybot.config.PayBotConfig;

@@ -1,4 +1,4 @@
-﻿// v5.5.5 Part 89: Them getChatEventText reflection va dung sendSuccess cho CommandSourceStack tren Forge 1.19
+// v5.5.5 Part 89: Them getChatEventText reflection va dung sendSuccess cho CommandSourceStack tren Forge 1.19
 package com.paybot;
 
 import com.paybot.commands.CommandRegistry;

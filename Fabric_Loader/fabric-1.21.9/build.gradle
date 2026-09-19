@@ -1,4 +1,4 @@
-﻿plugins {
+plugins {
     id 'dev.architectury.loom' version '1.11.458'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'java'

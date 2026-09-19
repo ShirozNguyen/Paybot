@@ -1,4 +1,4 @@
-﻿package com.paybot.managers;
+package com.paybot.managers;
 
 import com.google.gson.*;
 import com.paybot.PayBotMod;

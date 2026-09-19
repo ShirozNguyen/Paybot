@@ -1,4 +1,4 @@
-﻿// neoforge-modern/build.gradle — v5.5.5 Part 44
+// neoforge-modern/build.gradle — v5.5.5 Part 44
 //
 // MC 1.20.2 - 1.21.11. Từ 1.20.2, NeoForge tách hẳn khỏi coordinate "net.neoforged:forge"
 // (chỉ dùng cho giai đoạn chuyển tiếp ở 1.20.1) sang coordinate CHÍNH THỨC riêng

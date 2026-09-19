@@ -1,4 +1,4 @@
-﻿// v5.5.5 Part 49: neoforge-26.1 — cùng lý do tách khỏi Architectury Loom chung như fabric-26.1
+// v5.5.5 Part 49: neoforge-26.1 — cùng lý do tách khỏi Architectury Loom chung như fabric-26.1
 // (xem LOG.md Part 48): bản 1.7.435 đang dùng ở root xác nhận crash với 26.1+. Module này tự áp
 // ModDevGradle (net.neoforged.moddev) — plugin CHÍNH THỨC của chính NeoForge cho toolchain mới,
 // xác nhận version 2.0.141 qua gradle.properties gốc của repo NeoForge nhánh 26.1.x trên GitHub.

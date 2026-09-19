@@ -1,4 +1,4 @@
-﻿// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.3
+// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.3
 package com.paybot.managers;
 
 import com.paybot.PayBotMod;

@@ -1,4 +1,4 @@
-﻿// v5.5.5 Part 89: Sửa TextComponent, sendSuccess và sendMessage(..., NIL_UUID) trên Forge 1.18.x
+// v5.5.5 Part 89: Sửa TextComponent, sendSuccess và sendMessage(..., NIL_UUID) trên Forge 1.18.x
 package com.paybot;
 
 import com.paybot.commands.CommandRegistry;

@@ -1,4 +1,4 @@
-﻿// v5.5.5 Part 89: Fix player.inventory va player.sendMessage(..., ChatType.SYSTEM, NIL_UUID) tren Forge 1.16.x
+// v5.5.5 Part 89: Fix player.inventory va player.sendMessage(..., ChatType.SYSTEM, NIL_UUID) tren Forge 1.16.x
 // v5.5.5 Part 85: Fix 1.16 chat sendMessage & TextComponent in forge-1.16.2
 // v5.5.5 Part 84: Use FMLServerStartedEvent/FMLServerStoppingEvent for Forge < 1.18 in forge-1.16.2
 package com.paybot;
