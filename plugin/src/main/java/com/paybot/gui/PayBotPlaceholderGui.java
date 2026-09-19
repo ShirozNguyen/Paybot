@@ -37,7 +37,9 @@ public final class PayBotPlaceholderGui {
     public static void openMain(Player player, PayBotPlugin plugin) {
         TopupStatsManager stats = plugin.getTopupStatsManager();
 
-        Inventory inv = Bukkit.createInventory(null, 54, MAIN_TITLE);
+        PayBotGuiHolder holder = new PayBotGuiHolder(PayBotGuiHolder.GuiType.PLACEHOLDER_MAIN);
+        Inventory inv = Bukkit.createInventory(holder, 54, MAIN_TITLE);
+        holder.setInventory(inv);
         fillGlass(inv);
 
         inv.setItem(SLOT_SERVER_TOTAL, makeItem(Material.GOLD_INGOT,
@@ -71,7 +73,9 @@ public final class PayBotPlaceholderGui {
         TopupStatsManager stats = plugin.getTopupStatsManager();
         List<Map.Entry<String, Long>> top = stats.getTopPlayers(10);
 
-        Inventory inv = Bukkit.createInventory(null, 54, LEADERBOARD_TITLE);
+        PayBotGuiHolder holder = new PayBotGuiHolder(PayBotGuiHolder.GuiType.PLACEHOLDER_LEADERBOARD);
+        Inventory inv = Bukkit.createInventory(holder, 54, LEADERBOARD_TITLE);
+        holder.setInventory(inv);
         fillGlass(inv);
 
         // 2 hàng x 5, canh giữa từng hàng (centerStart) — hạng 1-5 hàng trên, 6-10 hàng dưới

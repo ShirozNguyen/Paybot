@@ -25,8 +25,15 @@ public final class GuiListener implements Listener {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // HELPER: kiểm tra title có phải GUI của plugin không
+    // HELPER: kiểm tra inventory/title có phải GUI của plugin không (Rule 17)
     // ══════════════════════════════════════════════════════════════════════════
+    public static boolean isOurInventory(org.bukkit.inventory.Inventory top, String title) {
+        if (top != null && top.getHolder() instanceof PayBotGuiHolder) {
+            return true;
+        }
+        return isOurGui(title);
+    }
+
     private static boolean isOurGui(String title) {
         if (title == null) return false;
         return title.equals("§6§lChọn nhà mạng")
@@ -44,11 +51,12 @@ public final class GuiListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onInventoryDrag(InventoryDragEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
+        org.bukkit.inventory.Inventory top = event.getView().getTopInventory();
         String title = event.getView().getTitle();
-        if (isOurGui(title)) { event.setCancelled(true); return; }
+        if (isOurInventory(top, title)) { event.setCancelled(true); return; }
         GuiSession s = GuiSession.get(player.getUniqueId());
         if (s.stage == GuiSession.Stage.NONE) return;
-        int topSize = event.getView().getTopInventory().getSize();
+        int topSize = top.getSize();
         for (int slot : event.getRawSlots()) {
             if (slot < topSize) { event.setCancelled(true); return; }
         }
@@ -61,8 +69,9 @@ public final class GuiListener implements Listener {
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
+        org.bukkit.inventory.Inventory top = event.getView().getTopInventory();
         String title   = event.getView().getTitle();
-        boolean ourGui = isOurGui(title);
+        boolean ourGui = isOurInventory(top, title);
 
         GuiSession s = GuiSession.get(player.getUniqueId());
         // Không phải GUI của plugin (cả title lẫn session) → bỏ qua
@@ -73,13 +82,16 @@ public final class GuiListener implements Listener {
 
         // Chỉ xử lý click trong top inventory (GUI của plugin), không phải player inventory bên dưới
         if (event.getClickedInventory() == null) return;
-        if (event.getClickedInventory() != event.getView().getTopInventory()) return;
+        if (event.getClickedInventory() != top) return;
         if (event.getCurrentItem() == null) return;
 
         int slot = event.getSlot();
 
+        PayBotGuiHolder holder = (top.getHolder() instanceof PayBotGuiHolder h) ? h : null;
+        PayBotGuiHolder.GuiType guiType = holder != null ? holder.getType() : null;
+
         // ── NapThe: Telco ──────────────────────────────────────────────────────
-        if (title.equals("§6§lChọn nhà mạng")) {
+        if (guiType == PayBotGuiHolder.GuiType.NAP_THE_TELCO || title.equals("§6§lChọn nhà mạng")) {
             NapTheGui.TelcoEntry t = NapTheGui.getTelcoBySlot(slot);
             if (t != null) {
                 player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1.2f);
@@ -89,7 +101,7 @@ public final class GuiListener implements Listener {
         }
 
         // ── NapThe: Denom ─────────────────────────────────────────────────────
-        if (title.startsWith("§6§lChọn mệnh giá - §e")) {
+        if (guiType == PayBotGuiHolder.GuiType.NAP_THE_DENOM || title.startsWith("§6§lChọn mệnh giá - §e")) {
             if (slot == 49) { // Back
                 NapTheGui.openTelcoGui(player);
                 return;
@@ -115,7 +127,7 @@ public final class GuiListener implements Listener {
         }
 
         // ── NapBank ────────────────────────────────────────────────────────────
-        if (title.equals("§6§lNạp tiền ngân hàng")) {
+        if (guiType == PayBotGuiHolder.GuiType.NAP_BANK || title.equals("§6§lNạp tiền ngân hàng")) {
             if (slot == NapBankGui.getCloseSlot()) {
                 player.closeInventory();
                 GuiSession.clear(player.getUniqueId());
@@ -141,7 +153,7 @@ public final class GuiListener implements Listener {
         }
 
         // ── ChinhSua ──────────────────────────────────────────────────────────
-        if (title.equals("§6§lChỉnh sửa mệnh giá nạp")) {
+        if (guiType == PayBotGuiHolder.GuiType.CHINH_SUA || title.equals("§6§lChỉnh sửa mệnh giá nạp")) {
             if (slot == 49) { player.closeInventory(); return; }
             ChinhSuaGui.SlotInfo info = ChinhSuaGui.getSlotInfo(slot);
             if (info != null) {
@@ -167,9 +179,8 @@ public final class GuiListener implements Listener {
             return;
         }
 
-        // ── TopupList ─────────────────────────────────────────────────────────
         // ── PayBotPlaceholder: Main menu ────────────────────────────────────────
-        if (title.equals(PayBotPlaceholderGui.MAIN_TITLE)) {
+        if (guiType == PayBotGuiHolder.GuiType.PLACEHOLDER_MAIN || title.equals(PayBotPlaceholderGui.MAIN_TITLE)) {
             if (slot == PayBotPlaceholderGui.getCloseSlot()) { player.closeInventory(); return; }
             if (slot == PayBotPlaceholderGui.getLeaderboardSlot()) {
                 PayBotPlaceholderGui.openLeaderboard(player, plugin);
@@ -178,7 +189,7 @@ public final class GuiListener implements Listener {
         }
 
         // ── PayBotPlaceholder: Leaderboard ──────────────────────────────────────
-        if (title.equals(PayBotPlaceholderGui.LEADERBOARD_TITLE)) {
+        if (guiType == PayBotGuiHolder.GuiType.PLACEHOLDER_LEADERBOARD || title.equals(PayBotPlaceholderGui.LEADERBOARD_TITLE)) {
             if (slot == PayBotPlaceholderGui.getCloseSlot()) { player.closeInventory(); return; }
             if (slot == PayBotPlaceholderGui.getBackSlot()) {
                 PayBotPlaceholderGui.openMain(player, plugin);
@@ -186,7 +197,8 @@ public final class GuiListener implements Listener {
             return;
         }
 
-        if (title.startsWith("§6§lDanh sách đơn")) {
+        // ── TopupList ─────────────────────────────────────────────────────────
+        if (guiType == PayBotGuiHolder.GuiType.TOPUP_LIST || title.startsWith("§6§lDanh sách đơn")) {
             int page = s.editDenom; // reused for page
             String filter = s.topupListFilter; // v5.0.0 (fix): nhớ filter card/bank/null khi phân trang
             if (slot == 49) { player.closeInventory(); return; }

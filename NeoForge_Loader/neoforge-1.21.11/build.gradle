@@ -7,7 +7,7 @@ plugins {
     id 'java'
 }
 
-version = '5.5.6'
+version = '5.5.7'
 group = 'com.paybot'
 
 repositories {

@@ -25,23 +25,25 @@ public class OfflineRewardManager {
     private final DatabaseManager db;
 
     /**
-     * playerName (lowercase) → List of reward maps.
-     * In-memory cache để hasPendingRewards() nhanh (gọi mỗi khi player join).
+     * Set các playerName (lowercase) đang có phần thưởng chờ.
+     * Sử dụng ConcurrentHashMap.newKeySet() thread-safe, không bao giờ chứa null.
+     */
+    private final Set<String> pendingPlayers = ConcurrentHashMap.newKeySet();
+
+    /**
+     * playerName (lowercase) → Danh sách phần thưởng đã được tải từ DB vào bộ nhớ đệm.
      */
     private final Map<String, List<Map<String, String>>> cache = new ConcurrentHashMap<>();
 
     public OfflineRewardManager(PayBotPlugin plugin) {
         this.plugin = plugin;
         this.db     = plugin.getDatabaseManager();
-        // Không cần load toàn bộ vào RAM lúc khởi động —
-        // query DB theo player khi cần (lazy load per-player).
-        // Nhưng cần biết DANH SÁCH player nào có reward để hasPendingRewards()
-        // hoạt động nhanh → load chỉ player names.
+        // Nạp danh sách tên người chơi có đơn chờ để hasPendingRewards() đạt tốc độ O(1)
         Set<String> playerNames = db.getPlayersWithPendingRewards();
         for (String name : playerNames) {
-            // Đánh dấu "có data" bằng cách put list rỗng làm sentinel;
-            // list thực sẽ được load lazy khi getRewardsForPlayer() được gọi.
-            cache.put(name, null); // null = chưa load, nhưng biết là có
+            if (name != null && !name.trim().isEmpty()) {
+                pendingPlayers.add(name.toLowerCase().trim());
+            }
         }
     }
 
@@ -58,51 +60,55 @@ public class OfflineRewardManager {
         db.insertOfflineReward(rewardId, playerName, rawCmd, rewardAmt,
                 denomVnd, type, invoiceId, discordUid, now);
 
-        // Invalidate cache để lần sau load lại từ DB
-        cache.put(playerName.toLowerCase(), null);
+        String key = playerName.toLowerCase().trim();
+        pendingPlayers.add(key);
+        cache.remove(key); // Invalidate cache để load lại dữ liệu mới nhất từ DB khi cần
 
         NotificationManager.log(plugin, "reward-queued-offline",
                 "[OfflineRewards] Đã lưu reward cho " + playerName + " (type=" + type + ")");
     }
 
     public synchronized List<Map<String, String>> getRewardsForPlayer(String playerName) {
-        String key = playerName.toLowerCase();
-        List<Map<String, String>> cached = cache.get(key);
-        // null = sentinel "có data nhưng chưa load", cần query DB
-        // key không có trong map = chắc chắn không có data
-        if (!cache.containsKey(key)) return Collections.emptyList();
-        if (cached == null || cached.isEmpty()) {
-            // Load từ DB và cache lại
-            cached = db.getOfflineRewardsForPlayer(playerName);
-            if (cached.isEmpty()) {
-                cache.remove(key); // không còn gì → xoá khỏi cache
-            } else {
-                cache.put(key, cached);
-            }
+        String key = playerName.toLowerCase().trim();
+        if (!pendingPlayers.contains(key)) {
+            return Collections.emptyList();
         }
-        return cached != null ? cached : Collections.emptyList();
+
+        List<Map<String, String>> cached = cache.get(key);
+        if (cached == null || cached.isEmpty()) {
+            // Lazy load từ CSDL
+            cached = db.getOfflineRewardsForPlayer(playerName);
+            if (cached == null || cached.isEmpty()) {
+                pendingPlayers.remove(key);
+                cache.remove(key);
+                return Collections.emptyList();
+            }
+            cache.put(key, cached);
+        }
+        return cached;
     }
 
     public boolean hasPendingRewards(String playerName) {
-        return cache.containsKey(playerName.toLowerCase());
+        if (playerName == null) return false;
+        return pendingPlayers.contains(playerName.toLowerCase().trim());
     }
 
     /**
      * Trả về tập hợp tên người chơi đang có phần thưởng chờ (dùng để tối ưu zero-lag cho autoRewardPollTask).
      */
     public Set<String> getPendingPlayerNames() {
-        return new HashSet<>(cache.keySet());
+        return new HashSet<>(pendingPlayers);
     }
 
     public synchronized void removeReward(String playerName, String rewardId) {
         db.deleteOfflineReward(rewardId);
-        // Invalidate cache
-        String key = playerName.toLowerCase();
-        cache.put(key, null); // force reload lần sau
-        // Kiểm tra còn reward nào không → nếu không, xoá khỏi cache
+        String key = playerName.toLowerCase().trim();
+        cache.remove(key);
+
+        // Kiểm tra xem còn reward nào không
         List<Map<String, String>> remaining = db.getOfflineRewardsForPlayer(playerName);
-        if (remaining.isEmpty()) {
-            cache.remove(key);
+        if (remaining == null || remaining.isEmpty()) {
+            pendingPlayers.remove(key);
         } else {
             cache.put(key, remaining);
         }
@@ -116,10 +122,12 @@ public class OfflineRewardManager {
         int expired = db.deleteExpiredOfflineRewards(cutoff);
         if (expired > 0) {
             plugin.getLogger().info("[OfflineRewards] Đã xoá " + expired + " reward hết hạn (> 7 ngày).");
-            // Reload danh sách player có reward
+            pendingPlayers.clear();
             cache.clear();
             for (String name : db.getPlayersWithPendingRewards()) {
-                cache.put(name, null);
+                if (name != null && !name.trim().isEmpty()) {
+                    pendingPlayers.add(name.toLowerCase().trim());
+                }
             }
         }
     }
@@ -146,7 +154,10 @@ public class OfflineRewardManager {
             // insertOfflineReward dùng INSERT OR IGNORE → tự không thêm trùng
             db.insertOfflineReward(rewardId, playerName, rawCmd, rewardAmt,
                     denomVnd, type, invoiceId, discordUid, createdAt);
-            cache.put(playerName.toLowerCase(), null);
+            String key = playerName.toLowerCase().trim();
+            pendingPlayers.add(key);
+            cache.remove(key);
         }
     }
 }
+

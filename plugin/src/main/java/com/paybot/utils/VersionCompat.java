@@ -445,18 +445,20 @@ public final class VersionCompat {
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    /** Apply display name and lore to an ItemStack's meta. */
+    /** Apply display name and lore to an ItemStack's meta with full Hex, Gradient, and legacy color support. */
     public static void applyMeta(ItemStack item, String displayName, List<String> lore) {
         if (item == null) return;
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return;
         if (displayName != null) {
-            meta.setDisplayName(org.bukkit.ChatColor.translateAlternateColorCodes('&', displayName));
+            meta.setDisplayName(ColorGradientUtil.colorize(displayName));
         }
         if (lore != null) {
             List<String> colorLore = new java.util.ArrayList<>();
             for (String l : lore) {
-                colorLore.add(org.bukkit.ChatColor.translateAlternateColorCodes('&', l));
+                if (l != null) {
+                    colorLore.add(ColorGradientUtil.colorize(l));
+                }
             }
             meta.setLore(colorLore);
         }

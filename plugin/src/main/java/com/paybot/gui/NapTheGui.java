@@ -46,13 +46,23 @@ public final class NapTheGui {
 
     // ─── Open telco GUI ───────────────────────────────────────────────────────
     public static void openTelcoGui(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 27, "§6§lChọn nhà mạng");
+        PayBotGuiHolder holder = new PayBotGuiHolder(PayBotGuiHolder.GuiType.NAP_THE_TELCO);
+        Inventory inv = Bukkit.createInventory(holder, 27, "§6§lChọn nhà mạng");
+        holder.setInventory(inv);
         fillGlass(inv);
 
         com.paybot.PayBotPlugin plugin = com.paybot.PayBotPlugin.getInstance();
         boolean customLoreEnabled = plugin != null && plugin.getConfig().getBoolean("custom-lore.enabled", false);
+        boolean customNameEnabled = plugin != null && plugin.getConfig().getBoolean("custom-name.enabled", false);
 
         for (TelcoEntry t : TELCOS) {
+            // 1. Tên hiển thị Custom Name cho nhà mạng
+            String customName = (customNameEnabled && plugin != null) ? plugin.getConfig().getString("custom-name.telco." + t.name(), "") : "";
+            String displayName = (customName != null && !customName.trim().isEmpty())
+                    ? com.paybot.utils.CustomNameFormatter.formatName(player, customName, 0, null)
+                    : t.color() + t.name();
+
+            // 2. Chú thích Custom Lore
             List<String> lore = null;
             if (customLoreEnabled) {
                 List<String> rawLore = plugin.getConfig().getStringList("custom-lore.telco." + t.name());
@@ -69,7 +79,7 @@ public final class NapTheGui {
 
             inv.setItem(t.slot(), VersionCompat.makeWoolItem(
                     t.woolData(),
-                    t.color() + t.name(),
+                    displayName,
                     lore
             ));
         }
@@ -82,21 +92,32 @@ public final class NapTheGui {
 
     // ─── Open denom GUI ───────────────────────────────────────────────────────
     public static void openDenomGui(Player player, String telco) {
-        Inventory inv = Bukkit.createInventory(null, 54, "§6§lChọn mệnh giá - §e" + telco);
+        PayBotGuiHolder holder = new PayBotGuiHolder(PayBotGuiHolder.GuiType.NAP_THE_DENOM, telco);
+        Inventory inv = Bukkit.createInventory(holder, 54, "§6§lChọn mệnh giá - §e" + telco);
+        holder.setInventory(inv);
         fillGlass(inv);
 
         com.paybot.PayBotPlugin plugin = com.paybot.PayBotPlugin.getInstance();
         boolean customLoreEnabled = plugin != null && plugin.getConfig().getBoolean("custom-lore.enabled", false);
+        boolean customNameEnabled = plugin != null && plugin.getConfig().getBoolean("custom-name.enabled", false);
 
         int i = 0;
         for (Map.Entry<String, Integer> e : DENOMS.entrySet()) {
             if (i >= DENOM_SLOTS.length) break;
             int denom = e.getValue();
+            String coinAmt = plugin != null ? plugin.getConfig().getString("denom-rewards-card." + denom + ".amt", "") : "";
+
+            // 1. Tên hiển thị Custom Name cho mệnh giá thẻ
+            String customName = (customNameEnabled && plugin != null) ? plugin.getConfig().getString("custom-name.card." + denom, "") : "";
+            String displayName = (customName != null && !customName.trim().isEmpty())
+                    ? com.paybot.utils.CustomNameFormatter.formatName(player, customName, denom, coinAmt)
+                    : "§e§l" + formatVnd(denom) + " VND";
+
+            // 2. Chú thích Custom Lore
             List<String> lore = null;
             if (customLoreEnabled) {
                 List<String> rawLore = plugin.getConfig().getStringList("custom-lore.card." + denom);
                 if (rawLore != null && !rawLore.isEmpty()) {
-                    String coinAmt = plugin.getConfig().getString("denom-rewards-card." + denom + ".amt", "");
                     lore = com.paybot.utils.CustomLoreFormatter.formatLore(player, rawLore, denom, coinAmt);
                 }
             }
@@ -109,7 +130,7 @@ public final class NapTheGui {
 
             inv.setItem(DENOM_SLOTS[i++], makeDenomItem(
                     denom,
-                    "§e§l" + formatVnd(denom) + " VND",
+                    displayName,
                     lore
             ));
         }

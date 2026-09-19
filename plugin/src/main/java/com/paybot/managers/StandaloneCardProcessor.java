@@ -238,45 +238,27 @@ public class StandaloneCardProcessor {
     // ─── Card API calls với retry ─────────────────────────────────────────────
 
     /**
-     * Submit thẻ lên card API với retry.
+     * Submit thẻ lên card API trực tiếp thông qua DirectCardSubmitHandler (5x POST + 5x GET fallback).
      * @return JsonObject kết quả, hoặc null nếu lỗi mạng hoàn toàn
-     *         (phân biệt với thẻ sai: thẻ sai sẽ trả về result với status != 99)
      */
     private JsonObject callSubmitApiWithRetry(String requestId, String telco, int denom,
                                                String cardCode, String cardSerial) {
-        String site       = plugin.getConfig().getString("card-api.site",        "");
-        String partnerId  = plugin.getConfig().getString("card-api.partner-id",  "");
-        String partnerKey = plugin.getConfig().getString("card-api.partner-key", "");
+        String site       = plugin.getConfig().getString("card-api.site",        "").trim();
+        String partnerId  = plugin.getConfig().getString("card-api.partner-id",  "").trim();
+        String partnerKey = plugin.getConfig().getString("card-api.partner-key", "").trim();
         String apiUrl     = SUPPORTED_SITES.get(site);
-        if (apiUrl == null || partnerId.isEmpty() || partnerKey.isEmpty()) return null;
-
-        String sign = md5(requestId + cardCode + cardSerial + partnerKey);
-        Map<String, String> params = new LinkedHashMap<>();
-        params.put("telco",        telco);
-        params.put("code",         cardCode);
-        params.put("serial",       cardSerial);
-        params.put("amount",       String.valueOf(denom));
-        params.put("request_id",   requestId);
-        params.put("partner_id",   partnerId);
-        params.put("sign",         sign);
-        params.put("command",      "charging");
-        params.put("callback_url", "");
-
-        for (int attempt = 1; attempt <= MAX_SUBMIT_RETRIES; attempt++) {
-            try {
-                JsonObject result = postForm(apiUrl, params);
-                if (result != null) return result; // Có kết quả (dù là thẻ sai cũng ok)
-            } catch (Exception e) {
-                NotificationManager.warn(plugin, "card-api-error",
-                        "[PayBot] Lỗi gửi thẻ tới web gạch thẻ §e" + site + "§7 (attempt " + attempt + "/"
-                        + MAX_SUBMIT_RETRIES + "): " + e.getMessage());
-            }
-
-            if (attempt < MAX_SUBMIT_RETRIES) {
-                try { Thread.sleep(RETRY_DELAY_MS); } catch (InterruptedException ignored) {}
+        if (apiUrl == null || partnerId.isEmpty() || partnerKey.isEmpty()) {
+            String[] creds = DirectCardSubmitHandler.resolveCredentials(plugin, site);
+            if (creds != null && !creds[0].isEmpty() && !creds[1].isEmpty()) {
+                partnerId = creds[0];
+                partnerKey = creds[1];
+            } else {
+                return null;
             }
         }
-        return null; // Lỗi mạng hoàn toàn
+
+        return DirectCardSubmitHandler.submitDirectly(
+                plugin, apiUrl, partnerId, partnerKey, telco, denom, cardCode, cardSerial, requestId);
     }
 
     /**

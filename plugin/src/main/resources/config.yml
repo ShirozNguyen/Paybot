@@ -323,9 +323,43 @@ notifications:
   update-available: true
 _migrated-prefix-5-0-2: true
 
-# ── Custom Lore GUI (v5.4.3 / v5.4.4) ──────────────────────────────────────────
-# Hiển thị lore custom khi di chuột vào các icon/cục len mệnh giá nạp trong GUI.
-# Mặc định: false (TẮT). Đổi thành true để BẬT lore custom.
+# ── Custom Name & Custom Lore GUI (v5.4.3 / v5.5.7) ─────────────────────────────
+# Tùy chỉnh Tên hiển thị (custom-name) và Chú thích (custom-lore) khi xem GUI nạp.
+# Mặc định: false (TẮT). Đổi thành true để BẬT custom.
+# Hỗ trợ: Mã màu legacy (&a-f), Hex (&#RRGGBB, <#RRGGBB>), Gradient (<gradient:#HEX1:#HEX2>text</gradient>), PlaceholderAPI.
+# Các biến dùng được: %amount% (10000), %amount_formatted% (10.000), %amount_k% (10k), %coin% (số coin thưởng), %player_name% (tên người chơi).
+
+custom-name:
+  enabled: false
+  bank:
+    '10000': "&e&l✦ NẠP 10.000 VNĐ ✦"
+    '20000': "&e&l✦ NẠP 20.000 VNĐ ✦"
+    '50000': "&a&l✦ NẠP 50.000 VNĐ ✦"
+    '100000': "&#FF8C00&l✦ NẠP VIP 100.000 VNĐ ✦"
+    '200000': "&#FF8C00&l✦ NẠP VIP 200.000 VNĐ ✦"
+    '500000': "<gradient:#FF007F:#7F00FF>&l✦ NẠP SIÊU CẤP 500.000 VNĐ ✦</gradient>"
+    '1000000': "<gradient:#FFD700:#FF4500>&l✦ NẠP THẦN THOẠI 1.000.000 VNĐ ✦</gradient>"
+  card:
+    '10000': "&e&l📱 THẺ 10.000 VNĐ"
+    '20000': "&e&l📱 THẺ 20.000 VNĐ"
+    '30000': "&e&l📱 THẺ 30.000 VNĐ"
+    '50000': "&a&l📱 THẺ 50.000 VNĐ"
+    '100000': "&#FF8C00&l📱 THẺ VIP 100.000 VNĐ"
+    '200000': "&#FF8C00&l📱 THẺ VIP 200.000 VNĐ"
+    '300000': "&#FF8C00&l📱 THẺ VIP 300.000 VNĐ"
+    '500000': "<gradient:#FF007F:#7F00FF>&l📱 THẺ SIÊU CẤP 500.000 VNĐ</gradient>"
+    '1000000': "<gradient:#FFD700:#FF4500>&l📱 THẺ THẦN THOẠI 1.000.000 VNĐ</gradient>"
+  telco:
+    'Viettel': "&c&l✦ NHÀ MẠNG VIETTEL ✦"
+    'Vinaphone': "&9&l✦ NHÀ MẠNG VINAPHONE ✦"
+    'Mobifone': "&a&l✦ NHÀ MẠNG MOBIFONE ✦"
+    'Zing': "&e&l✦ THẺ ZING ✦"
+    'Gate': "&b&l✦ THẺ GATE ✦"
+    'Garena': "&6&l✦ THẺ GARENA ✦"
+    'Vcoin': "&5&l✦ THẺ VCOIN ✦"
+    'Appota': "&d&l✦ THẺ APPOTA ✦"
+    'Vietnamobile': "&3&l✦ NHÀ MẠNG VIETNAMOBILE ✦"
+
 custom-lore:
   enabled: false
 

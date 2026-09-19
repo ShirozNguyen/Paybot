@@ -240,8 +240,17 @@ public class QRMapManager implements Listener {
                     VersionCompat.storeInvoiceId(meta, mapView, invoiceId, invoiceKey);
                     mapItem = VersionCompat.applyMapToItem(mapItem, meta, mapView);
 
-                    player.getInventory().addItem(mapItem);
-                    player.sendMessage(PayBotPlugin.f("§a[PayBot] §fQR chuyển khoản đã vào balo! Vui lòng kiểm tra balo để nạp 💳"));
+                    Map<Integer, ItemStack> leftover = player.getInventory().addItem(mapItem);
+                    if (leftover != null && !leftover.isEmpty()) {
+                        for (ItemStack dropItem : leftover.values()) {
+                            if (dropItem != null) {
+                                player.getWorld().dropItemNaturally(player.getLocation(), dropItem);
+                            }
+                        }
+                        player.sendMessage(PayBotPlugin.f("§e[PayBot] §fTúi đồ của bạn đã đầy! Bản đồ QR thanh toán đã rơi xuống chân bạn 💳"));
+                    } else {
+                        player.sendMessage(PayBotPlugin.f("§a[PayBot] §fQR chuyển khoản đã vào balo! Vui lòng kiểm tra balo để nạp 💳"));
+                    }
                     NotificationManager.log(plugin, "qr-created",
                             "[PayBot] Đã tạo QR cho " + player.getName() + " (invoice=" + invoiceId + ")");
 

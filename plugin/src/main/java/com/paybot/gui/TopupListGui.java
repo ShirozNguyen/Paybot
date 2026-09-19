@@ -65,8 +65,10 @@ public final class TopupListGui {
         String suffix = "card".equals(filter) ? " §7- §eThẻ"
                 : "bank".equals(filter) ? " §7- §6Bank"
                 : "";
-        Inventory inv = Bukkit.createInventory(null, 54,
+        PayBotGuiHolder holder = new PayBotGuiHolder(PayBotGuiHolder.GuiType.TOPUP_LIST, String.valueOf(page));
+        Inventory inv = Bukkit.createInventory(holder, 54,
                 "§6§lDanh sách đơn" + suffix + " §7(Trang " + (page + 1) + "/" + totalPages + ")");
+        holder.setInventory(inv);
         fillGlass(inv);
 
         int start = page * PAGE_SIZE;

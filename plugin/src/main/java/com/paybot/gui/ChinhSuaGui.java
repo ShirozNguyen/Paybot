@@ -56,7 +56,9 @@ public class ChinhSuaGui {
     // ─── Open ─────────────────────────────────────────────────────────────────
 
     public static void open(Player player, PayBotPlugin plugin) {
-        Inventory inv = Bukkit.createInventory(null, 54, TITLE);
+        PayBotGuiHolder holder = new PayBotGuiHolder(PayBotGuiHolder.GuiType.CHINH_SUA);
+        Inventory inv = Bukkit.createInventory(holder, 54, TITLE);
+        holder.setInventory(inv);
 
         // Hàng 1: label nạp thẻ
         inv.setItem(4, GuiUtil.makeItem(

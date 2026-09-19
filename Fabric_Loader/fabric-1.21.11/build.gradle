@@ -15,7 +15,7 @@ plugins {
 // root settings.gradle 'includeBuild') — KHÔNG còn nằm trong allprojects{}/subprojects{} của
 // root build.gradle nữa, nên PHẢI tự khai lại version/group/repositories/toolchain y hệt logic
 // root (trước đây thừa hưởng tự động qua allprojects{} — xem LOG.md Part 62 để biết đầy đủ).
-version = '5.5.6'
+version = '5.5.7'
 group = 'com.paybot'
 
 repositories {

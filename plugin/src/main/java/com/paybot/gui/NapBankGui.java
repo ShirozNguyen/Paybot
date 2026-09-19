@@ -32,19 +32,30 @@ public final class NapBankGui {
             java.util.Collections.sort(amounts);
         }
 
-        Inventory inv = Bukkit.createInventory(null, 54, "§6§lNạp tiền ngân hàng");
+        PayBotGuiHolder holder = new PayBotGuiHolder(PayBotGuiHolder.GuiType.NAP_BANK);
+        Inventory inv = Bukkit.createInventory(holder, 54, "§6§lNạp tiền ngân hàng");
+        holder.setInventory(inv);
         fillGlass(inv);
 
         // Center amounts in row 3 (slots 18-26)
         boolean customLoreEnabled = plugin.getConfig().getBoolean("custom-lore.enabled", false);
+        boolean customNameEnabled = plugin.getConfig().getBoolean("custom-name.enabled", false);
         int start = centerStart(18, amounts.size());
         for (int i = 0; i < amounts.size() && i < 9; i++) {
             int amt = amounts.get(i);
+            String coinAmt = plugin.getConfig().getString("denom-rewards-bank." + amt + ".amt", "");
+
+            // 1. Tên hiển thị Custom Name
+            String customName = customNameEnabled ? plugin.getConfig().getString("custom-name.bank." + amt, "") : "";
+            String displayName = (customName != null && !customName.trim().isEmpty())
+                    ? com.paybot.utils.CustomNameFormatter.formatName(player, customName, amt, coinAmt)
+                    : "§e§l" + formatVnd(amt) + " VND";
+
+            // 2. Chú thích Custom Lore
             List<String> lore = null;
             if (customLoreEnabled) {
                 List<String> rawLore = plugin.getConfig().getStringList("custom-lore.bank." + amt);
                 if (rawLore != null && !rawLore.isEmpty()) {
-                    String coinAmt = plugin.getConfig().getString("denom-rewards-bank." + amt + ".amt", "");
                     lore = com.paybot.utils.CustomLoreFormatter.formatLore(player, rawLore, amt, coinAmt);
                 }
             }
@@ -56,7 +67,7 @@ public final class NapBankGui {
             }
             inv.setItem(start + i, makeDenomItem(
                     amt,
-                    "§e§l" + formatVnd(amt) + " VND",
+                    displayName,
                     lore
             ));
         }
