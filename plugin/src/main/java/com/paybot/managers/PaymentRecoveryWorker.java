@@ -1,6 +1,7 @@
 package com.paybot.managers;
 
 import com.paybot.PayBotPlugin;
+import com.paybot.utils.SchedulerUtils;
 
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -93,9 +94,9 @@ public class PaymentRecoveryWorker {
 
                         plugin.getLogger().info("[PayBot-Recovery] Tự động giao bù đơn bank kẹt: #" + o.invoiceId + " cho " + o.playerName);
                         SchedulerUtils.runSync(plugin, () -> {
-                            boolean wasOnline = RewardDispatcher.dispatchOrQueueReward(
+                            boolean wasOnline = RewardDispatcher.dispatchOrQueue(
                                     plugin, o.invoiceId, o.playerName, rewardCmds, rewardAmt,
-                                    String.valueOf(o.amount), "bank");
+                                    String.valueOf(o.amount), "bank", o.invoiceId, "");
                             plugin.getLocalOrderManager().updateBankStatus(o.invoiceId, LocalOrderManager.BANK_APPROVED);
                             if (plugin.getRewardDeliveryLedger() != null) {
                                 plugin.getRewardDeliveryLedger().recordDelivery("bank", o.invoiceId, o.playerName, rewardHash, "DONE");
@@ -133,9 +134,9 @@ public class PaymentRecoveryWorker {
 
                         plugin.getLogger().info("[PayBot-Recovery] Tự động giao bù đơn thẻ kẹt: #" + o.requestId + " cho " + o.playerName);
                         SchedulerUtils.runSync(plugin, () -> {
-                            boolean wasOnline = RewardDispatcher.dispatchOrQueueReward(
+                            boolean wasOnline = RewardDispatcher.dispatchOrQueue(
                                     plugin, o.requestId, o.playerName, rewardCmds, rewardAmt,
-                                    String.valueOf(o.denom), "card");
+                                    String.valueOf(o.denom), "card", o.requestId, "");
                             plugin.getLocalOrderManager().updateCardStatus(o.requestId, LocalOrderManager.CARD_APPROVED, o.message);
                             if (plugin.getRewardDeliveryLedger() != null) {
                                 plugin.getRewardDeliveryLedger().recordDelivery("card", o.requestId, o.playerName, rewardHash, "DONE");
