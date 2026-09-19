@@ -21,6 +21,7 @@ import java.awt.image.BufferedImage;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Quản lý QR Map.
