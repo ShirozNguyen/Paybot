@@ -12,10 +12,15 @@ import java.util.stream.Collectors;
  */
 public class LocalOrderManager {
 
-    public static final String BANK_PENDING  = "PENDING";
-    public static final String BANK_PAID     = "PAID";
-    public static final String BANK_APPROVED = "APPROVED";
-    public static final String BANK_EXPIRED  = "EXPIRED";
+    public static final String BANK_PENDING   = "PENDING";
+    public static final String BANK_PAID      = "PAID";
+    public static final String BANK_APPROVED  = "APPROVED";
+    public static final String BANK_EXPIRED   = "EXPIRED";
+    public static final String BANK_CONFIRMED = "PAYMENT_CONFIRMED";
+    public static final String BANK_REWARD_PENDING = "REWARD_PENDING";
+    public static final String BANK_REWARD_PROCESSING = "REWARD_PROCESSING";
+    public static final String BANK_REWARD_DONE = "REWARD_DONE";
+    public static final String BANK_REWARD_FAILED = "REWARD_FAILED";
 
     public static final String CARD_PROCESSING  = "99";
     public static final String CARD_SUCCESS      = "1";
@@ -24,6 +29,11 @@ public class LocalOrderManager {
     public static final String CARD_MAINTENANCE  = "4";
     public static final String CARD_WRONG        = "100";
     public static final String CARD_APPROVED     = "APPROVED";
+    public static final String CARD_CONFIRMED    = "PAYMENT_CONFIRMED";
+    public static final String CARD_REWARD_PENDING = "REWARD_PENDING";
+    public static final String CARD_REWARD_PROCESSING = "REWARD_PROCESSING";
+    public static final String CARD_REWARD_DONE = "REWARD_DONE";
+    public static final String CARD_REWARD_FAILED = "REWARD_FAILED";
 
     public static class BankOrder {
         public String  invoiceId;
@@ -154,9 +164,29 @@ public class LocalOrderManager {
         String upperCode    = code == null ? "" : code.toUpperCase();
         for (BankOrder order : getPendingBankOrders()) {
             String iid = order.invoiceId.toUpperCase();
-            if (upperContent.contains(iid) || iid.equals(upperCode)) return order;
+            if (com.paybot.utils.InvoiceMatcher.matches(upperContent, iid) || iid.equals(upperCode)) return order;
         }
         return null;
+    }
+
+    public synchronized boolean claimBankOrderForReward(String invoiceId) {
+        BankOrder o = bankOrders.get(invoiceId);
+        if (o == null) return false;
+        boolean ok = db.claimBankOrder(invoiceId, o.status, BANK_REWARD_PROCESSING);
+        if (ok) {
+            o.status = BANK_REWARD_PROCESSING;
+        }
+        return ok;
+    }
+
+    public synchronized boolean claimCardOrderForReward(String requestId) {
+        CardOrder o = cardOrders.get(requestId);
+        if (o == null) return false;
+        boolean ok = db.claimCardOrder(requestId, o.status, CARD_REWARD_PROCESSING);
+        if (ok) {
+            o.status = CARD_REWARD_PROCESSING;
+        }
+        return ok;
     }
 
     public List<BankOrder> getUnregisteredBankOrders() {

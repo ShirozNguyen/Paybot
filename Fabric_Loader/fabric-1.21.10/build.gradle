@@ -1,4 +1,4 @@
-// v5.5.5 Part 61: SỬA LẠI Part 60 — cách cũ (khai 'dev.architectury.loom' version '1.13.469'
+﻿// v5.5.5 Part 61: SỬA LẠI Part 60 — cách cũ (khai 'dev.architectury.loom' version '1.13.469'
 // riêng cho module này trong khi root vẫn khai '1.7.435' cho module khác) THẤT BẠI khi build thật
 // (Shiroz gửi log GitHub Actions): "Error resolving plugin [id: 'dev.architectury.loom', version:
 // '1.13.469'] > The request for this plugin could not be satisfied because the plugin is already
@@ -29,7 +29,7 @@ plugins {
 // root settings.gradle 'includeBuild') — KHÔNG còn nằm trong allprojects{}/subprojects{} của
 // root build.gradle nữa, nên PHẢI tự khai lại version/group/repositories/toolchain y hệt logic
 // root (trước đây thừa hưởng tự động qua allprojects{} — xem LOG.md Part 62 để biết đầy đủ).
-version = '5.5.7'
+version = '5.5.8'
 group = 'com.paybot'
 
 repositories {

@@ -70,6 +70,20 @@ public class OfflineRewardManager {
         return removed;
     }
 
+    public synchronized boolean claimReward(String rewardId) {
+        return db.claimOfflineReward(rewardId);
+    }
+
+    public synchronized void completeReward(String playerName, String rewardId) {
+        removeReward(playerName, rewardId);
+    }
+
+    public synchronized void failReward(String playerName, String rewardId) {
+        db.failOfflineReward(rewardId);
+        String key = playerName.toLowerCase();
+        cache.remove(key);
+    }
+
     public synchronized Set<String> getPendingPlayerNames() {
         return new HashSet<>(cache.keySet());
     }

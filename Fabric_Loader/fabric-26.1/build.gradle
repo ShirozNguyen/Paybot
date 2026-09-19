@@ -1,4 +1,4 @@
-// v5.5.5 Part 48: fabric-26.1 — module TỰ áp dụng plugin Fabric Loom riêng (KHÔNG dùng
+﻿// v5.5.5 Part 48: fabric-26.1 — module TỰ áp dụng plugin Fabric Loom riêng (KHÔNG dùng
 // 'dev.architectury.loom' mà root build.gradle áp cho mọi subproject khác). Lý do: Architectury
 // Loom bản cũ (1.7.435, đang khai báo ở root) xác nhận crash với 26.1+ (thiếu mapping để tìm —
 // GitHub issue architectury-loom#328). Có bản 'dev.architectury.loom-no-remap' mới hơn có vẻ đã
@@ -18,7 +18,7 @@ plugins {
 // root build.gradle nữa, nên PHẢI tự khai lại version/group/repositories y hệt logic root
 // (trước đây thừa hưởng tự động qua allprojects{} — xem LOG.md Part 62 để biết đầy đủ). Khối
 // java.toolchain{} bên dưới GIỮ NGUYÊN từ Part 48 (đã tự ghi đè Java 25 từ trước).
-version = '5.5.7'
+version = '5.5.8'
 group = 'com.paybot'
 
 repositories {

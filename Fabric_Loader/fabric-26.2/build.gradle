@@ -1,4 +1,4 @@
-// v5.5.5 Part 51: fabric-26.2 — nhân bản từ fabric-26.1 (Part 48), toàn bộ lý do kiến trúc bên
+﻿// v5.5.5 Part 51: fabric-26.2 — nhân bản từ fabric-26.1 (Part 48), toàn bộ lý do kiến trúc bên
 // dưới (tách khỏi Architectury Loom, dùng net.fabricmc.fabric-loom trực tiếp) áp dụng y hệt vì
 // cùng "thế hệ" toolchain — chỉ đổi số version. Xem LOG.md Part 51 cho phần rà soát riêng 26.2.
 //
@@ -22,7 +22,7 @@ plugins {
 // root build.gradle nữa, nên PHẢI tự khai lại version/group/repositories y hệt logic root
 // (trước đây thừa hưởng tự động qua allprojects{} — xem LOG.md Part 62 để biết đầy đủ). Khối
 // java.toolchain{} bên dưới GIỮ NGUYÊN từ Part 51 (đã tự ghi đè Java 25 từ trước).
-version = '5.5.7'
+version = '5.5.8'
 group = 'com.paybot'
 
 repositories {

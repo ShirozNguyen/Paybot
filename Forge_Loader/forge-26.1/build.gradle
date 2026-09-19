@@ -1,4 +1,4 @@
-// v5.5.5 Part 50: forge-26.1 — CẢNH BÁO ĐỘ TIN CẬY (đọc trước khi dùng):
+﻿// v5.5.5 Part 50: forge-26.1 — CẢNH BÁO ĐỘ TIN CẬY (đọc trước khi dùng):
 //
 // Đây là module 26.x ÍT được xác minh NHẤT trong 3 loader đã làm (fabric-26.1, neoforge-26.1,
 // forge-26.1). Khác 2 module kia có tài liệu migrate CHÍNH THỨC với ví dụ build.gradle rõ ràng
@@ -33,7 +33,7 @@ plugins {
 // cùng thư mục) — KHÔNG còn nằm trong allprojects{} của root build.gradle nữa, nên PHẢI tự khai
 // lại version/group/repositories y hệt logic root (trước đây thừa hưởng tự động qua allprojects{}
 // — xem LOG.md Part 65). Khối java.toolchain{} bên dưới GIỮ NGUYÊN từ Part 50.
-version = '5.5.7'
+version = '5.5.8'
 group = 'com.paybot'
 
 repositories {

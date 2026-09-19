@@ -114,6 +114,20 @@ public class OfflineRewardManager {
         }
     }
 
+    public synchronized boolean claimReward(String rewardId) {
+        return db.claimOfflineReward(rewardId);
+    }
+
+    public synchronized void completeReward(String playerName, String rewardId) {
+        removeReward(playerName, rewardId);
+    }
+
+    public synchronized void failReward(String playerName, String rewardId) {
+        db.failOfflineReward(rewardId);
+        String key = playerName.toLowerCase().trim();
+        cache.remove(key);
+    }
+
     /**
      * Kiểm tra và xoá reward quá cũ (hơn 7 ngày). Gọi định kỳ mỗi giờ.
      */

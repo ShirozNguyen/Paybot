@@ -1,4 +1,4 @@
-// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.5
+﻿// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.5
 package com.paybot.managers;
 
 import com.paybot.PayBotMod;
@@ -14,21 +14,21 @@ import java.sql.*;
 import java.util.*;
 
 /**
- * DatabaseManager — v5.4.1 (Fabric/Forge)
- * Quản lý lưu song song SQLite local và MySQL cho Fabric/Forge Mod.
+ * DatabaseManager â€” v5.4.1 (Fabric/Forge)
+ * Quáº£n lÃ½ lÆ°u song song SQLite local vÃ  MySQL cho Fabric/Forge Mod.
  */
 public class DatabaseManager {
 
     private final PayBotMod mod;
-    private Connection conn;        // Connection MySQL (chỉ dùng khi useMySQL=true)
-    private Connection bankConn;   // Connection SQLite Bank (chỉ dùng khi useMySQL=false)
-    private Connection cardConn;   // Connection SQLite Card (chỉ dùng khi useMySQL=false)
-    private Connection rewardConn; // Connection SQLite Rewards (chỉ dùng khi useMySQL=false)
-    private boolean useMySQL = false; // true = chỉ dùng MySQL, false = chỉ dùng SQLite
+    private Connection conn;        // Connection MySQL (chá»‰ dÃ¹ng khi useMySQL=true)
+    private Connection bankConn;   // Connection SQLite Bank (chá»‰ dÃ¹ng khi useMySQL=false)
+    private Connection cardConn;   // Connection SQLite Card (chá»‰ dÃ¹ng khi useMySQL=false)
+    private Connection rewardConn; // Connection SQLite Rewards (chá»‰ dÃ¹ng khi useMySQL=false)
+    private boolean useMySQL = false; // true = chá»‰ dÃ¹ng MySQL, false = chá»‰ dÃ¹ng SQLite
 
-    // v5.5.5 Part 58 [FIX — ghi chú phụ Part 52 mục 52.4, "chưa xử lý" đã đề cập từ trước]:
-    // Circuit breaker chống "bão timeout" khi MySQL down kéo dài — xem giải thích đầy đủ ở
-    // bản plugin/DatabaseManager.java (cùng bug, cùng kiến trúc, cùng cách sửa).
+    // v5.5.5 Part 58 [FIX â€” ghi chÃº phá»¥ Part 52 má»¥c 52.4, "chÆ°a xá»­ lÃ½" Ä‘Ã£ Ä‘á» cáº­p tá»« trÆ°á»›c]:
+    // Circuit breaker chá»‘ng "bÃ£o timeout" khi MySQL down kÃ©o dÃ i â€” xem giáº£i thÃ­ch Ä‘áº§y Ä‘á»§ á»Ÿ
+    // báº£n plugin/DatabaseManager.java (cÃ¹ng bug, cÃ¹ng kiáº¿n trÃºc, cÃ¹ng cÃ¡ch sá»­a).
     private volatile long lastMysqlFailTimeMs = 0L;
     private static final long MYSQL_RETRY_COOLDOWN_MS = 15_000L;
 
@@ -37,8 +37,8 @@ public class DatabaseManager {
     }
 
     private synchronized boolean tryConnectMySQL() {
-        // Circuit breaker: xem giải thích đầy đủ ở bản plugin/DatabaseManager.java. Không dùng
-        // "conn == null" làm điều kiện phụ vì conn không bị reset về null khi thất bại.
+        // Circuit breaker: xem giáº£i thÃ­ch Ä‘áº§y Ä‘á»§ á»Ÿ báº£n plugin/DatabaseManager.java. KhÃ´ng dÃ¹ng
+        // "conn == null" lÃ m Ä‘iá»u kiá»‡n phá»¥ vÃ¬ conn khÃ´ng bá»‹ reset vá» null khi tháº¥t báº¡i.
         long sinceLastFail = System.currentTimeMillis() - lastMysqlFailTimeMs;
         if (lastMysqlFailTimeMs != 0L && sinceLastFail < MYSQL_RETRY_COOLDOWN_MS) {
             return false;
@@ -52,18 +52,18 @@ public class DatabaseManager {
             return result;
         } catch (java.util.concurrent.TimeoutException e) {
             future.cancel(true);
-            // v5.5.5 Part 53 [BUG lặp lại y hệt plugin/ — xem LOG.md Part 52 mục 52.3]: cùng bug,
-            // cùng nguyên nhân (mod-side DatabaseManager viết cùng kiến trúc với plugin/, chia sẻ
-            // luôn bug này). Log rõ timeout thay vì nuốt im lặng.
-            PayBotMod.LOGGER.error("[PayBot] Kết nối MySQL bị TIMEOUT sau 20 giây — khả năng cao "
-                    + "do firewall chặn, MySQL server không chạy, hoặc mạng có vấn đề.");
+            // v5.5.5 Part 53 [BUG láº·p láº¡i y há»‡t plugin/ â€” xem LOG.md Part 52 má»¥c 52.3]: cÃ¹ng bug,
+            // cÃ¹ng nguyÃªn nhÃ¢n (mod-side DatabaseManager viáº¿t cÃ¹ng kiáº¿n trÃºc vá»›i plugin/, chia sáº»
+            // luÃ´n bug nÃ y). Log rÃµ timeout thay vÃ¬ nuá»‘t im láº·ng.
+            PayBotMod.LOGGER.error("[PayBot] Káº¿t ná»‘i MySQL bá»‹ TIMEOUT sau 20 giÃ¢y â€” kháº£ nÄƒng cao "
+                    + "do firewall cháº·n, MySQL server khÃ´ng cháº¡y, hoáº·c máº¡ng cÃ³ váº¥n Ä‘á».");
             return false;
         } catch (Exception e) {
-            PayBotMod.LOGGER.error("[PayBot] Lỗi không xác định khi thử kết nối MySQL (executor/future): {}", e.getMessage(), e);
+            PayBotMod.LOGGER.error("[PayBot] Lá»—i khÃ´ng xÃ¡c Ä‘á»‹nh khi thá»­ káº¿t ná»‘i MySQL (executor/future): {}", e.getMessage(), e);
             return false;
         } finally {
             executor.shutdownNow();
-            // v5.5.5 Part 58: cập nhật circuit breaker dựa trên kết quả THẬT.
+            // v5.5.5 Part 58: cáº­p nháº­t circuit breaker dá»±a trÃªn káº¿t quáº£ THáº¬T.
             if (result) {
                 lastMysqlFailTimeMs = 0L;
             } else {
@@ -132,14 +132,14 @@ public class DatabaseManager {
                     conn = DriverManager.getConnection(url, props);
                     if (conn != null && !conn.isClosed()) {
                         if (!tryHost.equalsIgnoreCase(host)) {
-                            PayBotMod.LOGGER.info("[PayBot] Host '{}:{}' bị chặn NAT loopback bởi hosting. Đã tự động kết nối qua IP gateway hosting: '{}'", host, port, tryHost);
+                            PayBotMod.LOGGER.info("[PayBot] Host '{}:{}' bá»‹ cháº·n NAT loopback bá»Ÿi hosting. ÄÃ£ tá»± Ä‘á»™ng káº¿t ná»‘i qua IP gateway hosting: '{}'", host, port, tryHost);
                         }
                         return true;
                     }
                 } catch (SQLException e) {
                     lastSqlException = e;
                     if (e.getErrorCode() == 1045 || e.getErrorCode() == 1044 || e.getErrorCode() == 1049 || (e.getMessage() != null && e.getMessage().contains("Unknown database"))) {
-                        PayBotMod.LOGGER.error("[PayBot] Lỗi kết nối MySQL ({}:{}): {}", tryHost, port, e.getMessage());
+                        PayBotMod.LOGGER.error("[PayBot] Lá»—i káº¿t ná»‘i MySQL ({}:{}): {}", tryHost, port, e.getMessage());
                         return false;
                     }
                 } catch (Exception e) {
@@ -148,13 +148,13 @@ public class DatabaseManager {
             }
 
             if (lastSqlException != null) {
-                PayBotMod.LOGGER.error("[PayBot] Lỗi kết nối MySQL ({}:{}): {}", host, port, lastSqlException.getMessage());
+                PayBotMod.LOGGER.error("[PayBot] Lá»—i káº¿t ná»‘i MySQL ({}:{}): {}", host, port, lastSqlException.getMessage());
             } else if (lastException != null) {
-                PayBotMod.LOGGER.error("[PayBot] Lỗi không xác định khi kết nối MySQL: {}", lastException.getMessage(), lastException);
+                PayBotMod.LOGGER.error("[PayBot] Lá»—i khÃ´ng xÃ¡c Ä‘á»‹nh khi káº¿t ná»‘i MySQL: {}", lastException.getMessage(), lastException);
             }
             return false;
         } catch (Exception e) {
-            PayBotMod.LOGGER.error("[PayBot] Lỗi không xác định khi kết nối MySQL: {}", e.getMessage(), e);
+            PayBotMod.LOGGER.error("[PayBot] Lá»—i khÃ´ng xÃ¡c Ä‘á»‹nh khi káº¿t ná»‘i MySQL: {}", e.getMessage(), e);
             return false;
         }
     }
@@ -177,33 +177,33 @@ public class DatabaseManager {
 
         if ("mysql".equals(dbType)) {
             useMySQL = true;
-            PayBotMod.LOGGER.info("[PayBot] Chế độ database: MySQL. Đang kết nối...");
+            PayBotMod.LOGGER.info("[PayBot] Cháº¿ Ä‘á»™ database: MySQL. Äang káº¿t ná»‘i...");
             boolean mysqlSuccess = tryConnectMySQL();
             if (!mysqlSuccess) {
-                PayBotMod.LOGGER.error("[PayBot] ═══════════════════════════════════════════════");
-                PayBotMod.LOGGER.error("[PayBot] LỖI NGHIÊM TRỌNG: Không thể kết nối MySQL!");
-                PayBotMod.LOGGER.error("[PayBot] Kiểm tra lại mục mysql trong file config.yml và thông tin kết nối.");
-                PayBotMod.LOGGER.error("[PayBot] Mod sẽ dừng khởi tạo DB MySQL.");
-                PayBotMod.LOGGER.error("[PayBot] ═══════════════════════════════════════════════");
-                PayBotMod.LOGGER.error("[PayBot] Kiểm tra lại file mysql.yml và thông tin kết nối.");
-                PayBotMod.LOGGER.error("[PayBot] Mod sẽ DỪNG/TẮT ngay bây giờ.");
-                PayBotMod.LOGGER.error("[PayBot] ═══════════════════════════════════════════════");
-                throw new RuntimeException("[PayBot] Không thể kết nối MySQL theo cấu hình database-type: mysql");
+                PayBotMod.LOGGER.error("[PayBot] â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•");
+                PayBotMod.LOGGER.error("[PayBot] Lá»–I NGHIÃŠM TRá»ŒNG: KhÃ´ng thá»ƒ káº¿t ná»‘i MySQL!");
+                PayBotMod.LOGGER.error("[PayBot] Kiá»ƒm tra láº¡i má»¥c mysql trong file config.yml vÃ  thÃ´ng tin káº¿t ná»‘i.");
+                PayBotMod.LOGGER.error("[PayBot] Mod sáº½ dá»«ng khá»Ÿi táº¡o DB MySQL.");
+                PayBotMod.LOGGER.error("[PayBot] â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•");
+                PayBotMod.LOGGER.error("[PayBot] Kiá»ƒm tra láº¡i file mysql.yml vÃ  thÃ´ng tin káº¿t ná»‘i.");
+                PayBotMod.LOGGER.error("[PayBot] Mod sáº½ Dá»ªNG/Táº®T ngay bÃ¢y giá».");
+                PayBotMod.LOGGER.error("[PayBot] â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•");
+                throw new RuntimeException("[PayBot] KhÃ´ng thá»ƒ káº¿t ná»‘i MySQL theo cáº¥u hÃ¬nh database-type: mysql");
             }
             try {
                 createMySQLTables();
-                PayBotMod.LOGGER.info("[PayBot] Kết nối MySQL thành công! Mod hoạt động ở chế độ MySQL.");
+                PayBotMod.LOGGER.info("[PayBot] Káº¿t ná»‘i MySQL thÃ nh cÃ´ng! Mod hoáº¡t Ä‘á»™ng á»Ÿ cháº¿ Ä‘á»™ MySQL.");
                 runMigrations();
             } catch (Exception e) {
-                PayBotMod.LOGGER.error("[PayBot] Lỗi khởi tạo bảng MySQL!", e);
-                throw new RuntimeException("[PayBot] Lỗi khởi tạo bảng MySQL: " + e.getMessage());
+                PayBotMod.LOGGER.error("[PayBot] Lá»—i khá»Ÿi táº¡o báº£ng MySQL!", e);
+                throw new RuntimeException("[PayBot] Lá»—i khá»Ÿi táº¡o báº£ng MySQL: " + e.getMessage());
             }
         } else {
             if (!"sqlite".equals(dbType)) {
-                PayBotMod.LOGGER.warn("[PayBot] Giá trị database-type không hợp lệ: \"" + dbType + "\". Tự động dùng SQLite.");
+                PayBotMod.LOGGER.warn("[PayBot] GiÃ¡ trá»‹ database-type khÃ´ng há»£p lá»‡: \"" + dbType + "\". Tá»± Ä‘á»™ng dÃ¹ng SQLite.");
             }
             useMySQL = false;
-            PayBotMod.LOGGER.info("[PayBot] Chế độ database: SQLite.");
+            PayBotMod.LOGGER.info("[PayBot] Cháº¿ Ä‘á»™ database: SQLite.");
             try {
                 Class.forName("org.sqlite.JDBC");
                 File cardDir = new File(mod.getDataDir().toFile(), "Card");
@@ -220,10 +220,10 @@ public class DatabaseManager {
                 rewardConn = DriverManager.getConnection("jdbc:sqlite:" + rewardDbFile.getAbsolutePath());
                 
                 createSQLiteTables();
-                PayBotMod.LOGGER.info("[PayBot] Kết nối SQLite thành công!");
+                PayBotMod.LOGGER.info("[PayBot] Káº¿t ná»‘i SQLite thÃ nh cÃ´ng!");
                 runMigrations();
             } catch (Exception e) {
-                PayBotMod.LOGGER.error("[PayBot] Lỗi nghiêm trọng khi khởi tạo cơ sở dữ liệu! Dữ liệu sẽ không được lưu.", e);
+                PayBotMod.LOGGER.error("[PayBot] Lá»—i nghiÃªm trá»ng khi khá»Ÿi táº¡o cÆ¡ sá»Ÿ dá»¯ liá»‡u! Dá»¯ liá»‡u sáº½ khÃ´ng Ä‘Æ°á»£c lÆ°u.", e);
             }
         }
     }
@@ -293,6 +293,28 @@ public class DatabaseManager {
                     ")");
             try { st.execute("CREATE INDEX idx_reward_player ON offline_rewards(player_name)"); } catch (SQLException ignored) {}
         }
+
+        // v5.5.8 Part 122: ThÃªm cá»™t status vÃ o offline_rewards náº¿u chÆ°a cÃ³
+        try (Statement st = rewardConn.createStatement()) {
+            st.execute("ALTER TABLE offline_rewards ADD COLUMN status VARCHAR(32) NOT NULL DEFAULT 'PENDING'");
+        } catch (SQLException ignored) {}
+
+        // v5.5.8 Part 122: Táº¡o báº£ng reward_deliveries trÃªn rewardConn (Idempotency Ledger)
+        try (Statement st = rewardConn.createStatement()) {
+            st.execute("CREATE TABLE IF NOT EXISTS reward_deliveries (" +
+                    "delivery_id VARCHAR(128) PRIMARY KEY, " +
+                    "payment_type VARCHAR(32) NOT NULL, " +
+                    "payment_reference VARCHAR(128) NOT NULL, " +
+                    "player_name VARCHAR(128) NOT NULL, " +
+                    "reward_hash VARCHAR(128) NOT NULL, " +
+                    "status VARCHAR(32) NOT NULL DEFAULT 'DONE', " +
+                    "attempt_count INT DEFAULT 1, " +
+                    "created_at BIGINT NOT NULL, " +
+                    "updated_at BIGINT NOT NULL, " +
+                    "UNIQUE(payment_type, payment_reference, reward_hash)" +
+                    ")");
+            try { st.execute("CREATE INDEX idx_delivery_ref ON reward_deliveries(payment_reference)"); } catch (SQLException ignored) {}
+        }
     }
 
     private void createMySQLTables() throws SQLException {
@@ -332,14 +354,30 @@ public class DatabaseManager {
                     "type VARCHAR(64) DEFAULT 'card', " +
                     "invoice_id VARCHAR(128) DEFAULT '', " +
                     "discord_uid VARCHAR(128) DEFAULT '', " +
-                    "created_at BIGINT NOT NULL" +
+                    "created_at BIGINT NOT NULL, " +
+                    "status VARCHAR(32) NOT NULL DEFAULT 'PENDING'" +
                     ")" + suffix);
 
+            st.execute("CREATE TABLE IF NOT EXISTS reward_deliveries (" +
+                    "delivery_id VARCHAR(128) PRIMARY KEY, " +
+                    "payment_type VARCHAR(32) NOT NULL, " +
+                    "payment_reference VARCHAR(128) NOT NULL, " +
+                    "player_name VARCHAR(128) NOT NULL, " +
+                    "reward_hash VARCHAR(128) NOT NULL, " +
+                    "status VARCHAR(32) NOT NULL DEFAULT 'DONE', " +
+                    "attempt_count INT DEFAULT 1, " +
+                    "created_at BIGINT NOT NULL, " +
+                    "updated_at BIGINT NOT NULL, " +
+                    "UNIQUE KEY uq_reward_delivery (payment_type, payment_reference, reward_hash)" +
+                    ")" + suffix);
+
+            try { st.execute("ALTER TABLE offline_rewards ADD COLUMN status VARCHAR(32) NOT NULL DEFAULT 'PENDING'"); } catch (SQLException ignored) {}
             try { st.execute("CREATE INDEX idx_bank_player ON bank_orders(player_name)"); } catch (SQLException ignored) {}
             try { st.execute("CREATE INDEX idx_bank_status ON bank_orders(status)"); } catch (SQLException ignored) {}
             try { st.execute("CREATE INDEX idx_card_player ON card_orders(player_name)"); } catch (SQLException ignored) {}
             try { st.execute("CREATE INDEX idx_card_status ON card_orders(status)"); } catch (SQLException ignored) {}
             try { st.execute("CREATE INDEX idx_reward_player ON offline_rewards(player_name)"); } catch (SQLException ignored) {}
+            try { st.execute("CREATE INDEX idx_delivery_ref ON reward_deliveries(payment_reference)"); } catch (SQLException ignored) {}
         }
     }
 
@@ -356,7 +394,7 @@ public class DatabaseManager {
         File oldDbFile = new File(mod.getDataDir().toFile(), "paybot.db");
         if (!oldDbFile.exists()) return;
 
-        PayBotMod.LOGGER.info("[PayBot] Phát hiện database paybot.db cũ. Bắt đầu migrate dữ liệu sang cấu trúc mới...");
+        PayBotMod.LOGGER.info("[PayBot] PhÃ¡t hiá»‡n database paybot.db cÅ©. Báº¯t Ä‘áº§u migrate dá»¯ liá»‡u sang cáº¥u trÃºc má»›i...");
 
         String oldUrl = "jdbc:sqlite:" + oldDbFile.getAbsolutePath();
         try (Connection oldConn = DriverManager.getConnection(oldUrl)) {
@@ -375,9 +413,9 @@ public class DatabaseManager {
                     );
                     count++;
                 }
-                PayBotMod.LOGGER.info("[PayBot] Đã chuyển " + count + " đơn bank từ database cũ.");
+                PayBotMod.LOGGER.info("[PayBot] ÄÃ£ chuyá»ƒn " + count + " Ä‘Æ¡n bank tá»« database cÅ©.");
             } catch (SQLException e) {
-                PayBotMod.LOGGER.warn("[PayBot] Không thể đọc bank_orders từ database cũ: " + e.getMessage());
+                PayBotMod.LOGGER.warn("[PayBot] KhÃ´ng thá»ƒ Ä‘á»c bank_orders tá»« database cÅ©: " + e.getMessage());
             }
 
             // 2. Card
@@ -400,9 +438,9 @@ public class DatabaseManager {
                     );
                     count++;
                 }
-                PayBotMod.LOGGER.info("[PayBot] Đã chuyển " + count + " đơn card từ database cũ.");
+                PayBotMod.LOGGER.info("[PayBot] ÄÃ£ chuyá»ƒn " + count + " Ä‘Æ¡n card tá»« database cÅ©.");
             } catch (SQLException e) {
-                PayBotMod.LOGGER.warn("[PayBot] Không thể đọc card_orders từ database cũ: " + e.getMessage());
+                PayBotMod.LOGGER.warn("[PayBot] KhÃ´ng thá»ƒ Ä‘á»c card_orders tá»« database cÅ©: " + e.getMessage());
             }
 
             // 3. Reward
@@ -423,36 +461,36 @@ public class DatabaseManager {
                     );
                     count++;
                 }
-                PayBotMod.LOGGER.info("[PayBot] Đã chuyển " + count + " offline rewards từ database cũ.");
+                PayBotMod.LOGGER.info("[PayBot] ÄÃ£ chuyá»ƒn " + count + " offline rewards tá»« database cÅ©.");
             } catch (SQLException e) {
-                PayBotMod.LOGGER.warn("[PayBot] Không thể đọc offline_rewards từ database cũ: " + e.getMessage());
+                PayBotMod.LOGGER.warn("[PayBot] KhÃ´ng thá»ƒ Ä‘á»c offline_rewards tá»« database cÅ©: " + e.getMessage());
             }
 
             oldConn.close();
 
             File migratedFile = new File(mod.getDataDir().toFile(), "paybot.db.migrated");
             if (oldDbFile.renameTo(migratedFile)) {
-                PayBotMod.LOGGER.info("[PayBot] Đã đổi tên database cũ thành paybot.db.migrated.");
+                PayBotMod.LOGGER.info("[PayBot] ÄÃ£ Ä‘á»•i tÃªn database cÅ© thÃ nh paybot.db.migrated.");
             } else {
-                PayBotMod.LOGGER.warn("[PayBot] Không thể đổi tên file paybot.db cũ. Hãy xoá/đổi tên thủ công.");
+                PayBotMod.LOGGER.warn("[PayBot] KhÃ´ng thá»ƒ Ä‘á»•i tÃªn file paybot.db cÅ©. HÃ£y xoÃ¡/Ä‘á»•i tÃªn thá»§ cÃ´ng.");
             }
 
         } catch (Exception e) {
-            PayBotMod.LOGGER.error("[PayBot] Lỗi trong quá trình migrate database cũ: " + e.getMessage(), e);
+            PayBotMod.LOGGER.error("[PayBot] Lá»—i trong quÃ¡ trÃ¬nh migrate database cÅ©: " + e.getMessage(), e);
         }
     }
 
     private void syncMySQLAndSQLite() {
         if (conn == null || bankConn == null || cardConn == null || rewardConn == null) return;
-        PayBotMod.LOGGER.info("[PayBot] Bắt đầu đồng bộ song phương dữ liệu giữa MySQL và SQLite local...");
+        PayBotMod.LOGGER.info("[PayBot] Báº¯t Ä‘áº§u Ä‘á»“ng bá»™ song phÆ°Æ¡ng dá»¯ liá»‡u giá»¯a MySQL vÃ  SQLite local...");
         
         try {
             syncBankOrders();
             syncCardOrders();
             syncOfflineRewards();
-            PayBotMod.LOGGER.info("[PayBot] Đồng bộ song phương dữ liệu hoàn tất!");
+            PayBotMod.LOGGER.info("[PayBot] Äá»“ng bá»™ song phÆ°Æ¡ng dá»¯ liá»‡u hoÃ n táº¥t!");
         } catch (Exception e) {
-            PayBotMod.LOGGER.warn("[PayBot] Lỗi khi đồng bộ song phương: " + e.getMessage());
+            PayBotMod.LOGGER.warn("[PayBot] Lá»—i khi Ä‘á»“ng bá»™ song phÆ°Æ¡ng: " + e.getMessage());
         }
     }
 
@@ -520,7 +558,7 @@ public class DatabaseManager {
             }
         }
         if (sqliteUpdated > 0 || mysqlUpdated > 0) {
-            PayBotMod.LOGGER.info("[PayBot] Đồng bộ Bank: Cập nhật SQLite local: " + sqliteUpdated + " đơn, MySQL: " + mysqlUpdated + " đơn.");
+            PayBotMod.LOGGER.info("[PayBot] Äá»“ng bá»™ Bank: Cáº­p nháº­t SQLite local: " + sqliteUpdated + " Ä‘Æ¡n, MySQL: " + mysqlUpdated + " Ä‘Æ¡n.");
         }
     }
 
@@ -624,7 +662,7 @@ public class DatabaseManager {
             }
         }
         if (sqliteUpdated > 0 || mysqlUpdated > 0) {
-            PayBotMod.LOGGER.info("[PayBot] Đồng bộ Card: Cập nhật SQLite local: " + sqliteUpdated + " đơn, MySQL: " + mysqlUpdated + " đơn.");
+            PayBotMod.LOGGER.info("[PayBot] Äá»“ng bá»™ Card: Cáº­p nháº­t SQLite local: " + sqliteUpdated + " Ä‘Æ¡n, MySQL: " + mysqlUpdated + " Ä‘Æ¡n.");
         }
     }
 
@@ -721,7 +759,7 @@ public class DatabaseManager {
             }
         }
         if (sqliteUpdated > 0 || mysqlUpdated > 0) {
-            PayBotMod.LOGGER.info("[PayBot] Đồng bộ Reward: Cập nhật SQLite local: " + sqliteUpdated + " rewards, MySQL: " + mysqlUpdated + " rewards.");
+            PayBotMod.LOGGER.info("[PayBot] Äá»“ng bá»™ Reward: Cáº­p nháº­t SQLite local: " + sqliteUpdated + " rewards, MySQL: " + mysqlUpdated + " rewards.");
         }
     }
 
@@ -762,7 +800,7 @@ public class DatabaseManager {
         File yaml = new File(mod.getDataDir().toFile(), "bank-orders.yml");
         if (!yaml.exists()) return;
 
-        PayBotMod.LOGGER.info("[PayBot] Migration: đang chuyển bank-orders.yml sang database...");
+        PayBotMod.LOGGER.info("[PayBot] Migration: Ä‘ang chuyá»ƒn bank-orders.yml sang database...");
         int count = 0;
         try {
             Map<String, Object> data = new HashMap<>();
@@ -792,9 +830,9 @@ public class DatabaseManager {
                 }
             }
             yaml.renameTo(new File(mod.getDataDir().toFile(), "bank-orders.yml.migrated"));
-            PayBotMod.LOGGER.info("[PayBot] Migration bank-orders: " + count + " đơn đã chuyển sang DB.");
+            PayBotMod.LOGGER.info("[PayBot] Migration bank-orders: " + count + " Ä‘Æ¡n Ä‘Ã£ chuyá»ƒn sang DB.");
         } catch (Exception e) {
-            PayBotMod.LOGGER.error("[PayBot] Migration bank-orders lỗi: " + e.getMessage(), e);
+            PayBotMod.LOGGER.error("[PayBot] Migration bank-orders lá»—i: " + e.getMessage(), e);
         }
     }
 
@@ -803,7 +841,7 @@ public class DatabaseManager {
         File yaml = new File(mod.getDataDir().toFile(), "card-orders.yml");
         if (!yaml.exists()) return;
 
-        PayBotMod.LOGGER.info("[PayBot] Migration: đang chuyển card-orders.yml sang database...");
+        PayBotMod.LOGGER.info("[PayBot] Migration: Ä‘ang chuyá»ƒn card-orders.yml sang database...");
         int count = 0;
         try {
             Map<String, Object> data = new HashMap<>();
@@ -843,9 +881,9 @@ public class DatabaseManager {
                 }
             }
             yaml.renameTo(new File(mod.getDataDir().toFile(), "card-orders.yml.migrated"));
-            PayBotMod.LOGGER.info("[PayBot] Migration card-orders: " + count + " đơn đã chuyển sang DB.");
+            PayBotMod.LOGGER.info("[PayBot] Migration card-orders: " + count + " Ä‘Æ¡n Ä‘Ã£ chuyá»ƒn sang DB.");
         } catch (Exception e) {
-            PayBotMod.LOGGER.error("[PayBot] Migration card-orders lỗi: " + e.getMessage(), e);
+            PayBotMod.LOGGER.error("[PayBot] Migration card-orders lá»—i: " + e.getMessage(), e);
         }
     }
 
@@ -854,7 +892,7 @@ public class DatabaseManager {
         File yaml = new File(mod.getDataDir().toFile(), "offline-rewards.yml");
         if (!yaml.exists()) return;
 
-        PayBotMod.LOGGER.info("[PayBot] Migration: đang chuyển offline-rewards.yml sang database...");
+        PayBotMod.LOGGER.info("[PayBot] Migration: Ä‘ang chuyá»ƒn offline-rewards.yml sang database...");
         int count = 0;
         try {
             Map<String, Object> data = new HashMap<>();
@@ -896,9 +934,9 @@ public class DatabaseManager {
                 }
             }
             yaml.renameTo(new File(mod.getDataDir().toFile(), "offline-rewards.yml.migrated"));
-            PayBotMod.LOGGER.info("[PayBot] Migration offline-rewards: " + count + " reward đã chuyển sang DB.");
+            PayBotMod.LOGGER.info("[PayBot] Migration offline-rewards: " + count + " reward Ä‘Ã£ chuyá»ƒn sang DB.");
         } catch (Exception e) {
-            PayBotMod.LOGGER.error("[PayBot] Migration offline-rewards lỗi: " + e.getMessage(), e);
+            PayBotMod.LOGGER.error("[PayBot] Migration offline-rewards lá»—i: " + e.getMessage(), e);
         }
     }
 
@@ -907,7 +945,7 @@ public class DatabaseManager {
         return v != null ? String.valueOf(v) : def;
     }
 
-    // ─── Bank Orders CRUD ─────────────────────────────────────────────────────
+    // â”€â”€â”€ Bank Orders CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public synchronized void upsertBankOrder(String invoiceId, String playerName,
                                               int amount, String status,
@@ -925,7 +963,7 @@ public class DatabaseManager {
             ps.setInt(6, registeredWithBot);
             ps.executeUpdate();
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " upsertBankOrder lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " upsertBankOrder lá»—i: " + e.getMessage());
         }
     }
 
@@ -938,7 +976,7 @@ public class DatabaseManager {
             ps.setString(2, invoiceId);
             ps.executeUpdate();
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " updateBankStatus lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " updateBankStatus lá»—i: " + e.getMessage());
         }
     }
 
@@ -951,7 +989,7 @@ public class DatabaseManager {
             ps.setString(2, invoiceId);
             ps.executeUpdate();
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " markBankRegistered lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " markBankRegistered lá»—i: " + e.getMessage());
         }
     }
 
@@ -964,12 +1002,12 @@ public class DatabaseManager {
              ResultSet rs = st.executeQuery("SELECT * FROM bank_orders ORDER BY created_at ASC")) {
             return parseBankOrders(rs);
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " getAllBankOrders lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " getAllBankOrders lá»—i: " + e.getMessage());
         }
         return list;
     }
 
-    /** Kiểm tra xem invoice_id đã từng tồn tại trong CSDL chưa (dùng cho chống trùng mã nạp). */
+    /** Kiá»ƒm tra xem invoice_id Ä‘Ã£ tá»«ng tá»“n táº¡i trong CSDL chÆ°a (dÃ¹ng cho chá»‘ng trÃ¹ng mÃ£ náº¡p). */
     public synchronized boolean hasBankOrder(String invoiceId) {
         if (invoiceId == null || invoiceId.isEmpty()) return false;
         Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : bankConn;
@@ -980,11 +1018,11 @@ public class DatabaseManager {
                 return rs.next();
             }
         } catch (SQLException e) {
-            // v5.5.5 Part 53 [BUG lặp lại y hệt plugin/ — xem LOG.md Part 52 mục 52.4]: fail-open
-            // (return false = "chưa tồn tại") sai hướng cho hàm chống trùng — đổi fail-closed.
-            // Caller (TransferContentGenerator) xác nhận có vòng lặp thử lại 100 lần + fallback
-            // timestamp, đổi hướng này an toàn.
-            PayBotMod.LOGGER.warn("[PayBot] hasBankOrder({}) lỗi SQL khi kiểm tra trùng mã — coi như CÓ THỂ trùng để an toàn: {}", invoiceId, e.getMessage(), e);
+            // v5.5.5 Part 53 [BUG láº·p láº¡i y há»‡t plugin/ â€” xem LOG.md Part 52 má»¥c 52.4]: fail-open
+            // (return false = "chÆ°a tá»“n táº¡i") sai hÆ°á»›ng cho hÃ m chá»‘ng trÃ¹ng â€” Ä‘á»•i fail-closed.
+            // Caller (TransferContentGenerator) xÃ¡c nháº­n cÃ³ vÃ²ng láº·p thá»­ láº¡i 100 láº§n + fallback
+            // timestamp, Ä‘á»•i hÆ°á»›ng nÃ y an toÃ n.
+            PayBotMod.LOGGER.warn("[PayBot] hasBankOrder({}) lá»—i SQL khi kiá»ƒm tra trÃ¹ng mÃ£ â€” coi nhÆ° CÃ“ THá»‚ trÃ¹ng Ä‘á»ƒ an toÃ n: {}", invoiceId, e.getMessage(), e);
             return true;
         }
     }
@@ -1016,12 +1054,12 @@ public class DatabaseManager {
             ps.setLong(terminalStatuses.size() + 1, cutoffMs);
             return ps.executeUpdate();
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " deleteBankOrdersBefore lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " deleteBankOrdersBefore lá»—i: " + e.getMessage());
         }
         return 0;
     }
 
-    // ─── Card Orders CRUD ─────────────────────────────────────────────────────
+    // â”€â”€â”€ Card Orders CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public synchronized void upsertCardOrder(String requestId, String playerName,
                                               String telco, int denom,
@@ -1048,7 +1086,7 @@ public class DatabaseManager {
             ps.setInt(11, connectionError);
             ps.executeUpdate();
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " upsertCardOrder lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " upsertCardOrder lá»—i: " + e.getMessage());
         }
     }
 
@@ -1062,7 +1100,7 @@ public class DatabaseManager {
             ps.setString(3, requestId);
             ps.executeUpdate();
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " updateCardStatus lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " updateCardStatus lá»—i: " + e.getMessage());
         }
     }
 
@@ -1075,7 +1113,7 @@ public class DatabaseManager {
             ps.setString(2, requestId);
             ps.executeUpdate();
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " updateCardConnectionError lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " updateCardConnectionError lá»—i: " + e.getMessage());
         }
     }
 
@@ -1087,7 +1125,7 @@ public class DatabaseManager {
             ps.setString(1, requestId);
             ps.executeUpdate();
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " incrementCardSubmitAttempts lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " incrementCardSubmitAttempts lá»—i: " + e.getMessage());
         }
     }
 
@@ -1100,7 +1138,7 @@ public class DatabaseManager {
              ResultSet rs = st.executeQuery("SELECT * FROM card_orders ORDER BY created_at ASC")) {
             return parseCardOrders(rs);
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " getAllCardOrders lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " getAllCardOrders lá»—i: " + e.getMessage());
         }
         return list;
     }
@@ -1137,12 +1175,12 @@ public class DatabaseManager {
             ps.setLong(terminalStatuses.size() + 1, cutoffMs);
             return ps.executeUpdate();
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " deleteCardOrdersBefore lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " deleteCardOrdersBefore lá»—i: " + e.getMessage());
         }
         return 0;
     }
 
-    // ─── Offline Rewards CRUD ─────────────────────────────────────────────────
+    // â”€â”€â”€ Offline Rewards CRUD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public synchronized void insertOfflineReward(String rewardId, String playerName,
                                                   String rawCmd, String rewardAmount,
@@ -1167,7 +1205,7 @@ public class DatabaseManager {
             ps.setLong(9, createdAt);
             ps.executeUpdate();
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " insertOfflineReward lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " insertOfflineReward lá»—i: " + e.getMessage());
         }
     }
 
@@ -1183,7 +1221,7 @@ public class DatabaseManager {
                 return parseOfflineRewards(rs);
             }
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " getOfflineRewardsForPlayer lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " getOfflineRewardsForPlayer lá»—i: " + e.getMessage());
         }
         return list;
     }
@@ -1214,7 +1252,7 @@ public class DatabaseManager {
             ps.setString(1, rewardId);
             ps.executeUpdate();
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " deleteOfflineReward lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " deleteOfflineReward lá»—i: " + e.getMessage());
         }
     }
 
@@ -1227,7 +1265,7 @@ public class DatabaseManager {
              ResultSet rs = st.executeQuery("SELECT DISTINCT player_name FROM offline_rewards")) {
             while (rs.next()) set.add(rs.getString("player_name"));
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " getPlayersWithPendingRewards lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " getPlayersWithPendingRewards lá»—i: " + e.getMessage());
         }
         return set;
     }
@@ -1241,8 +1279,121 @@ public class DatabaseManager {
             ps.setLong(1, cutoffMs);
             return ps.executeUpdate();
         } catch (SQLException e) {
-            PayBotMod.LOGGER.warn(tag + " deleteExpiredOfflineRewards lỗi: " + e.getMessage());
+            PayBotMod.LOGGER.warn(tag + " deleteExpiredOfflineRewards lá»—i: " + e.getMessage());
         }
         return 0;
+    }
+
+    // â”€â”€â”€ v5.5.8 Part 122: Idempotency Ledger (Reward Deliveries) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    public synchronized boolean hasRewardDelivery(String paymentType, String paymentReference, String rewardHash) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : rewardConn;
+        if (c == null) return false;
+        String sql = "SELECT 1 FROM reward_deliveries WHERE payment_type=? AND payment_reference=? AND reward_hash=? LIMIT 1";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, paymentType);
+            ps.setString(2, paymentReference);
+            ps.setString(3, rewardHash);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] hasRewardDelivery error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public synchronized boolean recordRewardDelivery(String deliveryId, String paymentType, String paymentReference,
+                                                     String playerName, String rewardHash, String status) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : rewardConn;
+        if (c == null) return false;
+        long now = System.currentTimeMillis();
+        String sql = useMySQL
+                ? "INSERT INTO reward_deliveries (delivery_id, payment_type, payment_reference, player_name, reward_hash, status, attempt_count, created_at, updated_at) VALUES (?,?,?,?,?,?,1,?,?) ON DUPLICATE KEY UPDATE updated_at=VALUES(updated_at)"
+                : "INSERT OR IGNORE INTO reward_deliveries (delivery_id, payment_type, payment_reference, player_name, reward_hash, status, attempt_count, created_at, updated_at) VALUES (?,?,?,?,?,?,1,?,?)";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, deliveryId);
+            ps.setString(2, paymentType);
+            ps.setString(3, paymentReference);
+            ps.setString(4, playerName);
+            ps.setString(5, rewardHash);
+            ps.setString(6, status);
+            ps.setLong(7, now);
+            ps.setLong(8, now);
+            int affected = ps.executeUpdate();
+            return affected > 0;
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] recordRewardDelivery error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // â”€â”€â”€ v5.5.8 Part 122: Atomic Order Status Compare-And-Set â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    public synchronized boolean claimBankOrder(String invoiceId, String expectedStatus, String nextStatus) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : bankConn;
+        if (c == null) return false;
+        String sql = "UPDATE bank_orders SET status=? WHERE invoice_id=? AND status=?";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, nextStatus);
+            ps.setString(2, invoiceId);
+            ps.setString(3, expectedStatus);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] claimBankOrder error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public synchronized boolean claimCardOrder(String requestId, String expectedStatus, String nextStatus) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : cardConn;
+        if (c == null) return false;
+        String sql = "UPDATE card_orders SET status=? WHERE request_id=? AND status=?";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, nextStatus);
+            ps.setString(2, requestId);
+            ps.setString(3, expectedStatus);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] claimCardOrder error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public synchronized boolean claimOfflineReward(String rewardId) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : rewardConn;
+        if (c == null) return false;
+        String sql = "UPDATE offline_rewards SET status='PROCESSING' WHERE reward_id=? AND (status='PENDING' OR status IS NULL)";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, rewardId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] claimOfflineReward error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public synchronized void failOfflineReward(String rewardId) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : rewardConn;
+        if (c == null) return;
+        String sql = "UPDATE offline_rewards SET status='PENDING' WHERE reward_id=?";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, rewardId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] failOfflineReward error: " + e.getMessage());
+        }
+    }
+
+    public synchronized int revertProcessingOfflineRewards() {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : rewardConn;
+        if (c == null) return 0;
+        String sql = "UPDATE offline_rewards SET status='PENDING' WHERE status='PROCESSING'";
+        try (Statement st = c.createStatement()) {
+            return st.executeUpdate(sql);
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] revertProcessingOfflineRewards error: " + e.getMessage());
+            return 0;
+        }
     }
 }

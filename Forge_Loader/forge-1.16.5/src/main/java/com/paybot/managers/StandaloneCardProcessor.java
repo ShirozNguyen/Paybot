@@ -1,4 +1,4 @@
-// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.5
+﻿// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.5
 package com.paybot.managers;
 
 import com.google.gson.*;
@@ -213,19 +213,45 @@ public class StandaloneCardProcessor {
             List<String> rewardCmds = mod.resolveRewardCmds(order.denom, "card");
             if (!rewardCmds.isEmpty()) {
                 String rewardAmt = mod.computeRewardAmt(order.denom, "card");
-                // Update APPROVED trước khi dispatch (tránh double-approve nếu ai đó gọi /approve ngay)
-                mod.getLocalOrderManager().updateCardStatus(requestId, LocalOrderManager.CARD_APPROVED, message);
+                mod.getLocalOrderManager().updateCardStatus(requestId, LocalOrderManager.CARD_CONFIRMED, message);
+
+                if (!mod.getLocalOrderManager().claimCardOrderForReward(requestId)) {
+                    PayBotMod.LOGGER.warn("[CardProcessor] Card order #" + requestId + " already claimed.");
+                    return;
+                }
+
+                String rewardHash = RewardDeliveryLedger.computeRewardHash(rewardCmds, rewardAmt);
+                if (mod.getRewardDeliveryLedger() != null &&
+                        !mod.getRewardDeliveryLedger().recordDeliveryAttempt("card", requestId, rewardHash)) {
+                    PayBotMod.LOGGER.warn("[CardProcessor] Reward already delivered for card #" + requestId);
+                    return;
+                }
+
                 mod.runOnMainThread(() -> {
-                    boolean wasOnline = mod.dispatchOrQueueReward(
-                            requestId, playerName, rewardCmds, rewardAmt,
-                            String.valueOf(order.denom), "card");
-                    mod.notifyAdmins("§a[PayBot] §e" + playerName + " §fnạp thẻ §a" + order.telco
-                            + " §a" + PayBotMod.formatVnd(order.denom) + "VND §f— thưởng tự giao"
-                            + (wasOnline ? "" : " §7(offline → nhận khi join lại)") + "§f.");
-                    // v5.1.0: nếu bot-connected → notify Discord
-                    if (!mod.isStandaloneMode()) {
-                        mod.runAsync(() -> mod.getBotHttpClient().notifyCardResult(
-                                requestId, playerName, order.telco, order.denom, true, ""));
+                    try {
+                        boolean wasOnline = mod.dispatchOrQueueReward(
+                                requestId, playerName, rewardCmds, rewardAmt,
+                                String.valueOf(order.denom), "card");
+
+                        if (mod.getRewardDeliveryLedger() != null) {
+                            mod.getRewardDeliveryLedger().markDeliverySuccess("card", requestId, rewardHash);
+                        }
+                        mod.getLocalOrderManager().updateCardStatus(requestId, LocalOrderManager.CARD_APPROVED, message);
+
+                        mod.notifyAdmins("§a[PayBot] §e" + playerName + " §fnạp thẻ §a" + order.telco
+                                + " §a" + PayBotMod.formatVnd(order.denom) + "VND §f— thưởng tự giao"
+                                + (wasOnline ? "" : " §7(offline → nhận khi join lại)") + "§f.");
+                        // v5.1.0: nếu bot-connected → notify Discord
+                        if (!mod.isStandaloneMode()) {
+                            mod.runAsync(() -> mod.getBotHttpClient().notifyCardResult(
+                                    requestId, playerName, order.telco, order.denom, true, ""));
+                        }
+                    } catch (Exception e) {
+                        PayBotMod.LOGGER.error("[CardProcessor] Failed to dispatch reward for card #" + requestId, e);
+                        if (mod.getRewardDeliveryLedger() != null) {
+                            mod.getRewardDeliveryLedger().markDeliveryFailure("card", requestId, rewardHash, e.getMessage());
+                        }
+                        mod.getLocalOrderManager().updateCardStatus(requestId, LocalOrderManager.CARD_REWARD_FAILED, message);
                     }
                 });
             } else {

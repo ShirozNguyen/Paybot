@@ -70,6 +70,9 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
     private UpdateCheckManager      updateCheckManager;
     // v5.1.0 — SQLite database (thế YAML cho orders/rewards)
     private DatabaseManager         databaseManager;
+    // v5.5.8 Part 122 — Idempotency Ledger & Recovery Worker
+    private RewardDeliveryLedger    rewardDeliveryLedger;
+    private PaymentRecoveryWorker   paymentRecoveryWorker;
 
     /**
      * v5.0.0 — true nếu server hiện tại đang bị owner chặn (BanGuard, xem /disablepaybot).
@@ -128,6 +131,8 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
         // LocalOrderManager và OfflineRewardManager đều đọc DB khi construct.
         databaseManager     = new DatabaseManager(this);
         databaseManager.init();
+        rewardDeliveryLedger = new RewardDeliveryLedger(this);
+        paymentRecoveryWorker = new PaymentRecoveryWorker(this);
 
         // ── v5.5.5 [DEAD CODE — cơ chế ban qua BanGuard đã TẮT, KHÔNG xoá] ──────
         // TRƯỚC ĐÂY: bannedByOwner = BanGuard.isCurrentServerBanned() — đọc file marker
@@ -356,6 +361,14 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
      *                        (connectionError=true), phân biệt với thẻ sai thật sự.
      */
     private void scheduleStartupRecovery() {
+        // v5.5.8 Part 122: Khởi động PaymentRecoveryWorker quét và phục hồi giao dịch kẹt
+        SchedulerUtils.runAsyncLater(this, () -> {
+            if (paymentRecoveryWorker != null) {
+                getLogger().info("[PayBot] Startup recovery: bắt đầu phục hồi giao dịch và offline rewards...");
+                paymentRecoveryWorker.runRecovery();
+            }
+        }, 60L);
+
         // Bank recovery — 5 giây sau khi plugin enable (100 ticks)
         SchedulerUtils.runAsyncLater(this, () -> {
             if (isStandaloneMode()) {
@@ -823,12 +836,23 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
                 continue;
             }
 
-            // v5.0.2 FIX: Auto-dispatch reward — không cần admin duyệt thủ công.
+            // v5.5.8 Part 122: Auto-dispatch reward với State Machine + Idempotency Ledger
             List<String> rewardCmds = RewardDispatcher.resolveRewardCmds(this, matched.amount, "bank");
             final LocalOrderManager.BankOrder fm = matched;
             if (!rewardCmds.isEmpty()) {
                 String rewardAmt = RewardDispatcher.computeRewardAmt(this, matched.amount, "bank");
-                localOrderManager.updateBankStatus(fm.invoiceId, LocalOrderManager.BANK_APPROVED);
+                String rewardHash = RewardDeliveryLedger.computeRewardHash(rewardCmds, rewardAmt);
+
+                // Idempotency check: Tránh duplicate reward
+                if (rewardDeliveryLedger != null && rewardDeliveryLedger.hasDelivered("bank", fm.invoiceId, rewardHash)) {
+                    localOrderManager.updateBankStatus(fm.invoiceId, LocalOrderManager.BANK_APPROVED);
+                    continue;
+                }
+
+                // Cập nhật PAYMENT_CONFIRMED và claim atomic REWARD_PROCESSING
+                localOrderManager.updateBankStatus(fm.invoiceId, LocalOrderManager.BANK_CONFIRMED);
+                localOrderManager.claimBankOrderForReward(fm.invoiceId);
+
                 // v5.0.0 (Phase B): báo bot relay Discord nếu connect mode
                 if (!isStandaloneMode()) {
                     SchedulerUtils.runAsync(this,
@@ -837,6 +861,10 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
                 SchedulerUtils.runSync(this, () -> {
                     boolean wasOnline = RewardDispatcher.dispatchOrQueue(this, fm.invoiceId, fm.playerName,
                             rewardCmds, rewardAmt, String.valueOf(fm.amount), "bank", fm.invoiceId, "");
+                    localOrderManager.updateBankStatus(fm.invoiceId, LocalOrderManager.BANK_APPROVED);
+                    if (rewardDeliveryLedger != null) {
+                        rewardDeliveryLedger.recordDelivery("bank", fm.invoiceId, fm.playerName, rewardHash, "DONE");
+                    }
                     NotificationManager.notifyAdmins(this, "bank-payment-received",
                             "§a[PayBot] §fĐơn §b#" + fm.invoiceId + " §fcủa §e" + fm.playerName
                             + " §fthanh toán §f" + formatVnd(fm.amount) + " VND — §athưởng đã tự giao"
@@ -894,23 +922,32 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
             return;
         }
 
-        // v5.0.0: method này được gọi từ /RewardClaim (RewardClaimCommand) VÀ từ
-        // processOfflineRewards()/auto-poll (tự động giao lúc join hoặc auto-poll phát
-        // hiện online) — cả 2 nguồn đều đảm bảo đang ở main thread trước khi gọi tới đây
-        // (lệnh Bukkit vốn luôn ở main thread; processOfflineRewards() tự bọc runTask())
-        // → an toàn bỏ Bukkit.getScheduler().runTask() bọc thừa ở đây, remove khỏi storage
-        // diễn ra NGAY, tránh giao trùng nếu 2 nguồn gọi gần như đồng thời.
-        java.util.List<String> cmdList = RewardDispatcher.splitCmds(rawCmd);
-        // Player CHẮC CHẮN online tại đây (đã check ở caller) → deliverNow sẽ bắn pháo
-        // hoa/sound/thông báo (đơn đã được duyệt từ trước lúc player offline, giờ là lúc
-        // giao thưởng — player đang ở đây để thấy nên vẫn bắn hiệu ứng).
-        RewardDispatcher.deliverNow(this, player, cmdList, rewardAmt, denomVnd, type, invoiceId, true);
-        offlineRewardManager.removeReward(playerName, rewardId);
-        // v5.1.0: chỉ confirm với bot nếu đang kết nối
-        if (!isStandaloneMode()) {
-            SchedulerUtils.runAsync(this,
-                    () -> botHttpClient.confirmOfflineReward(rewardId));
+        // v5.5.8 Part 122: Claim offline reward atomic (PENDING -> PROCESSING)
+        if (!offlineRewardManager.claimReward(rewardId)) {
+            return; // Đã có luồng khác claim hoặc đang xử lý
         }
+
+        try {
+            java.util.List<String> cmdList = RewardDispatcher.splitCmds(rawCmd);
+            RewardDispatcher.deliverNow(this, player, cmdList, rewardAmt, denomVnd, type, invoiceId, true);
+            offlineRewardManager.completeReward(playerName, rewardId);
+            // v5.1.0: chỉ confirm với bot nếu đang kết nối
+            if (!isStandaloneMode()) {
+                SchedulerUtils.runAsync(this,
+                        () -> botHttpClient.confirmOfflineReward(rewardId));
+            }
+        } catch (Exception e) {
+            getLogger().warning("[OfflineRewards] Lỗi giao reward cho " + playerName + ": " + e.getMessage());
+            offlineRewardManager.failReward(playerName, rewardId);
+        }
+    }
+
+    public RewardDeliveryLedger getRewardDeliveryLedger() {
+        return rewardDeliveryLedger;
+    }
+
+    public PaymentRecoveryWorker getPaymentRecoveryWorker() {
+        return paymentRecoveryWorker;
     }
 
     private void processReward(JsonObject reward) {

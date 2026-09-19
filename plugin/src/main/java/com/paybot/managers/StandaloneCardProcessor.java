@@ -315,12 +315,26 @@ public class StandaloneCardProcessor {
             java.util.List<String> rewardCmds = RewardDispatcher.resolveRewardCmds(plugin, denom, "card");
             if (!rewardCmds.isEmpty()) {
                 String rewardAmt = RewardDispatcher.computeRewardAmt(plugin, denom, "card");
-                // Cập nhật trạng thái APPROVED ngay (trước dispatch để tránh approve lại nếu /approve được gọi)
-                plugin.getLocalOrderManager().updateCardStatus(requestId, LocalOrderManager.CARD_APPROVED, message);
+                String rewardHash = RewardDeliveryLedger.computeRewardHash(rewardCmds, rewardAmt);
+
+                // v5.5.8 Part 122: Idempotency check: Tránh duplicate reward
+                if (plugin.getRewardDeliveryLedger() != null && plugin.getRewardDeliveryLedger().hasDelivered("card", requestId, rewardHash)) {
+                    plugin.getLocalOrderManager().updateCardStatus(requestId, LocalOrderManager.CARD_APPROVED, message);
+                    return;
+                }
+
+                // Cập nhật PAYMENT_CONFIRMED và claim atomic REWARD_PROCESSING
+                plugin.getLocalOrderManager().updateCardStatus(requestId, LocalOrderManager.CARD_CONFIRMED, message);
+                plugin.getLocalOrderManager().claimCardOrderForReward(requestId);
+
                 SchedulerUtils.runSync(plugin, () -> {
                     boolean wasOnline = RewardDispatcher.dispatchOrQueue(
                             plugin, requestId, playerName, rewardCmds, rewardAmt,
                             String.valueOf(denom), "card", null, "");
+                    plugin.getLocalOrderManager().updateCardStatus(requestId, LocalOrderManager.CARD_APPROVED, message);
+                    if (plugin.getRewardDeliveryLedger() != null) {
+                        plugin.getRewardDeliveryLedger().recordDelivery("card", requestId, playerName, rewardHash, "DONE");
+                    }
                     String suffix = wasOnline ? "§7(đã giao thưởng)" : "§7(player offline — sẽ nhận khi vào lại)";
                     notifyOps("§a[PayBot] §fThẻ §e" + playerName + " §f" + denomStr
                             + " §athành công ✓ — " + suffix + "\n§7ID: §f" + requestId);

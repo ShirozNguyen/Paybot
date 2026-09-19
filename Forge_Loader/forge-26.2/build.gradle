@@ -1,4 +1,4 @@
-// v5.5.5 Part 51: forge-26.2 — nhân bản từ forge-26.1 (Part 50), CÙNG MỨC CẢNH BÁO ĐỘ TIN CẬY
+﻿// v5.5.5 Part 51: forge-26.2 — nhân bản từ forge-26.1 (Part 50), CÙNG MỨC CẢNH BÁO ĐỘ TIN CẬY
 // THẤP về ForgeGradle 7.0 dưới đây — chưa có gì thay đổi giữa lúc viết Part 50 và Part 51 (chỉ
 // vài giờ), rủi ro y hệt.
 //
@@ -37,7 +37,7 @@ plugins {
 // cùng thư mục) — KHÔNG còn nằm trong allprojects{} của root build.gradle nữa, nên PHẢI tự khai
 // lại version/group/repositories y hệt logic root (trước đây thừa hưởng tự động qua allprojects{}
 // — xem LOG.md Part 65). Khối java.toolchain{} bên dưới GIỮ NGUYÊN từ Part 51.
-version = '5.5.7'
+version = '5.5.8'
 group = 'com.paybot'
 
 repositories {

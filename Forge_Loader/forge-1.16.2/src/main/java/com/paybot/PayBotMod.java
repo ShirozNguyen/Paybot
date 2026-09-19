@@ -1,4 +1,4 @@
-// v5.5.5 Part 89: Fix player.inventory va player.sendMessage(..., ChatType.SYSTEM, NIL_UUID) tren Forge 1.16.x
+﻿// v5.5.5 Part 89: Fix player.inventory va player.sendMessage(..., ChatType.SYSTEM, NIL_UUID) tren Forge 1.16.x
 // v5.5.5 Part 85: Fix 1.16 chat sendMessage & TextComponent in forge-1.16.2
 // v5.5.5 Part 84: Use FMLServerStartedEvent/FMLServerStoppingEvent for Forge < 1.18 in forge-1.16.2
 package com.paybot;
@@ -61,6 +61,8 @@ public class PayBotMod {
     private QRMapManager            qrMapManager;
     private UpdateCheckManager      updateCheckManager;
     private PlaceholderManager      placeholderManager;
+    private RewardDeliveryLedger    rewardDeliveryLedger;
+    private PaymentRecoveryWorker   paymentRecoveryWorker;
 
     private ScheduledExecutorService scheduler;
 
@@ -240,12 +242,15 @@ public class PayBotMod {
         cardManager             = new CardManager();
         databaseManager         = new DatabaseManager(this);
         databaseManager.init();
+        rewardDeliveryLedger    = new RewardDeliveryLedger(this);
         localOrderManager       = new LocalOrderManager(this);
         offlineRewardManager    = new OfflineRewardManager(this);
         ownerSessionManager     = new OwnerSessionManager(this);
         setupManager            = new SetupManager(this);
         standaloneCardProcessor = new StandaloneCardProcessor(this);
         standaloneBankPoller    = new StandaloneBankPoller(this);
+        paymentRecoveryWorker   = new PaymentRecoveryWorker(this);
+        paymentRecoveryWorker.start();
         qrMapManager            = new QRMapManager(this);
         placeholderManager      = new PlaceholderManager(this);
         updateCheckManager      = new UpdateCheckManager(this);
@@ -284,6 +289,7 @@ public class PayBotMod {
 
     private void onServerStop() {
         LOGGER.info("[PayBot] Đang dừng…");
+        if (paymentRecoveryWorker != null) paymentRecoveryWorker.stop();
         if (scheduler        != null) scheduler.shutdownNow();
         if (pluginHttpServer != null) pluginHttpServer.stop();
         if (databaseManager  != null) databaseManager.close();
@@ -722,24 +728,43 @@ public class PayBotMod {
             try { amt = Integer.parseInt(amtStr); } catch (Exception ignored) {}
             final int finalAmt = amt;
 
-            // v5.0.0 (fix): "claim" (xoá khỏi storage) TRƯỚC, chỉ thực thi lệnh reward
-            // NẾU thực sự claim được — removeReward() giờ synchronized + trả boolean,
-            // đảm bảo atomic dù processOfflineRewards() được gọi từ nhiều nguồn gần như
-            // đồng thời (lúc join VÀ lúc auto-poll 30s — xem startAutoRewardPoll()).
-            // Claim ở ĐÂY (thread gọi method này, có thể không phải main thread) — an
-            // toàn vì offlineRewardManager hoàn toàn không đụng Bukkit/Fabric API.
-            boolean claimed = offlineRewardManager.removeReward(player.getName().getString(), rewardId);
-            if (!claimed) continue; // nguồn khác đã giao rồi — bỏ qua, không giao trùng
+            // Atomic CAS claim: Đánh dấu PROCESSING trước, KHÔNG xoá trước khi giao
+            boolean claimed = offlineRewardManager.claimReward(rewardId);
+            if (!claimed) continue; // nguồn khác đã claim — bỏ qua
+
+            // Idempotency ledger check
+            String rewardHash = RewardDeliveryLedger.computeRewardHash(List.of(rawCmd), amtStr);
+            if (rewardDeliveryLedger != null &&
+                    !rewardDeliveryLedger.recordDeliveryAttempt("offline", rewardId, rewardHash)) {
+                LOGGER.warn("[PayBot] Offline reward #" + rewardId + " already recorded in ledger.");
+                continue;
+            }
 
             server.execute(() -> {
                 ServerPlayer p = server.getPlayerList().getPlayer(player.getUUID());
-                if (p == null) return;
-                // executeReward() đã tự trigger effects nếu amount > 0
-                executeReward(p, rawCmd, rewardId, true, finalAmt);
+                if (p == null) {
+                    offlineRewardManager.failReward(player.getName().getString(), rewardId);
+                    return;
+                }
 
-                if (isNotifEnabled("reward-queued-offline") && logFilter.allow("reward-queued-offline"))
-                    LOGGER.info("[PayBot] Offline reward đã giao cho " + p.getName().getString()
-                            + " — amount=" + finalAmt);
+                try {
+                    // executeReward() đã tự trigger effects nếu amount > 0
+                    executeReward(p, rawCmd, rewardId, true, finalAmt);
+                    if (rewardDeliveryLedger != null) {
+                        rewardDeliveryLedger.markDeliverySuccess("offline", rewardId, rewardHash);
+                    }
+                    offlineRewardManager.completeReward(player.getName().getString(), rewardId);
+
+                    if (isNotifEnabled("reward-queued-offline") && logFilter.allow("reward-queued-offline"))
+                        LOGGER.info("[PayBot] Offline reward đã giao cho " + p.getName().getString()
+                                + " — amount=" + finalAmt);
+                } catch (Exception e) {
+                    LOGGER.error("[PayBot] Lỗi thực thi offline reward #" + rewardId, e);
+                    if (rewardDeliveryLedger != null) {
+                        rewardDeliveryLedger.markDeliveryFailure("offline", rewardId, rewardHash, e.getMessage());
+                    }
+                    offlineRewardManager.failReward(player.getName().getString(), rewardId);
+                }
             });
         }
     }
@@ -1007,4 +1032,6 @@ public class PayBotMod {
     public PluginHttpServer              getPluginHttpServer()        { return pluginHttpServer; }
     public ScheduledExecutorService      getScheduler()               { return scheduler; }
     public UpdateCheckManager            getUpdateCheckManager()      { return updateCheckManager; }
+    public RewardDeliveryLedger          getRewardDeliveryLedger()    { return rewardDeliveryLedger; }
+    public PaymentRecoveryWorker         getPaymentRecoveryWorker()   { return paymentRecoveryWorker; }
 }

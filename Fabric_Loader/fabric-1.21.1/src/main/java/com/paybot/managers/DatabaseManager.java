@@ -292,6 +292,28 @@ public class DatabaseManager {
                     ")");
             try { st.execute("CREATE INDEX idx_reward_player ON offline_rewards(player_name)"); } catch (SQLException ignored) {}
         }
+
+        // v5.5.8 Part 122: Thêm cột status vào offline_rewards nếu chưa có
+        try (Statement st = rewardConn.createStatement()) {
+            st.execute("ALTER TABLE offline_rewards ADD COLUMN status VARCHAR(32) NOT NULL DEFAULT 'PENDING'");
+        } catch (SQLException ignored) {}
+
+        // v5.5.8 Part 122: Tạo bảng reward_deliveries trên rewardConn (Idempotency Ledger)
+        try (Statement st = rewardConn.createStatement()) {
+            st.execute("CREATE TABLE IF NOT EXISTS reward_deliveries (" +
+                    "delivery_id VARCHAR(128) PRIMARY KEY, " +
+                    "payment_type VARCHAR(32) NOT NULL, " +
+                    "payment_reference VARCHAR(128) NOT NULL, " +
+                    "player_name VARCHAR(128) NOT NULL, " +
+                    "reward_hash VARCHAR(128) NOT NULL, " +
+                    "status VARCHAR(32) NOT NULL DEFAULT 'DONE', " +
+                    "attempt_count INT DEFAULT 1, " +
+                    "created_at BIGINT NOT NULL, " +
+                    "updated_at BIGINT NOT NULL, " +
+                    "UNIQUE(payment_type, payment_reference, reward_hash)" +
+                    ")");
+            try { st.execute("CREATE INDEX idx_delivery_ref ON reward_deliveries(payment_reference)"); } catch (SQLException ignored) {}
+        }
     }
 
     private void createMySQLTables() throws SQLException {
@@ -331,14 +353,30 @@ public class DatabaseManager {
                     "type VARCHAR(64) DEFAULT 'card', " +
                     "invoice_id VARCHAR(128) DEFAULT '', " +
                     "discord_uid VARCHAR(128) DEFAULT '', " +
-                    "created_at BIGINT NOT NULL" +
+                    "created_at BIGINT NOT NULL, " +
+                    "status VARCHAR(32) NOT NULL DEFAULT 'PENDING'" +
                     ")" + suffix);
 
+            st.execute("CREATE TABLE IF NOT EXISTS reward_deliveries (" +
+                    "delivery_id VARCHAR(128) PRIMARY KEY, " +
+                    "payment_type VARCHAR(32) NOT NULL, " +
+                    "payment_reference VARCHAR(128) NOT NULL, " +
+                    "player_name VARCHAR(128) NOT NULL, " +
+                    "reward_hash VARCHAR(128) NOT NULL, " +
+                    "status VARCHAR(32) NOT NULL DEFAULT 'DONE', " +
+                    "attempt_count INT DEFAULT 1, " +
+                    "created_at BIGINT NOT NULL, " +
+                    "updated_at BIGINT NOT NULL, " +
+                    "UNIQUE KEY uq_reward_delivery (payment_type, payment_reference, reward_hash)" +
+                    ")" + suffix);
+
+            try { st.execute("ALTER TABLE offline_rewards ADD COLUMN status VARCHAR(32) NOT NULL DEFAULT 'PENDING'"); } catch (SQLException ignored) {}
             try { st.execute("CREATE INDEX idx_bank_player ON bank_orders(player_name)"); } catch (SQLException ignored) {}
             try { st.execute("CREATE INDEX idx_bank_status ON bank_orders(status)"); } catch (SQLException ignored) {}
             try { st.execute("CREATE INDEX idx_card_player ON card_orders(player_name)"); } catch (SQLException ignored) {}
             try { st.execute("CREATE INDEX idx_card_status ON card_orders(status)"); } catch (SQLException ignored) {}
             try { st.execute("CREATE INDEX idx_reward_player ON offline_rewards(player_name)"); } catch (SQLException ignored) {}
+            try { st.execute("CREATE INDEX idx_delivery_ref ON reward_deliveries(payment_reference)"); } catch (SQLException ignored) {}
         }
     }
 
@@ -1243,5 +1281,118 @@ public class DatabaseManager {
             PayBotMod.LOGGER.warn(tag + " deleteExpiredOfflineRewards lỗi: " + e.getMessage());
         }
         return 0;
+    }
+
+    // ─── v5.5.8 Part 122: Idempotency Ledger (Reward Deliveries) ──────────────
+
+    public synchronized boolean hasRewardDelivery(String paymentType, String paymentReference, String rewardHash) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : rewardConn;
+        if (c == null) return false;
+        String sql = "SELECT 1 FROM reward_deliveries WHERE payment_type=? AND payment_reference=? AND reward_hash=? LIMIT 1";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, paymentType);
+            ps.setString(2, paymentReference);
+            ps.setString(3, rewardHash);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] hasRewardDelivery error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public synchronized boolean recordRewardDelivery(String deliveryId, String paymentType, String paymentReference,
+                                                     String playerName, String rewardHash, String status) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : rewardConn;
+        if (c == null) return false;
+        long now = System.currentTimeMillis();
+        String sql = useMySQL
+                ? "INSERT INTO reward_deliveries (delivery_id, payment_type, payment_reference, player_name, reward_hash, status, attempt_count, created_at, updated_at) VALUES (?,?,?,?,?,?,1,?,?) ON DUPLICATE KEY UPDATE updated_at=VALUES(updated_at)"
+                : "INSERT OR IGNORE INTO reward_deliveries (delivery_id, payment_type, payment_reference, player_name, reward_hash, status, attempt_count, created_at, updated_at) VALUES (?,?,?,?,?,?,1,?,?)";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, deliveryId);
+            ps.setString(2, paymentType);
+            ps.setString(3, paymentReference);
+            ps.setString(4, playerName);
+            ps.setString(5, rewardHash);
+            ps.setString(6, status);
+            ps.setLong(7, now);
+            ps.setLong(8, now);
+            int affected = ps.executeUpdate();
+            return affected > 0;
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] recordRewardDelivery error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // ─── v5.5.8 Part 122: Atomic Order Status Compare-And-Set ──────────────────
+
+    public synchronized boolean claimBankOrder(String invoiceId, String expectedStatus, String nextStatus) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : bankConn;
+        if (c == null) return false;
+        String sql = "UPDATE bank_orders SET status=? WHERE invoice_id=? AND status=?";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, nextStatus);
+            ps.setString(2, invoiceId);
+            ps.setString(3, expectedStatus);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] claimBankOrder error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public synchronized boolean claimCardOrder(String requestId, String expectedStatus, String nextStatus) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : cardConn;
+        if (c == null) return false;
+        String sql = "UPDATE card_orders SET status=? WHERE request_id=? AND status=?";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, nextStatus);
+            ps.setString(2, requestId);
+            ps.setString(3, expectedStatus);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] claimCardOrder error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public synchronized boolean claimOfflineReward(String rewardId) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : rewardConn;
+        if (c == null) return false;
+        String sql = "UPDATE offline_rewards SET status='PROCESSING' WHERE reward_id=? AND (status='PENDING' OR status IS NULL)";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, rewardId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] claimOfflineReward error: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public synchronized void failOfflineReward(String rewardId) {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : rewardConn;
+        if (c == null) return;
+        String sql = "UPDATE offline_rewards SET status='PENDING' WHERE reward_id=?";
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, rewardId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] failOfflineReward error: " + e.getMessage());
+        }
+    }
+
+    public synchronized int revertProcessingOfflineRewards() {
+        Connection c = useMySQL ? (tryConnectMySQL() ? conn : null) : rewardConn;
+        if (c == null) return 0;
+        String sql = "UPDATE offline_rewards SET status='PENDING' WHERE status='PROCESSING'";
+        try (Statement st = c.createStatement()) {
+            return st.executeUpdate(sql);
+        } catch (SQLException e) {
+            PayBotMod.LOGGER.warn("[DB] revertProcessingOfflineRewards error: " + e.getMessage());
+            return 0;
+        }
     }
 }

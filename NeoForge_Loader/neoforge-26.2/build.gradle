@@ -1,4 +1,4 @@
-// v5.5.5 Part 51: neoforge-26.2 — nhân bản từ neoforge-26.1 (Part 49), cùng lý do toolchain
+﻿// v5.5.5 Part 51: neoforge-26.2 — nhân bản từ neoforge-26.1 (Part 49), cùng lý do toolchain
 // áp dụng y hệt (ModDevGradle, tách khỏi Architectury Loom) — chỉ đổi version. Xem LOG.md
 // Part 51 cho phần rà soát riêng 26.2.
 //
@@ -24,7 +24,7 @@ plugins {
 // java.toolchain{} bên dưới GIỮ NGUYÊN từ Part 49 (đã tự ghi đè Java 25 từ trước). Lưu ý: dòng
 // 'version = project.neoforge_version' trong khối neoForge{} bên dưới KHÁC với 'version' của
 // Gradle project (mod_version) — 2 khái niệm độc lập, không đụng nhau.
-version = '5.5.7'
+version = '5.5.8'
 group = 'com.paybot'
 
 repositories {

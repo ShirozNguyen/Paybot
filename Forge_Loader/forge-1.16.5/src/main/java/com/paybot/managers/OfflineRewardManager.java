@@ -1,4 +1,4 @@
-// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.5
+﻿// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.5
 package com.paybot.managers;
 
 import com.paybot.PayBotMod;
@@ -7,7 +7,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * OfflineRewardManager — v5.1.0 (Refactored to SQLite for Fabric)
+ * OfflineRewardManager â€” v5.1.0 (Refactored to SQLite for Fabric)
  */
 public class OfflineRewardManager {
 
@@ -71,6 +71,20 @@ public class OfflineRewardManager {
         return removed;
     }
 
+    public synchronized boolean claimReward(String rewardId) {
+        return db.claimOfflineReward(rewardId);
+    }
+
+    public synchronized void completeReward(String playerName, String rewardId) {
+        removeReward(playerName, rewardId);
+    }
+
+    public synchronized void failReward(String playerName, String rewardId) {
+        db.failOfflineReward(rewardId);
+        String key = playerName.toLowerCase();
+        cache.remove(key);
+    }
+
     public synchronized Set<String> getPendingPlayerNames() {
         return new HashSet<>(cache.keySet());
     }
@@ -79,7 +93,7 @@ public class OfflineRewardManager {
         long cutoff = System.currentTimeMillis() - TTL_MS;
         int expired = db.deleteExpiredOfflineRewards(cutoff);
         if (expired > 0) {
-            PayBotMod.LOGGER.info("[OfflineRewards] Đã xoá " + expired + " reward hết hạn (> 7 ngày).");
+            PayBotMod.LOGGER.info("[OfflineRewards] ÄÃ£ xoÃ¡ " + expired + " reward háº¿t háº¡n (> 7 ngÃ y).");
             cache.clear();
             for (String name : db.getPlayersWithPendingRewards()) {
                 cache.put(name, null);

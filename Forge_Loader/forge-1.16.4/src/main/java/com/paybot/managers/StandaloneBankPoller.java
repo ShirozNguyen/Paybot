@@ -1,4 +1,4 @@
-// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.4
+﻿// v5.5.5 Part 85: Sync 1.16.5 Mojang API for forge-1.16.4
 package com.paybot.managers;
 
 import com.google.gson.*;
@@ -173,19 +173,49 @@ public class StandaloneBankPoller {
         List<String> rewardCmds = mod.resolveRewardCmds(order.amount, "bank");
         if (!rewardCmds.isEmpty()) {
             String rewardAmt = mod.computeRewardAmt(order.amount, "bank");
-            mod.getLocalOrderManager().updateBankStatus(order.invoiceId, LocalOrderManager.BANK_APPROVED);
+            // Mark payment confirmed first
+            mod.getLocalOrderManager().updateBankStatus(order.invoiceId, LocalOrderManager.BANK_CONFIRMED);
+
+            // Atomic CAS claim
+            if (!mod.getLocalOrderManager().claimBankOrderForReward(order.invoiceId)) {
+                PayBotMod.LOGGER.warn("[BankPoller] Order #" + order.invoiceId + " already claimed by another worker.");
+                return;
+            }
+
+            // Ledger check
+            String rewardHash = RewardDeliveryLedger.computeRewardHash(rewardCmds, rewardAmt);
+            if (mod.getRewardDeliveryLedger() != null &&
+                    !mod.getRewardDeliveryLedger().recordDeliveryAttempt("bank", order.invoiceId, rewardHash)) {
+                PayBotMod.LOGGER.warn("[BankPoller] Reward already delivered for invoice #" + order.invoiceId);
+                return;
+            }
+
             mod.runOnMainThread(() -> {
-                boolean wasOnline = mod.dispatchOrQueueReward(
-                        order.invoiceId, order.playerName, rewardCmds, rewardAmt,
-                        String.valueOf(order.amount), "bank");
-                mod.notifyAdmins("§a[PayBot] §e" + order.playerName + " §fnạp bank §a"
-                        + PayBotMod.formatVnd(order.amount) + " VND §f— thưởng tự giao"
-                        + (wasOnline ? "" : " §7(offline → nhận khi join lại)")
-                        + " §7(" + source + ")");
-                // v5.1.0: nếu bot-connected → notify Discord
-                if (!mod.isStandaloneMode()) {
-                    mod.runAsync(() -> mod.getBotHttpClient().notifyBankPaidViaApi(
-                            order.invoiceId, order.playerName, order.amount));
+                try {
+                    boolean wasOnline = mod.dispatchOrQueueReward(
+                            order.invoiceId, order.playerName, rewardCmds, rewardAmt,
+                            String.valueOf(order.amount), "bank");
+
+                    if (mod.getRewardDeliveryLedger() != null) {
+                        mod.getRewardDeliveryLedger().markDeliverySuccess("bank", order.invoiceId, rewardHash);
+                    }
+                    mod.getLocalOrderManager().updateBankStatus(order.invoiceId, LocalOrderManager.BANK_APPROVED);
+
+                    mod.notifyAdmins("§a[PayBot] §e" + order.playerName + " §fnạp bank §a"
+                            + PayBotMod.formatVnd(order.amount) + " VND §f— thưởng tự giao"
+                            + (wasOnline ? "" : " §7(offline → nhận khi join lại)")
+                            + " §7(" + source + ")");
+                    // v5.1.0: nếu bot-connected → notify Discord
+                    if (!mod.isStandaloneMode()) {
+                        mod.runAsync(() -> mod.getBotHttpClient().notifyBankPaidViaApi(
+                                order.invoiceId, order.playerName, order.amount));
+                    }
+                } catch (Exception e) {
+                    PayBotMod.LOGGER.error("[BankPoller] Failed to dispatch reward for invoice #" + order.invoiceId, e);
+                    if (mod.getRewardDeliveryLedger() != null) {
+                        mod.getRewardDeliveryLedger().markDeliveryFailure("bank", order.invoiceId, rewardHash, e.getMessage());
+                    }
+                    mod.getLocalOrderManager().updateBankStatus(order.invoiceId, LocalOrderManager.BANK_REWARD_FAILED);
                 }
             });
         } else {
