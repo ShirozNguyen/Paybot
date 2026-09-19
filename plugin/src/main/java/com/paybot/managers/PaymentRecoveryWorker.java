@@ -1,9 +1,11 @@
 package com.paybot.managers;
 
 import com.paybot.PayBotPlugin;
-import com.paybot.utils.SchedulerUtils;
 
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * PaymentRecoveryWorker — v5.5.8 Part 122 (Tuân thủ Rule 17)
@@ -16,9 +18,33 @@ public class PaymentRecoveryWorker {
     private static final long TIMEOUT_THRESHOLD_MS = 60_000L; // 60 giây timeout cho processing
 
     private final PayBotPlugin plugin;
+    private ScheduledExecutorService recoveryScheduler;
 
     public PaymentRecoveryWorker(PayBotPlugin plugin) {
         this.plugin = plugin;
+    }
+
+    public synchronized void start() {
+        if (recoveryScheduler != null && !recoveryScheduler.isShutdown()) return;
+        recoveryScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "PayBot-PaymentRecoveryWorker");
+            t.setDaemon(true);
+            return t;
+        });
+        recoveryScheduler.scheduleWithFixedDelay(() -> {
+            try {
+                runRecovery();
+            } catch (Throwable t) {
+                // Ignore background errors
+            }
+        }, 5, 60, TimeUnit.SECONDS);
+    }
+
+    public synchronized void stop() {
+        if (recoveryScheduler != null) {
+            recoveryScheduler.shutdownNow();
+            recoveryScheduler = null;
+        }
     }
 
     /**
@@ -60,17 +86,20 @@ public class PaymentRecoveryWorker {
                         String rewardAmt = RewardDispatcher.computeRewardAmt(plugin, o.amount, "bank");
                         String rewardHash = RewardDeliveryLedger.computeRewardHash(rewardCmds, rewardAmt);
 
-                        if (plugin.getRewardDeliveryLedger().hasDelivered("bank", o.invoiceId, rewardHash)) {
+                        if (plugin.getRewardDeliveryLedger() != null && plugin.getRewardDeliveryLedger().hasDelivered("bank", o.invoiceId, rewardHash)) {
                             plugin.getLocalOrderManager().updateBankStatus(o.invoiceId, LocalOrderManager.BANK_APPROVED);
                             continue;
                         }
 
                         plugin.getLogger().info("[PayBot-Recovery] Tự động giao bù đơn bank kẹt: #" + o.invoiceId + " cho " + o.playerName);
                         SchedulerUtils.runSync(plugin, () -> {
-                            boolean wasOnline = RewardDispatcher.dispatchOrQueue(plugin, o.invoiceId, o.playerName,
-                                    rewardCmds, rewardAmt, String.valueOf(o.amount), "bank", o.invoiceId, "");
+                            boolean wasOnline = RewardDispatcher.dispatchOrQueueReward(
+                                    plugin, o.invoiceId, o.playerName, rewardCmds, rewardAmt,
+                                    String.valueOf(o.amount), "bank");
                             plugin.getLocalOrderManager().updateBankStatus(o.invoiceId, LocalOrderManager.BANK_APPROVED);
-                            plugin.getRewardDeliveryLedger().recordDelivery("bank", o.invoiceId, o.playerName, rewardHash, "DONE");
+                            if (plugin.getRewardDeliveryLedger() != null) {
+                                plugin.getRewardDeliveryLedger().recordDelivery("bank", o.invoiceId, o.playerName, rewardHash, "DONE");
+                            }
                         });
                     }
                 }
@@ -97,17 +126,20 @@ public class PaymentRecoveryWorker {
                         String rewardAmt = RewardDispatcher.computeRewardAmt(plugin, o.denom, "card");
                         String rewardHash = RewardDeliveryLedger.computeRewardHash(rewardCmds, rewardAmt);
 
-                        if (plugin.getRewardDeliveryLedger().hasDelivered("card", o.requestId, rewardHash)) {
+                        if (plugin.getRewardDeliveryLedger() != null && plugin.getRewardDeliveryLedger().hasDelivered("card", o.requestId, rewardHash)) {
                             plugin.getLocalOrderManager().updateCardStatus(o.requestId, LocalOrderManager.CARD_APPROVED, o.message);
                             continue;
                         }
 
                         plugin.getLogger().info("[PayBot-Recovery] Tự động giao bù đơn thẻ kẹt: #" + o.requestId + " cho " + o.playerName);
                         SchedulerUtils.runSync(plugin, () -> {
-                            boolean wasOnline = RewardDispatcher.dispatchOrQueue(plugin, o.requestId, o.playerName,
-                                    rewardCmds, rewardAmt, String.valueOf(o.denom), "card", o.requestId, "");
+                            boolean wasOnline = RewardDispatcher.dispatchOrQueueReward(
+                                    plugin, o.requestId, o.playerName, rewardCmds, rewardAmt,
+                                    String.valueOf(o.denom), "card");
                             plugin.getLocalOrderManager().updateCardStatus(o.requestId, LocalOrderManager.CARD_APPROVED, o.message);
-                            plugin.getRewardDeliveryLedger().recordDelivery("card", o.requestId, o.playerName, rewardHash, "DONE");
+                            if (plugin.getRewardDeliveryLedger() != null) {
+                                plugin.getRewardDeliveryLedger().recordDelivery("card", o.requestId, o.playerName, rewardHash, "DONE");
+                            }
                         });
                     }
                 }

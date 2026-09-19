@@ -3,6 +3,9 @@ package com.paybot.managers;
 import com.paybot.PayBotMod;
 
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * PaymentRecoveryWorker — v5.5.8 Part 122 (Tuân thủ Rule 17)
@@ -15,9 +18,33 @@ public class PaymentRecoveryWorker {
     private static final long TIMEOUT_THRESHOLD_MS = 60_000L; // 60 giây timeout cho processing
 
     private final PayBotMod mod;
+    private ScheduledExecutorService recoveryScheduler;
 
     public PaymentRecoveryWorker(PayBotMod mod) {
         this.mod = mod;
+    }
+
+    public synchronized void start() {
+        if (recoveryScheduler != null && !recoveryScheduler.isShutdown()) return;
+        recoveryScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "PayBot-PaymentRecoveryWorker");
+            t.setDaemon(true);
+            return t;
+        });
+        recoveryScheduler.scheduleWithFixedDelay(() -> {
+            try {
+                runRecovery();
+            } catch (Throwable t) {
+                // Ignore background errors
+            }
+        }, 5, 60, TimeUnit.SECONDS);
+    }
+
+    public synchronized void stop() {
+        if (recoveryScheduler != null) {
+            recoveryScheduler.shutdownNow();
+            recoveryScheduler = null;
+        }
     }
 
     /**

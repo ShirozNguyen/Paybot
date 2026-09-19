@@ -50,6 +50,31 @@ public class RewardDeliveryLedger {
     }
 
     /**
+     * Ghi nhận nỗ lực giao thưởng (Idempotent Check).
+     * @return true nếu được phép giao (chưa giao); false nếu đã giao rồi (chống lặp).
+     */
+    public boolean recordDeliveryAttempt(String paymentType, String paymentReference, String rewardHash) {
+        if (hasDelivered(paymentType, paymentReference, rewardHash)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Đánh dấu giao thưởng thành công vào sổ cái.
+     */
+    public boolean markDeliverySuccess(String paymentType, String paymentReference, String rewardHash) {
+        return recordDelivery(paymentType, paymentReference, "player", rewardHash, "DONE");
+    }
+
+    /**
+     * Đánh dấu giao thưởng thất bại vào sổ cái.
+     */
+    public boolean markDeliveryFailure(String paymentType, String paymentReference, String rewardHash, String reason) {
+        return recordDelivery(paymentType, paymentReference, "player", rewardHash, "FAILED: " + (reason != null ? reason : "error"));
+    }
+
+    /**
      * Ghi nhận việc giao thưởng thành công vào sổ cái.
      *
      * @return true nếu ghi nhận thành công; false nếu đã tồn tại bản ghi (duplicate).
