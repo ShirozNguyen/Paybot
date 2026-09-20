@@ -14,7 +14,7 @@ import com.paybot.utils.PayBotDebug;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+// ResourceLocation loaded dynamically — class removed/moved in MC 26.x
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.MapItem;
@@ -41,6 +41,19 @@ import java.util.Optional;
  */
 public class ForgeVersionAdapterModern implements VersionAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger("PayBot-Forge-Adapter-Modern");
+
+    // Dynamic ResourceLocation class — may not exist in MC 26.x under same package
+    private static final Class<?> RESOURCE_LOCATION_CLASS;
+    static {
+        Class<?> _rlCls = null;
+        for (String _rlName : new String[]{
+                "net.minecraft.resources.ResourceLocation",
+                "net.minecraft.core.ResourceLocation",
+                "net.minecraft.util.ResourceLocation"}) {
+            try { _rlCls = Class.forName(_rlName); break; } catch (Throwable ignored) {}
+        }
+        RESOURCE_LOCATION_CLASS = _rlCls;
+    }
 
     private boolean dataComponentsEra = false;
 
@@ -116,8 +129,8 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
             return;
         }
 
-        ResourceLocation testCustomName = createResourceLocation("minecraft", "custom_name");
-        ResourceLocation testLore = createResourceLocation("minecraft", "lore");
+        Object testCustomName = createResourceLocation("minecraft", "custom_name");
+        Object testLore = createResourceLocation("minecraft", "lore");
         if (testCustomName == null || testLore == null) {
             LOGGER.error("[ForgeModern] Không dựng được ResourceLocation để test registry.");
             return;
@@ -159,7 +172,7 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
         for (Method m : registryClass.getMethods()) {
             if (m.getParameterCount() != 1) continue;
             Class<?> p0 = m.getParameterTypes()[0];
-            if (!p0.isAssignableFrom(ResourceLocation.class)) continue;
+            if (RESOURCE_LOCATION_CLASS == null || !p0.isAssignableFrom(RESOURCE_LOCATION_CLASS)) continue;
             Class<?> ret = m.getReturnType();
             if (ret == void.class || ret == boolean.class || ret == Boolean.class) continue;
             if (ret == Optional.class) {
@@ -173,7 +186,7 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
 
     private Object getDataComponentType(String path) {
         if (dataComponentTypeRegistry == null || registryGetMethod == null) return null;
-        ResourceLocation rl = createResourceLocation("minecraft", path);
+        Object rl = createResourceLocation("minecraft", path);
         if (rl == null) return null;
         return unwrapOptional(invokeSilently(registryGetMethod, dataComponentTypeRegistry, rl));
     }
@@ -340,27 +353,28 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
         }
     }
 
-    private ResourceLocation createResourceLocation(String namespace, String path) {
+    // Returns Object (not ResourceLocation) to compile on any MC version
+    private Object createResourceLocation(String namespace, String path) {
         try {
-            Method mFrom = ResourceLocation.class.getMethod("fromNamespaceAndPath", String.class, String.class);
-            return (ResourceLocation) mFrom.invoke(null, namespace, path);
+            Method mFrom = RESOURCE_LOCATION_CLASS.getMethod("fromNamespaceAndPath", String.class, String.class);
+            return mFrom.invoke(null, namespace, path);
         } catch (Throwable ignored) {}
         try {
-            for (Constructor<?> ctor : ResourceLocation.class.getDeclaredConstructors()) {
+            for (Constructor<?> ctor : RESOURCE_LOCATION_CLASS.getDeclaredConstructors()) {
                 Class<?>[] p = ctor.getParameterTypes();
                 if (p.length == 2 && p[0] == String.class && p[1] == String.class) {
                     ctor.setAccessible(true);
-                    return (ResourceLocation) ctor.newInstance(namespace, path);
+                    return ctor.newInstance(namespace, path);
                 }
             }
         } catch (Throwable ignored) {}
         try {
-            for (Method m : ResourceLocation.class.getMethods()) {
+            for (Method m : RESOURCE_LOCATION_CLASS.getMethods()) {
                 if (Modifier.isStatic(m.getModifiers())
                         && m.getParameterCount() == 1 && m.getParameterTypes()[0] == String.class
-                        && ResourceLocation.class.isAssignableFrom(m.getReturnType())) {
+                        && RESOURCE_LOCATION_CLASS.isAssignableFrom(m.getReturnType())) {
                     Object result = m.invoke(null, namespace + ":" + path);
-                    if (result != null) return (ResourceLocation) result;
+                    if (result != null) return result;
                 }
             }
         } catch (Throwable ignored) {}

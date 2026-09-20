@@ -33,7 +33,16 @@ public final class LegacyItemTagHelper {
     public static void setName(ItemStack stack, Component nameComponent) {
         if (stack == null || stack.isEmpty() || nameComponent == null) return;
         try {
-            stack.setHoverName(nameComponent);
+            boolean _shnCalled = false;
+            for (java.lang.reflect.Method _shnM : stack.getClass().getMethods()) {
+                String _shnN = _shnM.getName();
+                if ((_shnN.equals("setHoverName") || _shnN.equals("m_41794_") || _shnN.equals("func_200292_b"))
+                        && _shnM.getParameterCount() == 1) {
+                    _shnM.invoke(stack, nameComponent);
+                    _shnCalled = true;
+                    break;
+                }
+            }
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("LegacyItemTagHelper.setName: setHoverName() lỗi", t);
         }
@@ -103,30 +112,33 @@ public final class LegacyItemTagHelper {
         return null;
     }
 
+    // Pure reflection — no direct fallback (direct call fails compile on MC 1.20.5+)
     private static CompoundTag getOrCreateTag(ItemStack stack) {
         try {
             Method m = stack.getClass().getMethod("getOrCreateTag");
-            return (CompoundTag) m.invoke(stack);
+            Object result = m.invoke(stack);
+            if (result instanceof CompoundTag) return (CompoundTag) result;
+            if (result != null) return unwrapOptionalCompoundTag(result);
         } catch (Throwable ignored) {}
         try {
-            return stack.getOrCreateTag();
+            CompoundTag tag = new CompoundTag();
+            setTagReflect(stack, tag);
+            return tag;
         } catch (Throwable t) {
-            PayBotDebug.logSwallowed("LegacyItemTagHelper.getOrCreateTag", t);
+            PayBotDebug.logSwallowed("LegacyItemTagHelper.getOrCreateTag fallback", t);
             return null;
         }
     }
 
+    // Pure reflection — no direct fallback (direct call fails compile on MC 1.20.5+)
     private static CompoundTag getTag(ItemStack stack) {
         try {
             Method m = stack.getClass().getMethod("getTag");
-            return (CompoundTag) m.invoke(stack);
+            Object result = m.invoke(stack);
+            if (result instanceof CompoundTag) return (CompoundTag) result;
+            if (result != null) return unwrapOptionalCompoundTag(result);
         } catch (Throwable ignored) {}
-        try {
-            return stack.getTag();
-        } catch (Throwable t) {
-            PayBotDebug.logSwallowed("LegacyItemTagHelper.getTag", t);
-            return null;
-        }
+        return null;
     }
 
     public static CompoundTag getOrCreateDisplayTag(ItemStack stack) {
@@ -138,7 +150,7 @@ public final class LegacyItemTagHelper {
                 display = (CompoundTag) stack.getClass().getMethod("getOrCreateTagElement", String.class).invoke(stack, "display");
             } catch (Throwable ignored) {}
             if (display == null) {
-                display = root.getCompound("display");
+                display = getCompoundTagSafe(root, "display");
                 root.put("display", display);
             }
             return display;
@@ -151,7 +163,18 @@ public final class LegacyItemTagHelper {
     public static String safeComponentToJson(Component comp) {
         if (comp == null) return "{\"text\":\"\"}";
         try {
-            return Component.Serializer.toJson(comp);
+            // Reflection — Component.Serializer.toJson signature changed in MC 1.21.x+
+            Class<?> _serCls = Class.forName("net.minecraft.network.chat.Component$Serializer");
+            for (java.lang.reflect.Method _serM : _serCls.getMethods()) {
+                if (_serM.getName().equals("toJson")
+                        && java.lang.reflect.Modifier.isStatic(_serM.getModifiers())
+                        && _serM.getParameterCount() == 1
+                        && _serM.getParameterTypes()[0].isAssignableFrom(comp.getClass())) {
+                    Object _serR = _serM.invoke(null, comp);
+                    if (_serR != null) return _serR.toString();
+                }
+            }
+            throw new ReflectiveOperationException("Component.Serializer.toJson(Component) not found");
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("LegacyItemTagHelper.safeComponentToJson", t);
             JsonObject obj = new JsonObject();
@@ -159,4 +182,47 @@ public final class LegacyItemTagHelper {
             return obj.toString();
         }
     }
+    // ─── Pure-reflection helpers (compile-safe on any MC version) ─────────────────
+
+    /** Unwrap Optional<CompoundTag> — MC 26.x changed getTag/getCompound return type */
+    private static CompoundTag unwrapOptionalCompoundTag(Object optionalObj) {
+        try {
+            Method orElse = optionalObj.getClass().getMethod("orElse", Object.class);
+            Object val = orElse.invoke(optionalObj, (Object) null);
+            if (val instanceof CompoundTag) return (CompoundTag) val;
+        } catch (Throwable ignored) {}
+        return null;
+    }
+
+    /** setTag(CompoundTag) via reflection — removed in MC 1.20.5+ DataComponents era */
+    private static void setTagReflect(ItemStack stack, CompoundTag tag) {
+        try {
+            for (Method m : stack.getClass().getMethods()) {
+                String n = m.getName();
+                if ((n.equals("setTag") || n.equals("m_41751_") || n.equals("func_77982_d"))
+                        && m.getParameterCount() == 1
+                        && m.getParameterTypes()[0].isAssignableFrom(CompoundTag.class)) {
+                    m.invoke(stack, tag);
+                    return;
+                }
+            }
+        } catch (Throwable t) {
+            PayBotDebug.logSwallowed("LegacyItemTagHelper.setTagReflect", t);
+        }
+    }
+
+    /** Get CompoundTag subtag by key — handles Optional<CompoundTag> return in MC 26.x+ */
+    private static CompoundTag getCompoundTagSafe(CompoundTag parent, String key) {
+        try {
+            Method m = parent.getClass().getMethod("getCompound", String.class);
+            Object result = m.invoke(parent, key);
+            if (result instanceof CompoundTag) return (CompoundTag) result;
+            if (result != null) {
+                CompoundTag unwrapped = unwrapOptionalCompoundTag(result);
+                if (unwrapped != null) return unwrapped;
+            }
+        } catch (Throwable ignored) {}
+        return new CompoundTag();
+    }
+
 }
