@@ -150,12 +150,12 @@ public class JarLoaderDetector {
                     cachedType = JarLoaderType.FORGE;
                     return cachedType;
                 }
-                if (JarLoaderDetector.class.getResource("/quilt.mod.json") != null) {
-                    cachedType = JarLoaderType.QUILT;
-                    return cachedType;
-                }
                 if (JarLoaderDetector.class.getResource("/fabric.mod.json") != null) {
                     cachedType = JarLoaderType.FABRIC;
+                    return cachedType;
+                }
+                if (JarLoaderDetector.class.getResource("/quilt.mod.json") != null) {
+                    cachedType = JarLoaderType.QUILT;
                     return cachedType;
                 }
             } catch (Throwable ignored) {
@@ -188,14 +188,14 @@ public class JarLoaderDetector {
             return JarLoaderType.FORGE;
         }
 
-        // Ưu tiên 4: Quilt mod JAR có quilt.mod.json
-        if (jar.getJarEntry("quilt.mod.json") != null) {
-            return JarLoaderType.QUILT;
-        }
-
-        // Ưu tiên 5: Fabric mod JAR có fabric.mod.json
+        // Ưu tiên 4: Fabric mod JAR có fabric.mod.json (kể cả có thêm quilt.mod.json)
         if (jar.getJarEntry("fabric.mod.json") != null) {
             return JarLoaderType.FABRIC;
+        }
+
+        // Ưu tiên 5: Quilt mod JAR chỉ có quilt.mod.json thuần
+        if (jar.getJarEntry("quilt.mod.json") != null) {
+            return JarLoaderType.QUILT;
         }
 
         return JarLoaderType.UNKNOWN;

@@ -64,7 +64,13 @@ public class UpdateCheckManager {
                 }
 
                 // 4. Lọc và so sánh phiên bản dành riêng cho Loader của JAR này
-                CheckResult result = LoaderSpecificVersionComparator.evaluateUpdate(jsonRaw, selfLoader, currentVersion);
+                String mcVersion = null;
+                try {
+                    String sv = org.bukkit.Bukkit.getServer().getVersion();
+                    java.util.regex.Matcher mVer = java.util.regex.Pattern.compile("\\(MC:\\s*([0-9.]+)\\)").matcher(sv);
+                    if (mVer.find()) mcVersion = mVer.group(1).trim();
+                } catch (Throwable ignored) {}
+                CheckResult result = LoaderSpecificVersionComparator.evaluateUpdate(jsonRaw, selfLoader, currentVersion, mcVersion);
                 lastCheckResult = result;
 
                 // 5. Xuất thông báo ra console server

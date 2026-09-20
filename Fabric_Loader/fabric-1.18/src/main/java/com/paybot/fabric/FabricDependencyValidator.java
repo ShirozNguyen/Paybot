@@ -1,30 +1,12 @@
 package com.paybot.fabric;
 
-import com.paybot.compat.DependencyChecker;
-import net.fabricmc.loader.api.FabricLoader;
-
 /**
- * FabricDependencyValidator — Kiểm tra các dependency phụ thuộc bắt buộc riêng trên môi trường Fabric/Quilt.
- * Giúp báo lỗi có kiểm soát và hiển thị thông tin hướng dẫn tiếng Việt rõ ràng khi người dùng quên chưa cài Architectury API.
+ * FabricDependencyValidator — v5.5.9 Part 125.
+ * PayBot 100% Native, hoàn toàn không phụ thuộc vào mod Architectury API.
+ * validate() là no-op để đảm bảo tương thích ngược.
  */
 public class FabricDependencyValidator {
-
     public static void validate() {
-        boolean hasMod = FabricLoader.getInstance().isModLoaded("architectury");
-        boolean hasClass = DependencyChecker.isClassPresent("dev.architectury.platform.Platform");
-
-        if (!hasMod || !hasClass) {
-            String errorMsg = "\n"
-                    + "================================================================================\n"
-                    + "[PayBot Fabric/Quilt] THIẾU MOD BẮT BUỘC (MISSING DEPENDENCY):\n"
-                    + "  Mod PayBot yêu cầu mod 'Architectury API' (modid: architectury) để khởi chạy.\n"
-                    + "  Vui lòng tải mod 'Architectury API' (bản Fabric/Quilt tương ứng với Minecraft) từ:\n"
-                    + "    • CurseForge: https://www.curseforge.com/minecraft/mc-mods/architectury-api\n"
-                    + "    • Modrinth:   https://modrinth.com/mod/architectury-api\n"
-                    + "  sau đó copy file .jar vào thư mục 'mods/' của server/client rồi thử lại.\n"
-                    + "================================================================================\n";
-            System.err.println(errorMsg);
-            throw new RuntimeException("[PayBot Fabric/Quilt] THIẾU MOD BẮT BUỘC: Vui lòng cài đặt mod Architectury API (Fabric) vào thư mục mods!");
-        }
+        // No-op: PayBot chạy thuần native Fabric/Quilt, không bắt buộc cài mod ngoài.
     }
 }

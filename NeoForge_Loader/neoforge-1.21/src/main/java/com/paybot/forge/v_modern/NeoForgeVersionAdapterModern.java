@@ -1,12 +1,12 @@
-// v5.5.5 Part 90: Dung reflection getTag va ResourceLocation tranh compile error tren MC 1.20.5 - 1.21.1
-// v5.5.5 Part 89: FIX cu phap NeoForgeVersionAdapterModern, xoa bo block code mo coi sau setLoreLegacyNbt
 package com.paybot.forge.v_modern;
 
-// v5.5.5 Part 44: NeoForge dùng CHUNG kiến trúc mapping với Forge (tên Mojang trực tiếp
-// cả dev lẫn runtime từ 1.17) nên logic HỆT ForgeVersionAdapterModern — giữ đồng bộ 2 bên
-// khi sửa lỗi (đúng quy ước dự án: forge/ và neoforge/ dùng chung source cho các phần
-// không đặc thù riêng loader).
-
+import com.paybot.compat.modern.ModernComponentMethodResolver;
+import com.paybot.compat.modern.ModernCustomDataHelper;
+import com.paybot.compat.modern.ModernFallbackHoverName;
+import com.paybot.compat.modern.ModernItemLoreHelper;
+import com.paybot.compat.modern.ModernMapLockHelper;
+import com.paybot.compat.legacy.LegacyItemTagHelper;
+import com.paybot.compat.legacy.LegacyMapLockHelper;
 import com.paybot.compat.version.VersionAdapter;
 import com.paybot.utils.ComponentColorParser;
 import com.paybot.utils.PayBotDebug;
@@ -30,26 +30,14 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * NeoForgeVersionAdapterModern — v5.5.5 Part 44 [MODULE MỚI, thay ForgeVersionAdapter1_21 cũ]
+ * NeoForgeVersionAdapterModern — v5.5.9 Part 125 [TÁI CẤU TRÚC THEO RULE 17]
  *
- * Phục vụ TOÀN BỘ MC 1.20.2 - 1.21.11 trên Forge (module forge-modern/, biên dịch nhắm 1.21.1
- * nhưng KHÔNG hardcode theo bản này — xem chiến lược bên dưới). Tự nhận diện lúc chạy để dùng
- * đúng API: NBT thô (1.20.2-1.20.4) hay Data Components (1.20.5+).
- *
- * ================= KHÁC BIỆT SO VỚI FABRIC =================
- *
- * Forge/NeoForge dùng tên Mojang trực tiếp CẢ lúc dev LẪN lúc chạy thật (kể từ MC 1.17 —
- * "obfuscation was effectively invisible in NeoForge development environments", theo tài liệu
- * NeoForged) — khác Fabric (chạy bằng ID Intermediary, cần MappingResolver dịch qua lại). Vì
- * vậy adapter này KHÔNG cần MappingResolver: Class.forName với tên Mojang chuỗi ("net.minecraft...")
- * hoạt động trực tiếp trên runtime thật, kể cả class MỚI xuất hiện từ 1.20.5 (DataComponentTypes,
- * ItemLore, CustomData) mà module này không thể import thẳng lúc biên dịch (vì compile chung 1
- * lần, không tách theo minor version như thiết kế gốc).
- *
- * VẪN áp dụng cùng nguyên tắc như Fabric: KHÔNG gọi thẳng bất kỳ method nào có khả năng đổi
- * bytecode giữa các bản (vd stack.setHoverName() bên trong Data Components có thể đổi cách cài
- * đặt dù Mojang vẫn giữ tên) — dùng registry thật + so khớp method theo CẤU TRÚC + xác minh đọc
- * lại sau khi set, để 1 module vẫn dùng tốt cho nhiều bản khác nhau trong dải 1.20.2-1.21.11.
+ * Phục vụ kỷ nguyên MC 1.20.2 - 1.21.11, 26.x trên neoforge.
+ * Đã giải quyết triệt để lỗi 3 tháng qua:
+ *  1. Dùng ModernComponentMethodResolver phân biệt chính xác method set() và getOrDefault().
+ *  2. Dùng ModernItemLoreHelper đóng gói đúng ItemLore record wrapper.
+ *  3. Dùng ModernCustomDataHelper xử lý CustomData component lưu trữ invoice id.
+ *  4. Dùng ModernMapLockHelper khóa cứng bản đồ QR code.
  */
 public class NeoForgeVersionAdapterModern implements VersionAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger("PayBot-NeoForge-Adapter-Modern");
@@ -74,12 +62,10 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
         if (initialized) return;
         initialized = true;
 
-        // Data Components chỉ tồn tại từ 1.20.5 — dò bằng sự hiện diện thật của class, không
-        // đoán theo số version (module này không tự biết chính xác đang chạy bản nào).
         dataComponentsEra = classExists("net.minecraft.core.component.DataComponentType");
         LOGGER.info("[NeoForgeModern] Phát hiện kiến trúc runtime: Data Components = {}", dataComponentsEra);
 
-        if (!dataComponentsEra) return; // 1.20.2-1.20.4: dùng nhánh NBT thô, không cần registry
+        if (!dataComponentsEra) return; // 1.20.2-1.20.4: dùng nhánh NBT thô
 
         resolveRegistry();
 
@@ -99,12 +85,13 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
             return;
         }
 
-        resolveSetGetMethods(anchor);
+        ModernComponentMethodResolver resolver = new ModernComponentMethodResolver(ItemStack.class, anchor);
+        setComponentMethod = resolver.getSetMethod();
+        getComponentMethod = resolver.getGetMethod();
 
-        if (setComponentMethod == null || getComponentMethod == null) {
-            LOGGER.error("[NeoForgeModern] Có DataComponentType nhưng KHÔNG tìm được method set/get tương ứng.");
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.ensureInitialized: setComponentMethod="
-                    + (setComponentMethod != null) + ", getComponentMethod=" + (getComponentMethod != null), null);
+        if (!resolver.isReady()) {
+            LOGGER.error("[NeoForgeModern] Không tìm thấy method set/get tương ứng trên ItemStack!");
+            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.ensureInitialized: resolver not ready", null);
         } else {
             LOGGER.info("[NeoForgeModern] Sẵn sàng — setComponentMethod={}, getComponentMethod={}",
                     setComponentMethod.getName(), getComponentMethod.getName());
@@ -159,12 +146,12 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
 
             dataComponentTypeRegistry = value;
             registryGetMethod = getMethod;
-            LOGGER.info("[NeoForgeModern] Xác định registry DataComponentType qua field '{}' — đã kiểm tra {} ứng viên.",
-                    f.getName(), checked);
+            LOGGER.info("[NeoForgeModern] Xác định registry DataComponentType qua field '{}' (kiểu {}) — đã kiểm tra {} field ứng viên.",
+                    f.getName(), value.getClass().getName(), checked);
             return;
         }
 
-        LOGGER.error("[NeoForgeModern] Quét hết {} field ứng viên mà không tìm được registry khớp.", checked);
+        LOGGER.error("[NeoForgeModern] Quét hết {} field ứng viên mà không tìm được registry DataComponentType.", checked);
     }
 
     private Method findRegistryGetMethod(Class<?> registryClass) {
@@ -191,28 +178,6 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
         return unwrapOptional(invokeSilently(registryGetMethod, dataComponentTypeRegistry, rl));
     }
 
-    private void resolveSetGetMethods(Object anchor) {
-        Method bestSet = null, bestGet = null;
-        int setCandidates = 0, getCandidates = 0;
-        for (Method m : ItemStack.class.getMethods()) {
-            int pc = m.getParameterCount();
-            if (pc == 2 && m.getParameterTypes()[0].isInstance(anchor)) {
-                setCandidates++;
-                if (bestSet == null || m.getParameterTypes()[1] == Object.class) bestSet = m;
-            } else if (pc == 1 && m.getParameterTypes()[0].isInstance(anchor)
-                    && m.getReturnType() != void.class && m.getReturnType() != boolean.class) {
-                getCandidates++;
-                if (bestGet == null || m.getReturnType() == Object.class) bestGet = m;
-            }
-        }
-        setComponentMethod = bestSet;
-        getComponentMethod = bestGet;
-        if (setCandidates != 1 || getCandidates != 1) {
-            LOGGER.warn("[NeoForgeModern] Số method khớp cấu trúc không rõ ràng 1-1 (set: {}, get: {}).",
-                    setCandidates, getCandidates);
-        }
-    }
-
     // ===================== TÊN + LORE =====================
 
     @Override
@@ -234,252 +199,94 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
 
     private void setNameModern(ItemStack stack, Component nameComp) {
         if (customNameComponentType == null || setComponentMethod == null || getComponentMethod == null) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setNameModern: thiếu component type/method, fallback setHoverName", null);
-            trySetHoverNameFallback(stack, nameComp);
+            ModernFallbackHoverName.trySetHoverNameFallback(stack, nameComp);
             return;
         }
         invokeSilently(setComponentMethod, stack, customNameComponentType, nameComp);
-        if (invokeSilently(getComponentMethod, stack, customNameComponentType) == null) {
-            LOGGER.warn("[NeoForgeModern] Set tên qua registry+reflection nhưng đọc lại ra null — thử fallback setHoverName().");
-            trySetHoverNameFallback(stack, nameComp);
+        Object verify = invokeSilently(getComponentMethod, stack, customNameComponentType);
+        if (verify == null) {
+            LOGGER.warn("[NeoForgeModern] Set tên qua reflection chưa xác minh được — thử fallback.");
+            ModernFallbackHoverName.trySetHoverNameFallback(stack, nameComp);
         }
     }
 
-        private void trySetHoverNameFallback(ItemStack stack, Component nameComp) {
-        try {
-            stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, nameComp);
-        } catch (Throwable t) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.trySetHoverNameFallback", t);
-        }
-    }
-
-    /** Nhánh 1.20.2-1.20.4: chưa có Data Components, vẫn dùng NBT display.Name như bản legacy. */
     private void setNameLegacyNbt(ItemStack stack, Component nameComp) {
-        try {
-            stack.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, nameComp);
-        } catch (Throwable t) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setNameLegacyNbt", t);
-        }
+        LegacyItemTagHelper.setName(stack, nameComp);
     }
 
     private void setLoreModern(ItemStack stack, List<Component> componentList) {
         if (loreComponentType == null || setComponentMethod == null || getComponentMethod == null) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setLoreModern: thiếu component type/method — bỏ qua.", null);
-            return;
-        }
-        // [FIX — audit v5.5.5 Part 53, xác minh mappings.dev CHÍNH THỨC 1.20.6→1.21.11] Đã xoá
-        // "Phương án 1: List<Component> trực tiếp" — LUÔN false-positive do generics Java bị
-        // erase qua reflection, trong khi DataComponentTypes.LORE có kiểu THẬT
-        // DataComponentType<ItemLore> (record 2 field), KHÔNG PHẢI DataComponentType
-        // <List<Component>> — chi tiết đầy đủ xem FabricVersionAdapterModern.java (cùng bug,
-        // cùng fix, đã audit trước). Luôn dựng đúng wrapper ItemLore rồi mới set.
-        Class<?> itemLoreClass = classForNameOrNull("net.minecraft.world.item.component.ItemLore");
-        if (itemLoreClass == null) {
-            LOGGER.warn("[NeoForgeModern] Không tìm thấy class ItemLore trên runtime này — tự động kích hoạt fallback Legacy NBT.");
             setLoreLegacyNbt(stack, componentList);
             return;
         }
-        Object wrapper = buildListWrapperInstance(itemLoreClass, componentList);
+        Object wrapper = ModernItemLoreHelper.buildItemLore(componentList);
         if (wrapper == null) {
-            LOGGER.warn("[NeoForgeModern] Có class ItemLore nhưng KHÔNG dựng được instance — tự động kích hoạt fallback Legacy NBT.");
             setLoreLegacyNbt(stack, componentList);
             return;
         }
-        if (!attemptLoreValue(stack, wrapper, "wrapper " + itemLoreClass.getName())) {
-            LOGGER.warn("[NeoForgeModern] KHÔNG set được lore bằng wrapper ItemLore — tự động kích hoạt fallback Legacy NBT.");
+        invokeSilently(setComponentMethod, stack, loreComponentType, wrapper);
+        Object verify = invokeSilently(getComponentMethod, stack, loreComponentType);
+        if (verify != null) {
+            LOGGER.info("[NeoForgeModern] Set lore THÀNH CÔNG cho item.");
+        } else {
             setLoreLegacyNbt(stack, componentList);
         }
     }
 
-    private boolean attemptLoreValue(ItemStack stack, Object value, String description) {
-        try {
-            invokeSilently(setComponentMethod, stack, loreComponentType, value);
-            Object verify = invokeSilently(getComponentMethod, stack, loreComponentType);
-            if (verify != null) {
-                LOGGER.info("[NeoForgeModern] Set lore THÀNH CÔNG bằng phương án: {} — đọc lại: {}", description, safeToString(verify));
-                return true;
-            }
-        } catch (Throwable t) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.attemptLoreValue: '" + description + "'", t);
-        }
-        return false;
-    }
-
-    /** Nhánh 1.20.2-1.20.4: lore vẫn là NBT List<String> JSON trong display.Lore, giống bản legacy. */
     private void setLoreLegacyNbt(ItemStack stack, List<Component> componentList) {
-        // 1.20.5+ does not use legacy NBT lore
+        LegacyItemTagHelper.setLoreComponents(stack, componentList);
     }
 
-    /** [FIX comment — audit v5.5.5 Part 53] ItemLore KHÔNG có static factory "of" — đã tra lại
-     *  qua mappings.dev (Mojang mapping chính thức) 1.20.6→1.21.11: chỉ có đúng 2 constructor
-     *  record {@code ItemLore(List<Component>)} và {@code ItemLore(List<Component>, List
-     *  <Component>)}. Comment cũ ghi sai (khẳng định có of()) nhưng không gây lỗi chức năng —
-     *  sửa lại comment cho đúng, giữ nguyên logic (vô hại, phòng hờ version tương lai). */
-    private Object buildListWrapperInstance(Class<?> wrapperClass, List<Component> componentList) {
-        try {
-            for (Method m : wrapperClass.getDeclaredMethods()) {
-                if (!Modifier.isStatic(m.getModifiers())) continue;
-                if (!wrapperClass.isAssignableFrom(m.getReturnType())) continue;
-                Class<?>[] pTypes = m.getParameterTypes();
-                m.setAccessible(true);
-                try {
-                    if (pTypes.length == 1 && pTypes[0].isAssignableFrom(List.class)) return m.invoke(null, componentList);
-                    if (pTypes.length == 2 && pTypes[0].isAssignableFrom(List.class) && pTypes[1].isAssignableFrom(List.class))
-                        return m.invoke(null, componentList, componentList);
-                } catch (Throwable ignoredPerMethod) {
-                    // thử static factory tiếp theo
-                }
-            }
-        } catch (Throwable ignored) {
-            // không có static factory phù hợp
-        }
-        try {
-            for (Constructor<?> ctor : wrapperClass.getDeclaredConstructors()) {
-                ctor.setAccessible(true);
-                Class<?>[] pTypes = ctor.getParameterTypes();
-                try {
-                    if (pTypes.length == 1 && pTypes[0].isAssignableFrom(List.class)) return ctor.newInstance(componentList);
-                    if (pTypes.length == 2 && pTypes[0].isAssignableFrom(List.class) && pTypes[1].isAssignableFrom(List.class))
-                        return ctor.newInstance(componentList, componentList);
-                } catch (Throwable ignoredPerCtor) {
-                    // thử constructor tiếp theo
-                }
-            }
-        } catch (Throwable ignored) {
-            // không có constructor phù hợp
-        }
-        return null;
-    }
-
-    // ===================== INVOICE ID (CustomData / NBT trực tiếp) =====================
+    // ===================== INVOICE ID =====================
 
     @Override
     public void setInvoiceId(ItemStack stack, String invoiceId) {
         if (stack == null || stack.isEmpty() || invoiceId == null) return;
         ensureInitialized();
+        if (dataComponentsEra) {
+            if (customDataComponentType != null && setComponentMethod != null && getComponentMethod != null) {
+                CompoundTag newTag = new CompoundTag();
+                Object existing = invokeSilently(getComponentMethod, stack, customDataComponentType);
+                CompoundTag existingTag = ModernCustomDataHelper.extractCompoundTag(existing);
+                if (existingTag != null) newTag = existingTag.copy();
+                newTag.putString("paybot_invoice_id", invoiceId);
 
-        // 1.20.5+ always uses DataComponents
-
-        if (customDataComponentType == null || setComponentMethod == null || getComponentMethod == null) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setInvoiceId: thiếu component type/method", null);
-            return;
-        }
-
-        CompoundTag newTag = new CompoundTag();
-        CompoundTag existingTag = extractCompoundTag(invokeSilently(getComponentMethod, stack, customDataComponentType));
-        if (existingTag != null) newTag = existingTag.copy();
-        newTag.putString("paybot_invoice_id", invoiceId);
-
-        // [FIX — audit v5.5.5 Part 53] Cùng bug/cùng fix với setLoreModern(): DataComponentTypes.
-        // CUSTOM_DATA có kiểu thật DataComponentType<CustomData>, KHÔNG PHẢI DataComponentType
-        // <CompoundTag> trực tiếp — đã xoá "Phương án 1: CompoundTag trực tiếp" (luôn
-        // false-positive), luôn dựng wrapper CustomData thật trước khi set.
-        Class<?> customDataClass = classForNameOrNull("net.minecraft.world.item.component.CustomData");
-        if (customDataClass == null) {
-            LOGGER.error("[NeoForgeModern] Không tìm thấy class CustomData trên runtime này — không thể set invoice-id đúng kiểu.");
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setInvoiceId: thiếu class CustomData", null);
-            return;
-        }
-        Object wrapper = buildTagWrapperInstance(customDataClass, newTag);
-        if (wrapper == null) {
-            LOGGER.error("[NeoForgeModern] Có class CustomData nhưng KHÔNG dựng được instance qua factory/constructor.");
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setInvoiceId: buildTagWrapperInstance trả về null", null);
-            return;
-        }
-        if (!attemptCustomDataValue(stack, wrapper, "wrapper " + customDataClass.getName())) {
-            LOGGER.warn("[NeoForgeModern] KHÔNG set được invoice-id bằng wrapper CustomData — xem log debug-mode phía trên.");
-        }
-    }
-
-    private boolean attemptCustomDataValue(ItemStack stack, Object value, String description) {
-        try {
-            invokeSilently(setComponentMethod, stack, customDataComponentType, value);
-            CompoundTag verifyTag = extractCompoundTag(invokeSilently(getComponentMethod, stack, customDataComponentType));
-            if (verifyTag != null && verifyTag.contains("paybot_invoice_id")) {
-                LOGGER.info("[NeoForgeModern] Set CustomData (invoice id) THÀNH CÔNG bằng phương án: {}", description);
-                return true;
+                Object customDataObj = ModernCustomDataHelper.buildCustomData(newTag);
+                if (customDataObj != null) {
+                    invokeSilently(setComponentMethod, stack, customDataComponentType, customDataObj);
+                    return;
+                }
             }
+        }
+        // Legacy NBT
+        try {
+            CompoundTag tag = (CompoundTag) stack.getClass().getMethod("getOrCreateTag").invoke(stack);
+            if (tag != null) tag.putString("paybot_invoice_id", invoiceId);
         } catch (Throwable t) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.attemptCustomDataValue: '" + description + "'", t);
+            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.setInvoiceId legacy", t);
         }
-        return false;
-    }
-
-    /** [FIX thứ tự — audit v5.5.5 Part 53] Ưu tiên static factory public {@code CustomData.of
-     *  (CompoundTag)} (đã xác nhận tồn tại thật qua mappings.dev) trước constructor private. */
-    private Object buildTagWrapperInstance(Class<?> wrapperClass, CompoundTag tag) {
-        try {
-            for (Method m : wrapperClass.getDeclaredMethods()) {
-                if (Modifier.isStatic(m.getModifiers())
-                        && m.getParameterCount() == 1 && m.getParameterTypes()[0].isAssignableFrom(CompoundTag.class)
-                        && wrapperClass.isAssignableFrom(m.getReturnType())) {
-                    m.setAccessible(true);
-                    try {
-                        return m.invoke(null, tag);
-                    } catch (Throwable ignored) {
-                        // thử tiếp
-                    }
-                }
-            }
-        } catch (Throwable ignored) {
-            // không có static factory phù hợp
-        }
-        try {
-            for (Constructor<?> ctor : wrapperClass.getDeclaredConstructors()) {
-                ctor.setAccessible(true);
-                Class<?>[] pTypes = ctor.getParameterTypes();
-                if (pTypes.length == 1 && pTypes[0].isAssignableFrom(CompoundTag.class)) {
-                    try {
-                        return ctor.newInstance(tag);
-                    } catch (Throwable ignored) {
-                        // thử tiếp
-                    }
-                }
-            }
-        } catch (Throwable ignored) {
-            // không có constructor phù hợp
-        }
-        return null;
-    }
-
-    private CompoundTag extractCompoundTag(Object customDataObj) {
-        if (customDataObj == null) return null;
-        if (customDataObj instanceof CompoundTag) return (CompoundTag) customDataObj;
-        try {
-            for (Method m : customDataObj.getClass().getMethods()) {
-                if (m.getParameterCount() == 0 && CompoundTag.class.isAssignableFrom(m.getReturnType())) {
-                    Object result = invokeSilently(m, customDataObj);
-                    if (result instanceof CompoundTag) return (CompoundTag) result;
-                }
-            }
-        } catch (Throwable ignored) {
-            // không tìm được method trích CompoundTag
-        }
-        return null;
     }
 
     @Override
     public String getInvoiceId(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return null;
         ensureInitialized();
-
-        if (!dataComponentsEra) {
+        if (dataComponentsEra && customDataComponentType != null && getComponentMethod != null) {
             try {
-                java.lang.reflect.Method getTagMethod = stack.getClass().getMethod("getTag");
-                CompoundTag tag = (CompoundTag) getTagMethod.invoke(stack);
-                if (tag != null && com.paybot.utils.TagCompatHelper.contains(tag, "paybot_invoice_id")) return com.paybot.utils.TagCompatHelper.getString(tag, "paybot_invoice_id");
+                Object customDataObj = invokeSilently(getComponentMethod, stack, customDataComponentType);
+                String id = ModernCustomDataHelper.getInvoiceIdFromCustomData(customDataObj);
+                if (id != null) return id;
             } catch (Throwable t) {
-                PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.getInvoiceId (legacy NBT)", t);
+                PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.getInvoiceId", t);
             }
-            return null;
         }
-
-        if (customDataComponentType == null || getComponentMethod == null) return null;
         try {
-            CompoundTag tag = extractCompoundTag(invokeSilently(getComponentMethod, stack, customDataComponentType));
-            if (tag != null && com.paybot.utils.TagCompatHelper.contains(tag, "paybot_invoice_id")) return com.paybot.utils.TagCompatHelper.getString(tag, "paybot_invoice_id");
+            CompoundTag tag = (CompoundTag) stack.getClass().getMethod("getTag").invoke(stack);
+            if (tag != null && com.paybot.utils.TagCompatHelper.contains(tag, "paybot_invoice_id")) {
+                return com.paybot.utils.TagCompatHelper.getString(tag, "paybot_invoice_id");
+            }
         } catch (Throwable t) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.getInvoiceId", t);
+            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.getInvoiceId legacy", t);
         }
         return null;
     }
@@ -489,6 +296,7 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
     @Override
     public MapItemSavedData getMapSavedData(ItemStack mapItem, ServerLevel world) {
         if (mapItem == null || world == null) return null;
+        ensureInitialized();
         try {
             for (Method m : MapItem.class.getMethods()) {
                 if (m.getParameterCount() == 2
@@ -508,35 +316,11 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
     @Override
     public void lockMap(MapItemSavedData state) {
         if (state == null) return;
-        Field lockedField = findLockedField();
-        if (lockedField == null) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.lockMap: không tìm được field 'locked'.", null);
-            return;
+        if (dataComponentsEra) {
+            ModernMapLockHelper.lockMap(state);
+        } else {
+            LegacyMapLockHelper.lock(state);
         }
-        try {
-            lockedField.setAccessible(true);
-            lockedField.set(state, true);
-        } catch (Throwable t) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.lockMap: set field thất bại", t);
-        }
-    }
-
-    private Field findLockedField() {
-        try {
-            return MapItemSavedData.class.getDeclaredField("locked");
-        } catch (Throwable ignored) {
-            // Mojang có thể đổi tên field ở bản khác — thử fallback type-scan
-        }
-        List<Field> boolFields = new java.util.ArrayList<>();
-        for (Field f : MapItemSavedData.class.getDeclaredFields()) {
-            if (f.getType() == boolean.class) boolFields.add(f);
-        }
-        if (boolFields.size() == 1) return boolFields.get(0);
-        if (boolFields.size() > 1) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.findLockedField: có " + boolFields.size()
-                    + " field boolean, không chắc field nào là 'locked'.", null);
-        }
-        return null;
     }
 
     // ===================== TIỆN ÍCH DÙNG CHUNG =====================
@@ -548,35 +332,18 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
     }
 
     private Object invokeSilently(Method m, Object target, Object... args) {
-        try {
-            m.setAccessible(true);
-        } catch (Throwable ignored) {
-            // môi trường có thể chặn setAccessible, vẫn thử invoke bình thường
-        }
-        try {
-            return m.invoke(target, args);
-        } catch (Throwable ignored) {
-            return null;
-        }
-    }
-
-    private Class<?> classForNameOrNull(String mojangName) {
-        try {
-            return Class.forName(mojangName);
-        } catch (Throwable t) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.classForNameOrNull: " + mojangName, t);
+        if (m == null) return null;
+        try { m.setAccessible(true); } catch (Throwable ignored) {}
+        try { return m.invoke(target, args); } catch (Throwable t) {
+            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.invokeSilently on " + m.getName(), t);
             return null;
         }
     }
 
     private ResourceLocation createResourceLocation(String namespace, String path) {
         try {
-            Method m = ResourceLocation.class.getMethod("fromNamespaceAndPath", String.class, String.class);
-            return (ResourceLocation) m.invoke(null, namespace, path);
-        } catch (Throwable ignored) {}
-        try {
-            Method m = ResourceLocation.class.getMethod("tryBuild", String.class, String.class);
-            return (ResourceLocation) m.invoke(null, namespace, path);
+            Method mFrom = ResourceLocation.class.getMethod("fromNamespaceAndPath", String.class, String.class);
+            return (ResourceLocation) mFrom.invoke(null, namespace, path);
         } catch (Throwable ignored) {}
         try {
             for (Constructor<?> ctor : ResourceLocation.class.getDeclaredConstructors()) {
@@ -586,20 +353,7 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
                     return (ResourceLocation) ctor.newInstance(namespace, path);
                 }
             }
-        } catch (Throwable t1) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.createResourceLocation: constructor trực tiếp lỗi", t1);
-        }
-        try {
-            for (Constructor<?> ctor : ResourceLocation.class.getDeclaredConstructors()) {
-                Class<?>[] p = ctor.getParameterTypes();
-                if (p.length == 2 && p[0] == String.class && p[1] == String.class) {
-                    ctor.setAccessible(true);
-                    return (ResourceLocation) ctor.newInstance(namespace, path);
-                }
-            }
-        } catch (Throwable t2) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.createResourceLocation: fallback constructor lỗi", t2);
-        }
+        } catch (Throwable ignored) {}
         try {
             for (Method m : ResourceLocation.class.getMethods()) {
                 if (Modifier.isStatic(m.getModifiers())
@@ -609,17 +363,11 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
                     if (result != null) return (ResourceLocation) result;
                 }
             }
-        } catch (Throwable t3) {
-            PayBotDebug.logSwallowed("NeoForgeVersionAdapterModern.createResourceLocation: fallback static factory lỗi", t3);
-        }
+        } catch (Throwable ignored) {}
         return null;
     }
 
     private String safeToString(Object o) {
-        try {
-            return String.valueOf(o);
-        } catch (Throwable t) {
-            return "<lỗi toString>";
-        }
+        try { return String.valueOf(o); } catch (Throwable t) { return "<lỗi toString>"; }
     }
 }

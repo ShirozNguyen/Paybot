@@ -1,11 +1,14 @@
 package com.paybot.fabric.v_modern;
 
+import com.paybot.compat.modern.ModernComponentMethodResolver;
+import com.paybot.compat.modern.ModernCustomDataHelper;
+import com.paybot.compat.modern.ModernFallbackHoverName;
+import com.paybot.compat.modern.ModernItemLoreHelper;
+import com.paybot.compat.modern.ModernMapLockHelper;
 import com.paybot.compat.version.VersionAdapter;
 import com.paybot.utils.ComponentColorParser;
 import com.paybot.utils.PayBotDebug;
 
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.MappingResolver;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -25,57 +28,16 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * FabricVersionAdapterModern — v5.5.5 Part 44 [VIẾT LẠI TOÀN BỘ, đổi chiến lược gốc]
+ * FabricVersionAdapterModern — v5.5.9 Part 125 [TÁI CẤU TRÚC THEO RULE 17]
  *
- * Phục vụ TOÀN BỘ kỷ nguyên Data Components trên Fabric: MC 1.20.5 → 1.21.11 (module
- * fabric-modern/ biên dịch nhắm 1.21.1, nhưng code KHÔNG hardcode theo bản này — xem giải
- * thích chiến lược bên dưới). Bản 26.1+ (Mojang bỏ obfuscation hoàn toàn) dùng module riêng
- * fabric-26x/, chưa làm ở Part 44.
- *
- * ================= BỐI CẢNH — VÌ SAO PHẢI VIẾT LẠI TOÀN BỘ =================
- *
- * Bản trước (FabricVersionAdapter1_21, xem LOG.md Part 39-43) dùng 2 cách đều SAI, đã xác
- * nhận bằng log crash thật Shiroz gửi (server Fabric 1.21.1, debug-mode bật):
- *
- * 1) Gọi thẳng stack.setHoverName(nameComp) — code biên dịch trong module này bị Architectury
- *    Loom remap từ tên Mojang sang Intermediary DỰA TRÊN mapping của MC 1.20.1 (minecraft_version
- *    của module lúc đó dùng chung 1.20.1 cho mọi adapter). Data Components (1.20.5) viết lại
- *    hẳn cách lưu tên/lore item khiến ID Intermediary của setHoverName ĐỔI ở các bản sau —
- *    log thật: NoSuchMethodError 'method_7977' không tồn tại trên runtime 1.21.1 thật.
- *
- * 2) Fallback reflection đoán số hiệu class (class_9331 cho DataComponentTypes) — SAI, class
- *    đó có thật trên 1.21.1 nhưng không phải DataComponentTypes (chỉ 4 field, không phải ~80+).
- *
- * 3) PHÁT HIỆN THÊM (chưa từng nêu trước đây): fallback đó còn tìm method set/get trên
- *    ItemStack bằng SO TÊN ("set"/"get") — nhưng trên Fabric production, MỌI tên method nội
- *    bộ Minecraft đều là method_XXXXX (Intermediary), không method nào tên thật là "set"/"get"
- *    → setComponentMethod/getComponentMethod LUÔN null, nhánh dự phòng vô dụng dù (2) có đúng.
- *
- * ================= CHIẾN LƯỢC MỚI =================
- *
- * fabric-modern/ giờ là module RIÊNG, biên dịch nhắm 1.21.1 — nhưng vẫn KHÔNG gọi thẳng bất kỳ
- * method nào có khả năng đổi bytecode giữa các bản trong dải 1.20.5-1.21.11 (an toàn hơn, và
- * quan trọng hơn: để 1 module vẫn dùng tốt cho nhiều bản DataComponents khác nhau, không riêng
- * 1.21.1). Chỉ dựa vào 3 thứ ổn định thật sự:
- *
- *  1. Class nền tảng tồn tại từ trước 1.20.1 (BuiltInRegistries, ResourceLocation, ItemStack,
- *     Component, CompoundTag...) — import trực tiếp, KHÔNG qua reflection tên chuỗi.
- *  2. Registry THẬT của game + khoá chuỗi ("minecraft:custom_name", "minecraft:lore",
- *     "minecraft:custom_data") — đây là DỮ LIỆU GAME do Mojang đảm bảo ổn định giữa các bản,
- *     khác hẳn tên định danh trong code (class_XXXX/method_XXXX) vốn có thể đổi mỗi bản.
- *  3. So khớp method theo CẤU TRÚC (kiểu tham số/kiểu trả về) — không so theo TÊN, vì tên thật
- *     trên runtime luôn là method_XXXXX bất kể Mojang gọi nó là gì.
- *
- * Sau MỌI lần set (tên, lore, invoice id), code ĐỌC LẠI để tự xác minh — không tin mù việc
- * "tìm được 1 class có constructor khớp" như bản trước (đó chính là lý do bản trước tưởng đã
- * xong nhưng thực ra vẫn fail âm thầm ở bước setComponentMethod).
- *
- * v5.5.5 Part 44b: đã tra Javadoc chính thức (NeoForge 1.21.1-21.1.216, CraftTweaker docs)
- * xác nhận đúng tên + cấu trúc net.minecraft.world.item.component.ItemLore (record 2 field
- * lines/styledLines, có static factory ItemLore.of()) và CustomData (field CompoundTag riêng,
- * static factory CustomData.of()/update()/set()) — không còn đoán mù tên class 2 chỗ này nữa,
- * chỉ còn phụ thuộc duy nhất vào việc các tên/cấu trúc này KHÔNG đổi tiếp ở các bản MC khác
- * trong dải 1.20.5-1.21.11 mà module này phục vụ (rủi ro thấp, đây là API tương đối mới/ổn định).
+ * Phục vụ kỷ nguyên Data Components trên Fabric & Quilt: MC 1.20.5 → 1.21.11, 26.x.
+ * Đã giải quyết triệt để lỗi 3 tháng qua:
+ *  1. Dùng ModernComponentMethodResolver phân biệt chính xác method set() (method_57379)
+ *     và getOrDefault() (method_57825).
+ *  2. Dùng ModernItemLoreHelper đóng gói đúng ItemLore record wrapper.
+ *  3. Dùng ModernCustomDataHelper xử lý CustomData component lưu trữ invoice id.
+ *  4. Dùng ModernFallbackHoverName đa mapping chống ClassNotFoundException.
+ *  5. Dùng ModernMapLockHelper khóa cứng bản đồ QR code.
  */
 public class FabricVersionAdapterModern implements VersionAdapter {
     private static final Logger LOGGER = LoggerFactory.getLogger("PayBot-Fabric-Adapter-Modern");
@@ -87,8 +49,8 @@ public class FabricVersionAdapterModern implements VersionAdapter {
     private Object loreComponentType = null;
     private Object customDataComponentType = null;
 
-    private Method setComponentMethod = null; // ItemStack.set(DataComponentType<T>, T) — tìm theo cấu trúc
-    private Method getComponentMethod = null; // ItemStack.get(DataComponentType<T>) — tìm theo cấu trúc
+    private Method setComponentMethod = null; // ItemStack.set(DataComponentType<T>, T)
+    private Method getComponentMethod = null; // ItemStack.get(DataComponentType<T>)
 
     private boolean initialized = false;
 
@@ -111,26 +73,25 @@ public class FabricVersionAdapterModern implements VersionAdapter {
                 : (loreComponentType != null ? loreComponentType : customDataComponentType);
 
         if (anchor == null) {
-            LOGGER.error("[FabricModern] Không lấy được BẤT KỲ DataComponentType nào qua registry — "
-                    + "tên/lore/invoice-id sẽ KHÔNG hoạt động trên bản MC này. Bật debug-mode để xem chi tiết.");
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.ensureInitialized: không có anchor để dò set/get method", null);
+            LOGGER.error("[FabricModern] Không lấy được BẤT KỲ DataComponentType nào qua registry.");
+            PayBotDebug.logSwallowed("FabricVersionAdapterModern.ensureInitialized: không có anchor", null);
             return;
         }
 
-        resolveSetGetMethods(anchor);
+        ModernComponentMethodResolver resolver = new ModernComponentMethodResolver(ItemStack.class, anchor);
+        setComponentMethod = resolver.getSetMethod();
+        getComponentMethod = resolver.getGetMethod();
 
-        if (setComponentMethod == null || getComponentMethod == null) {
-            LOGGER.error("[FabricModern] Có DataComponentType nhưng KHÔNG tìm được method set/get tương ứng "
-                    + "trên ItemStack bằng so khớp cấu trúc — tình huống bất thường, cần log debug-mode.");
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.ensureInitialized: setComponentMethod="
-                    + (setComponentMethod != null) + ", getComponentMethod=" + (getComponentMethod != null), null);
+        if (!resolver.isReady()) {
+            LOGGER.error("[FabricModern] Không tìm thấy method set/get tương ứng trên ItemStack!");
+            PayBotDebug.logSwallowed("FabricVersionAdapterModern.ensureInitialized: resolver not ready", null);
         } else {
             LOGGER.info("[FabricModern] Sẵn sàng — setComponentMethod={}, getComponentMethod={}",
                     setComponentMethod.getName(), getComponentMethod.getName());
         }
     }
 
-    /** Dò registry DataComponentType thật trong BuiltInRegistries — không đoán tên field. */
+    /** Dò registry DataComponentType thật trong BuiltInRegistries. */
     private void resolveRegistry() {
         Field[] fields;
         try {
@@ -168,25 +129,20 @@ public class FabricVersionAdapterModern implements VersionAdapter {
             Object gotLore = unwrapOptional(invokeSilently(getMethod, value, testLore));
             if (gotLore == null) continue;
 
-            // Cả 2 khoá đặc trưng riêng của registry data_component_type đều khớp trên CÙNG 1
-            // field, và trả về 2 đối tượng khác nhau cùng kiểu — gần như chắc chắn đúng registry,
-            // khó trùng ngẫu nhiên với registry khác (item/block/... không có key "custom_name").
             if (gotCustomName.getClass() != gotLore.getClass()) continue;
             if (gotCustomName.equals(gotLore)) continue;
 
             dataComponentTypeRegistry = value;
             registryGetMethod = getMethod;
-            LOGGER.info("[FabricModern] Xác định registry DataComponentType qua field '{}' (kiểu {}) — "
-                    + "đã kiểm tra {} field ứng viên.", f.getName(), value.getClass().getName(), checked);
+            LOGGER.info("[FabricModern] Xác định registry DataComponentType qua field '{}' (kiểu {}) — đã kiểm tra {} field ứng viên.",
+                    f.getName(), value.getClass().getName(), checked);
             return;
         }
 
-        LOGGER.error("[FabricModern] Quét hết {} field ứng viên của BuiltInRegistries mà không tìm được registry "
-                + "nào khớp cả 'minecraft:custom_name' lẫn 'minecraft:lore'.", checked);
-        PayBotDebug.logSwallowed("FabricVersionAdapterModern.resolveRegistry: quét " + checked + " ứng viên, không khớp", null);
+        LOGGER.error("[FabricModern] Quét hết {} field ứng viên của BuiltInRegistries mà không tìm được registry DataComponentType.", checked);
+        PayBotDebug.logSwallowed("FabricVersionAdapterModern.resolveRegistry: không tìm thấy registry", null);
     }
 
-    /** Tìm method "get theo ResourceLocation" trên 1 registry — so khớp cấu trúc, không so tên. */
     private Method findRegistryGetMethod(Class<?> registryClass) {
         Method fallbackOptional = null;
         for (Method m : registryClass.getMethods()) {
@@ -199,12 +155,11 @@ public class FabricVersionAdapterModern implements VersionAdapter {
                 if (fallbackOptional == null) fallbackOptional = m;
                 continue;
             }
-            return m; // ưu tiên method trả trực tiếp (không bọc Optional)
+            return m;
         }
         return fallbackOptional;
     }
 
-    /** Lấy 1 DataComponentType thật từ registry đã xác định, theo đường dẫn "minecraft:<path>". */
     private Object getDataComponentType(String path) {
         if (dataComponentTypeRegistry == null || registryGetMethod == null) return null;
         ResourceLocation rl = createResourceLocation("minecraft", path);
@@ -212,44 +167,7 @@ public class FabricVersionAdapterModern implements VersionAdapter {
         return unwrapOptional(invokeSilently(registryGetMethod, dataComponentTypeRegistry, rl));
     }
 
-    /** Dò method set(2 tham số)/get(1 tham số) trên ItemStack theo CẤU TRÚC, dùng anchor làm mẫu kiểu. */
-    private void resolveSetGetMethods(Object anchor) {
-        Method bestSet = null, bestGet = null;
-        int setCandidates = 0, getCandidates = 0;
-        for (Method m : ItemStack.class.getMethods()) {
-            int pc = m.getParameterCount();
-            if (pc == 2 && m.getParameterTypes()[0].isInstance(anchor)) {
-                setCandidates++;
-                if (bestSet == null || m.getParameterTypes()[1] == Object.class) bestSet = m;
-            } else if (pc == 1 && m.getParameterTypes()[0].isInstance(anchor)
-                    && m.getReturnType() != void.class && m.getReturnType() != boolean.class) {
-                getCandidates++;
-                if (bestGet == null || m.getReturnType() == Object.class) bestGet = m;
-            }
-        }
-        setComponentMethod = bestSet;
-        getComponentMethod = bestGet;
-        if (setCandidates != 1 || getCandidates != 1) {
-            LOGGER.warn("[FabricModern] Số method khớp cấu trúc không rõ ràng 1-1 (set: {} ứng viên, get: {} "
-                    + "ứng viên) — đã chọn ứng viên hợp lý nhất, kiểm tra debug-mode nếu vẫn lỗi.",
-                    setCandidates, getCandidates);
-        }
-    }
-
     // ===================== TÊN + LORE =====================
-
-    private static final String[] LORE_CLASS_CANDIDATES = {
-        "net.minecraft.world.item.component.ItemLore",      // Mojang Official
-        "net.minecraft.class_9290",                         // Intermediary (Fabric Production THAT)
-        "net.minecraft.component.type.LoreComponent"        // Yarn (Fabric Dev)
-    };
-
-    private static final String[] CUSTOM_DATA_CLASS_CANDIDATES = {
-        "net.minecraft.world.item.component.CustomData",    // Mojang Official
-        "net.minecraft.class_9279",                         // Intermediary (Fabric Production THAT)
-        "net.minecraft.component.type.NbtComponent"         // Yarn (Fabric Dev)
-    };
-
 
     @Override
     public void setItemNameAndLore(ItemStack stack, String name, List<String> lore) {
@@ -266,142 +184,36 @@ public class FabricVersionAdapterModern implements VersionAdapter {
 
     private void setName(ItemStack stack, Component nameComp) {
         if (customNameComponentType == null || setComponentMethod == null || getComponentMethod == null) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setName: thiếu customNameComponentType/set-get method, dùng fallback setHoverName trực tiếp", null);
-            trySetHoverNameFallback(stack, nameComp);
+            ModernFallbackHoverName.trySetHoverNameFallback(stack, nameComp);
             return;
         }
         invokeSilently(setComponentMethod, stack, customNameComponentType, nameComp);
         Object verify = invokeSilently(getComponentMethod, stack, customNameComponentType);
         if (verify == null) {
-            LOGGER.warn("[FabricModern] Set tên qua registry+reflection nhưng đọc lại ra null — thử fallback setHoverName().");
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setName: set qua reflection không xác minh được", null);
-            trySetHoverNameFallback(stack, nameComp);
-        }
-    }
-
-    /** Fallback CHỈ dùng khi đường chính (registry+reflection) thất bại — rủi ro NoSuchMethodError
-     *  nếu bytecode setHoverName() đổi giữa bản biên dịch (1.21.1) và bản đang chạy thật. */
-    private void trySetHoverNameFallback(ItemStack stack, Component nameComp) {
-        try {
-            try {
-                java.lang.reflect.Method m = stack.getClass().getMethod("setHoverName", Component.class);
-                m.invoke(stack, nameComp);
-            } catch (NoSuchMethodException eNoMethod) {
-                Class<?> dc = Class.forName("net.minecraft.core.component.DataComponents");
-                Object compType = dc.getField("CUSTOM_NAME").get(null);
-                java.lang.reflect.Method mSet = stack.getClass().getMethod("set", Class.forName("net.minecraft.core.component.DataComponentType"), Object.class);
-                mSet.invoke(stack, compType, nameComp);
-            }
-        } catch (Throwable t) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.trySetHoverNameFallback: setHoverName() trực tiếp cũng lỗi", t);
+            LOGGER.warn("[FabricModern] Set tên qua reflection chưa xác minh được — thử fallback an toàn.");
+            ModernFallbackHoverName.trySetHoverNameFallback(stack, nameComp);
         }
     }
 
     private void setLore(ItemStack stack, List<Component> componentList) {
         if (loreComponentType == null || setComponentMethod == null || getComponentMethod == null) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setLore: thiếu loreComponentType/set-get method — bỏ qua set lore.", null);
+            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setLore: thiếu loreComponentType/set-get method", null);
             return;
         }
 
-        // [FIX — audit v5.5.5 Part 53, xác minh qua mappings.dev CHÍNH THỨC xuyên suốt
-        // 1.20.6 → 1.21.11] TRƯỚC ĐÂY có "Phương án 1: truyền thẳng List<Component>" thử
-        // trước — ĐÃ XÁC NHẬN ĐÂY LÀ BUG GỐC, không phải phương án dự phòng vô hại:
-        //
-        // DataComponentTypes.LORE có kiểu THẬT là DataComponentType<ItemLore> (record 2 field
-        // lines/styledLines) — KHÔNG PHẢI DataComponentType<List<Component>>. Do generics Java
-        // bị erase khi gọi qua reflection (invokeSilently gọi Method.invoke(Object,Object...),
-        // JVM không kiểm tra khớp kiểu T thật sự tại set()/get()), nên "Phương án 1" truyền
-        // thẳng 1 List thô KHÔNG BAO GIỜ ném exception — set() "thành công" vô điều kiện, và
-        // get() đọc lại trả về ĐÚNG CÁI List thô đó (vì get() chỉ trả lại y nguyên object đã
-        // lưu, không tự ép kiểu) → attemptLoreValue() luôn thấy verify != null → LUÔN báo
-        // "THÀNH CÔNG" giả — khiến "Phương án 2" (dùng đúng wrapper ItemLore, phương án ĐÚNG
-        // duy nhất theo cấu trúc component thật) KHÔNG BAO GIỜ được thử tới trong thực tế.
-        //
-        // Lỗi thật chỉ lộ ra SAU đó, khi server mã hoá item để gửi cho client hiển thị tooltip
-        // (STREAM_CODEC của LORE component được viết riêng cho kiểu ItemLore) — 1 List thô nằm
-        // sai chỗ khiến bước mã hoá/hiển thị đó thất bại (client không thấy lore) mà KHÔNG có
-        // exception nào lộ ra ở phía set() để code này bắt được — đúng loại lỗi "verify chỗ
-        // này nhưng crash chỗ khác" khiến nhiều lần sửa trước tưởng đã xong.
-        //
-        // FIX: bỏ hẳn Phương án 1 — không còn đường nào để lưu sai kiểu nữa, luôn dựng đúng
-        // ItemLore trước khi set.
-        Class<?> itemLoreClass = resolveClassCandidates(LORE_CLASS_CANDIDATES);
-        if (itemLoreClass == null) {
-            LOGGER.error("[FabricModern] Không tìm thấy class ItemLore trên runtime này — không thể set lore đúng kiểu.");
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setLore: thiếu class net.minecraft.world.item.component.ItemLore", null);
+        Object itemLoreInstance = ModernItemLoreHelper.buildItemLore(componentList);
+        if (itemLoreInstance == null) {
+            LOGGER.error("[FabricModern] Không tạo được ItemLore wrapper instance — bỏ qua set lore.");
             return;
         }
-        Object wrapper = buildListWrapperInstance(itemLoreClass, componentList);
-        if (wrapper == null) {
-            LOGGER.error("[FabricModern] Có class ItemLore nhưng KHÔNG dựng được instance qua constructor/factory — xem debug-mode.");
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setLore: buildListWrapperInstance trả về null", null);
-            return;
-        }
-        if (!attemptLoreValue(stack, wrapper, "wrapper " + itemLoreClass.getName())) {
-            LOGGER.warn("[FabricModern] KHÔNG set được lore bằng wrapper ItemLore — xem log debug-mode phía trên.");
-        }
-    }
 
-    private boolean attemptLoreValue(ItemStack stack, Object value, String description) {
-        try {
-            invokeSilently(setComponentMethod, stack, loreComponentType, value);
-            Object verify = invokeSilently(getComponentMethod, stack, loreComponentType);
-            if (verify != null) {
-                LOGGER.info("[FabricModern] Set lore THÀNH CÔNG bằng phương án: {} — đọc lại xác minh: {}", description, safeToString(verify));
-                return true;
-            }
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.attemptLoreValue: phương án '" + description + "' set xong nhưng đọc lại ra null", null);
-        } catch (Throwable t) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.attemptLoreValue: phương án '" + description + "' lỗi", t);
+        invokeSilently(setComponentMethod, stack, loreComponentType, itemLoreInstance);
+        Object verify = invokeSilently(getComponentMethod, stack, loreComponentType);
+        if (verify != null) {
+            LOGGER.info("[FabricModern] Set lore THÀNH CÔNG cho item — xác minh: {}", safeToString(verify));
+        } else {
+            LOGGER.warn("[FabricModern] Set lore xong nhưng đọc lại ra null — kiểm tra debug-mode.");
         }
-        return false;
-    }
-
-    /** [FIX comment — audit v5.5.5 Part 53] Comment CŨ ở đây khẳng định "đã xác minh qua Javadoc
-     *  chính thức... CÓ static factory ItemLore.of(List)/ItemLore.of(List,List)" — ĐÃ TRA LẠI
-     *  qua mappings.dev (Mojang mapping chính thức) xuyên suốt 1.20.6 → 1.21.11: ItemLore
-     *  KHÔNG có bất kỳ static factory nào tên "of" hay tên khác — chỉ có ĐÚNG 2 constructor
-     *  record: {@code ItemLore(List<Component> lines)} và
-     *  {@code ItemLore(List<Component> lines, List<Component> styledLines)}, ổn định không đổi
-     *  suốt dải version trên. Comment cũ SAI nhưng KHÔNG gây lỗi chức năng — vòng lặp static
-     *  factory bên dưới vốn dĩ luôn không tìm thấy gì (đúng thực tế) rồi tự rơi xuống nhánh
-     *  constructor (cũng đúng thực tế) — giữ lại vòng lặp static factory làm phòng hờ (không
-     *  hại gì) cho trường hợp version tương lai có thêm factory, nhưng SỬA LẠI comment cho đúng
-     *  để không còn ai đọc rồi tưởng thật, tốn công tìm 1 API không tồn tại. */
-    private Object buildListWrapperInstance(Class<?> wrapperClass, List<Component> componentList) {
-        try {
-            for (Method m : wrapperClass.getDeclaredMethods()) {
-                if (!Modifier.isStatic(m.getModifiers())) continue;
-                if (!wrapperClass.isAssignableFrom(m.getReturnType())) continue;
-                Class<?>[] pTypes = m.getParameterTypes();
-                m.setAccessible(true);
-                try {
-                    if (pTypes.length == 1 && pTypes[0].isAssignableFrom(List.class)) return m.invoke(null, componentList);
-                    if (pTypes.length == 2 && pTypes[0].isAssignableFrom(List.class) && pTypes[1].isAssignableFrom(List.class))
-                        return m.invoke(null, componentList, componentList);
-                } catch (Throwable ignoredPerMethod) {
-                    // thử static factory tiếp theo
-                }
-            }
-        } catch (Throwable ignored) {
-            // không có static factory phù hợp
-        }
-        try {
-            for (Constructor<?> ctor : wrapperClass.getDeclaredConstructors()) {
-                ctor.setAccessible(true);
-                Class<?>[] pTypes = ctor.getParameterTypes();
-                try {
-                    if (pTypes.length == 1 && pTypes[0].isAssignableFrom(List.class)) return ctor.newInstance(componentList);
-                    if (pTypes.length == 2 && pTypes[0].isAssignableFrom(List.class) && pTypes[1].isAssignableFrom(List.class))
-                        return ctor.newInstance(componentList, componentList);
-                } catch (Throwable ignoredPerCtor) {
-                    // thử constructor tiếp theo
-                }
-            }
-        } catch (Throwable ignored) {
-            // không có constructor phù hợp
-        }
-        return null;
     }
 
     // ===================== INVOICE ID (CustomData) =====================
@@ -411,118 +223,30 @@ public class FabricVersionAdapterModern implements VersionAdapter {
         if (stack == null || stack.isEmpty() || invoiceId == null) return;
         ensureInitialized();
         if (customDataComponentType == null || setComponentMethod == null || getComponentMethod == null) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setInvoiceId: thiếu customDataComponentType/set-get method", null);
+            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setInvoiceId: thiếu component type/method", null);
             return;
         }
 
         CompoundTag newTag = new CompoundTag();
         Object existing = invokeSilently(getComponentMethod, stack, customDataComponentType);
-        CompoundTag existingTag = extractCompoundTag(existing);
+        CompoundTag existingTag = ModernCustomDataHelper.extractCompoundTag(existing);
         if (existingTag != null) newTag = existingTag.copy();
         newTag.putString("paybot_invoice_id", invoiceId);
 
-        // [FIX — audit v5.5.5 Part 53, xác minh qua mappings.dev CHÍNH THỨC] CÙNG LOẠI BUG với
-        // setLore() phía trên: DataComponentTypes.CUSTOM_DATA có kiểu thật DataComponentType
-        // <CustomData> (final class, field CompoundTag riêng tư bên trong) — KHÔNG PHẢI
-        // DataComponentType<CompoundTag> trực tiếp. "Phương án 1: CompoundTag trực tiếp" trước
-        // đây luôn "verify thành công" giả (cùng lý do generics erasure qua reflection như lore)
-        // vì get() trả lại nguyên chính CompoundTag đã lưu, vẫn chứa "paybot_invoice_id" —
-        // khiến Phương án 2 (wrapper CustomData, phương án ĐÚNG) không bao giờ thực sự được cần
-        // tới. Khác với ItemLore (không có factory), CustomData CÓ static factory thật đã xác
-        // nhận qua mapping: {@code public static CustomData of(CompoundTag)} — ưu tiên factory
-        // này trước (buildTagWrapperInstance đã hỗ trợ, chỉ cần đổi thứ tự gọi bên dưới).
-        Class<?> customDataClass = resolveClassCandidates(CUSTOM_DATA_CLASS_CANDIDATES);
-        if (customDataClass == null) {
-            LOGGER.error("[FabricModern] Không tìm thấy class CustomData trên runtime này — không thể set invoice-id đúng kiểu.");
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setInvoiceId: thiếu class net.minecraft.world.item.component.CustomData", null);
+        Object customDataObj = ModernCustomDataHelper.buildCustomData(newTag);
+        if (customDataObj == null) {
+            LOGGER.error("[FabricModern] Không tạo được CustomData wrapper instance cho invoice id.");
             return;
         }
-        Object wrapper = buildTagWrapperInstance(customDataClass, newTag);
-        if (wrapper == null) {
-            LOGGER.error("[FabricModern] Có class CustomData nhưng KHÔNG dựng được instance qua factory/constructor — xem debug-mode.");
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.setInvoiceId: buildTagWrapperInstance trả về null", null);
-            return;
-        }
-        if (!attemptCustomDataValue(stack, wrapper, "wrapper " + customDataClass.getName())) {
-            LOGGER.warn("[FabricModern] KHÔNG set được invoice-id bằng wrapper CustomData — xem log debug-mode phía trên.");
-        }
-    }
 
-    private boolean attemptCustomDataValue(ItemStack stack, Object value, String description) {
-        try {
-            invokeSilently(setComponentMethod, stack, customDataComponentType, value);
-            Object verify = invokeSilently(getComponentMethod, stack, customDataComponentType);
-            CompoundTag verifyTag = extractCompoundTag(verify);
-            if (verifyTag != null && verifyTag.contains("paybot_invoice_id")) {
-                LOGGER.info("[FabricModern] Set CustomData (invoice id) THÀNH CÔNG bằng phương án: {}", description);
-                return true;
-            }
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.attemptCustomDataValue: phương án '" + description + "' không xác minh được sau khi set", null);
-        } catch (Throwable t) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.attemptCustomDataValue: phương án '" + description + "' lỗi", t);
+        invokeSilently(setComponentMethod, stack, customDataComponentType, customDataObj);
+        Object verify = invokeSilently(getComponentMethod, stack, customDataComponentType);
+        String savedId = ModernCustomDataHelper.getInvoiceIdFromCustomData(verify);
+        if (invoiceId.equals(savedId)) {
+            LOGGER.info("[FabricModern] Set CustomData (invoice id: {}) THÀNH CÔNG!", invoiceId);
+        } else {
+            LOGGER.warn("[FabricModern] Set CustomData xong nhưng xác minh invoice id thất bại.");
         }
-        return false;
-    }
-
-    /** [FIX thứ tự — audit v5.5.5 Part 53] TRƯỚC ĐÂY thử constructor (private) trước, static
-     *  factory sau. Đã xác nhận qua mapping chính thức: CustomData có constructor {@code
-     *  private CustomData(CompoundTag)} NHƯNG cũng có factory tĩnh THẬT {@code public static
-     *  CustomData of(CompoundTag)}. Gọi constructor private qua reflection (setAccessible(true))
-     *  vẫn hoạt động nên KHÔNG phải bug functional — nhưng gọi thẳng API public chính thức
-     *  (of()) đúng ý đồ Mojang hơn là lách qua constructor private, nên đổi thứ tự: ưu tiên
-     *  static factory public trước, constructor private chỉ còn là dự phòng cho version nào lỡ
-     *  không có factory. */
-    private Object buildTagWrapperInstance(Class<?> wrapperClass, CompoundTag tag) {
-        // Ưu tiên static factory method public nhận CompoundTag (vd CustomData.of(tag)).
-        try {
-            for (Method m : wrapperClass.getDeclaredMethods()) {
-                if (Modifier.isStatic(m.getModifiers())
-                        && m.getParameterCount() == 1 && m.getParameterTypes()[0].isAssignableFrom(CompoundTag.class)
-                        && wrapperClass.isAssignableFrom(m.getReturnType())) {
-                    m.setAccessible(true);
-                    try {
-                        return m.invoke(null, tag);
-                    } catch (Throwable ignored) {
-                        // thử tiếp
-                    }
-                }
-            }
-        } catch (Throwable ignored) {
-            // không có static factory phù hợp
-        }
-        // Dự phòng: constructor nhận CompoundTag (kể cả private, qua setAccessible).
-        try {
-            for (Constructor<?> ctor : wrapperClass.getDeclaredConstructors()) {
-                ctor.setAccessible(true);
-                Class<?>[] pTypes = ctor.getParameterTypes();
-                if (pTypes.length == 1 && pTypes[0].isAssignableFrom(CompoundTag.class)) {
-                    try {
-                        return ctor.newInstance(tag);
-                    } catch (Throwable ignored) {
-                        // thử tiếp
-                    }
-                }
-            }
-        } catch (Throwable ignored) {
-            // không có constructor phù hợp
-        }
-        return null;
-    }
-
-    private CompoundTag extractCompoundTag(Object customDataObj) {
-        if (customDataObj == null) return null;
-        if (customDataObj instanceof CompoundTag) return (CompoundTag) customDataObj;
-        try {
-            for (Method m : customDataObj.getClass().getMethods()) {
-                if (m.getParameterCount() == 0 && CompoundTag.class.isAssignableFrom(m.getReturnType())) {
-                    Object result = invokeSilently(m, customDataObj);
-                    if (result instanceof CompoundTag) return (CompoundTag) result;
-                }
-            }
-        } catch (Throwable ignored) {
-            // không tìm được method trích CompoundTag
-        }
-        return null;
     }
 
     @Override
@@ -532,30 +256,14 @@ public class FabricVersionAdapterModern implements VersionAdapter {
         if (customDataComponentType == null || getComponentMethod == null) return null;
         try {
             Object customDataObj = invokeSilently(getComponentMethod, stack, customDataComponentType);
-            CompoundTag tag = extractCompoundTag(customDataObj);
-            if (tag != null) {
-                try {
-                    for (Method m : tag.getClass().getMethods()) {
-                        if ("getString".equals(m.getName()) && m.getParameterCount() == 1 && m.getParameterTypes()[0] == String.class) {
-                            Object res = m.invoke(tag, "paybot_invoice_id");
-                            if (res instanceof String) {
-                                String s = (String) res;
-                                if (!s.isEmpty()) return s;
-                            } else if (res instanceof java.util.Optional) {
-                                java.util.Optional<?> opt = (java.util.Optional<?>) res;
-                                if (opt.isPresent()) return String.valueOf(opt.get());
-                            }
-                        }
-                    }
-                } catch (Throwable ignored) {}
-            }
+            return ModernCustomDataHelper.getInvoiceIdFromCustomData(customDataObj);
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("FabricVersionAdapterModern.getInvoiceId", t);
         }
         return null;
     }
 
-    // ===================== MAP (QR code) — đã an toàn từ trước, giữ nguyên logic =====================
+    // ===================== MAP (QR code) =====================
 
     @Override
     public MapItemSavedData getMapSavedData(ItemStack mapItem, ServerLevel world) {
@@ -579,55 +287,7 @@ public class FabricVersionAdapterModern implements VersionAdapter {
 
     @Override
     public void lockMap(MapItemSavedData state) {
-        if (state == null) return;
-        Field lockedField = findLockedField();
-        if (lockedField == null) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.lockMap: không tìm được field 'locked' bằng bất kỳ cách nào — "
-                    + "map QR có thể bị ghi đè địa hình theo thời gian trên phiên bản MC này.", null);
-            return;
-        }
-        try {
-            lockedField.setAccessible(true);
-            lockedField.set(state, true);
-        } catch (Throwable t) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.lockMap: set field thất bại", t);
-        }
-    }
-
-    private Field findLockedField() {
-        String[] candidates = {"locked", "field_1838", "f_77914_", "f_77910_", "f_77906_"};
-        for (String name : candidates) {
-            try {
-                Field f = MapItemSavedData.class.getDeclaredField(name);
-                if (f.getType() == boolean.class) {
-                    f.setAccessible(true);
-                    return f;
-                }
-            } catch (Throwable ignored) {}
-        }
-        try {
-            MappingResolver resolver = FabricLoader.getInstance().getMappingResolver();
-            String runtimeName = resolver.mapFieldName("intermediary",
-                    "net.minecraft.class_22", "field_1838", "Z");
-            Field f = MapItemSavedData.class.getDeclaredField(runtimeName);
-            f.setAccessible(true);
-            return f;
-        } catch (Throwable ignored) {
-            // ID field_1838 chỉ là best-effort, có thể không đúng bản này — thử tiếp
-        }
-        List<Field> boolFields = new java.util.ArrayList<>();
-        for (Field f : MapItemSavedData.class.getDeclaredFields()) {
-            if (f.getType() == boolean.class) boolFields.add(f);
-        }
-        if (boolFields.size() == 1) {
-            LOGGER.info("[FabricModern] lockMap: dùng fallback type-scan, tìm thấy đúng 1 field boolean: {}", boolFields.get(0).getName());
-            return boolFields.get(0);
-        }
-        if (boolFields.size() > 1) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.findLockedField: có " + boolFields.size()
-                    + " field boolean trong MapItemSavedData, không chắc field nào là 'locked'.", null);
-        }
-        return null;
+        ModernMapLockHelper.lockMap(state);
     }
 
     // ===================== TIỆN ÍCH DÙNG CHUNG =====================
@@ -639,21 +299,21 @@ public class FabricVersionAdapterModern implements VersionAdapter {
     }
 
     private Object invokeSilently(Method m, Object target, Object... args) {
+        if (m == null) return null;
         try {
             m.setAccessible(true);
-        } catch (Throwable ignored) {
-            // môi trường có thể chặn setAccessible, vẫn thử invoke bình thường
-        }
+        } catch (Throwable ignored) {}
         try {
             return m.invoke(target, args);
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            PayBotDebug.logSwallowed("FabricVersionAdapterModern.invokeSilently on " + m.getName(), t);
             return null;
         }
     }
 
     private ResourceLocation createResourceLocation(String namespace, String path) {
         try {
-            java.lang.reflect.Method mFrom = ResourceLocation.class.getMethod("fromNamespaceAndPath", String.class, String.class);
+            Method mFrom = ResourceLocation.class.getMethod("fromNamespaceAndPath", String.class, String.class);
             return (ResourceLocation) mFrom.invoke(null, namespace, path);
         } catch (Throwable ignored) {}
         try {
@@ -664,9 +324,7 @@ public class FabricVersionAdapterModern implements VersionAdapter {
                     return (ResourceLocation) ctor.newInstance(namespace, path);
                 }
             }
-        } catch (Throwable t2) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.createResourceLocation: fallback constructor reflection lỗi", t2);
-        }
+        } catch (Throwable ignored) {}
         try {
             for (Method m : ResourceLocation.class.getMethods()) {
                 if (Modifier.isStatic(m.getModifiers())
@@ -676,45 +334,8 @@ public class FabricVersionAdapterModern implements VersionAdapter {
                     if (result != null) return (ResourceLocation) result;
                 }
             }
-        } catch (Throwable t3) {
-            PayBotDebug.logSwallowed("FabricVersionAdapterModern.createResourceLocation: fallback static factory lỗi", t3);
-        }
-        return null;
-    }
-
-    /** Thử Class.forName trực tiếp (chỉ hoạt động ở dev-env), rồi qua MappingResolver intermediary
-     *  (chỉ hoạt động nếu tên truyền vào ĐÃ LÀ intermediary hợp lệ) — giữ như 1 phương án bổ sung
-     *  trong chuỗi "thử nhiều phương án + xác minh đọc lại", không còn là điểm phụ thuộc duy nhất. */
-    private Class<?> resolveClassCandidates(String... candidates) {
-        net.fabricmc.loader.api.MappingResolver resolver = null;
-        try {
-            resolver = net.fabricmc.loader.api.FabricLoader.getInstance().getMappingResolver();
         } catch (Throwable ignored) {}
-
-        for (String name : candidates) {
-            try {
-                return Class.forName(name);
-            } catch (Throwable ignored) {}
-
-            if (resolver != null) {
-                try {
-                    String runtimeName = resolver.mapClassName("intermediary", name);
-                    if (runtimeName != null && !runtimeName.isEmpty()) {
-                        return Class.forName(runtimeName);
-                    }
-                } catch (Throwable ignored) {}
-            }
-
-            try {
-                ClassLoader cl = net.fabricmc.loader.api.FabricLoader.getInstance().getClass().getClassLoader();
-                if (cl != null) return Class.forName(name, true, cl);
-            } catch (Throwable ignored) {}
-        }
         return null;
-    }
-
-    private Class<?> resolveClassEitherWay(String nameOrIntermediary) {
-        return resolveClassCandidates(nameOrIntermediary);
     }
 
     private String safeToString(Object o) {

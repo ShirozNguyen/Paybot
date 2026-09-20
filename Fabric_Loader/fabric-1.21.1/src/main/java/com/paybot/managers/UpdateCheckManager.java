@@ -85,8 +85,9 @@ public class UpdateCheckManager {
                 return;
             }
 
-            // 3. Lọc và so sánh phiên bản dành riêng cho Loader của chính file JAR này
-            CheckResult result = LoaderSpecificVersionComparator.evaluateUpdate(jsonRaw, selfLoader, currentVersion);
+            // 3. Lọc và so sánh phiên bản dành riêng cho Loader và phiên bản Minecraft của chính file JAR này
+            String mcVersion = com.paybot.compat.McVersionHelper.getMinecraftVersion();
+            CheckResult result = LoaderSpecificVersionComparator.evaluateUpdate(jsonRaw, selfLoader, currentVersion, mcVersion);
             latestVersion = result.getLatestVersion();
             updateAvailable = result.isUpdateAvailable();
             downloadUrl = result.getDownloadUrl();

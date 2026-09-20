@@ -59,13 +59,14 @@ public class LoaderSpecificVersionComparator {
     /**
      * Phân tích JSON từ Modrinth và tìm bản cập nhật mới nhất dành riêng cho Loader của file JAR này.
      *
-     * @param jsonRaw        Dữ liệu JSON thô trả về từ Modrinth API
-     * @param jarLoaderType  Loại Loader của chính file JAR này
-     * @param currentVersion Phiên bản hiện tại của file JAR
+     * @param jsonRaw          Dữ liệu JSON thô trả về từ Modrinth API
+     * @param jarLoaderType    Loại Loader của chính file JAR này
+     * @param currentVersion   Phiên bản hiện tại của file JAR
+     * @param currentMcVersion Phiên bản Minecraft của server (ví dụ 1.21.1), null nếu không lọc theo MC
      * @return CheckResult chứa thông tin so sánh
      */
-    public static CheckResult evaluateUpdate(String jsonRaw, JarLoaderType jarLoaderType, String currentVersion) {
-        String cleanCurrent = currentVersion != null ? currentVersion.trim() : "0.0.0";
+    public static CheckResult evaluateUpdate(String jsonRaw, JarLoaderType jarLoaderType, String currentVersion, String currentMcVersion) {
+        String cleanCurrent = extractCleanVersion(currentVersion);
         String downloadUrl = "https://modrinth.com/"
                 + (jarLoaderType == JarLoaderType.PLUGIN ? "plugin" : "mod")
                 + "/" + jarLoaderType.getModrinthSlug();
@@ -86,48 +87,87 @@ public class LoaderSpecificVersionComparator {
             }
 
             String latestMatchingVersion = null;
+            String latestMatchingCleanVersion = null;
 
             // Modrinth API trả về mảng các version đã được sắp xếp từ mới nhất đến cũ nhất
             for (JsonElement item : versions) {
                 if (!item.isJsonObject()) continue;
                 JsonObject verObj = item.getAsJsonObject();
 
-                // Lấy danh sách loader mà phiên bản này hỗ trợ
+                // 1. Kiểm tra xem version này có hỗ trợ đúng Loader của chính JAR này hay không
                 List<String> loaders = extractLoaders(verObj);
-
-                // Kiểm tra xem version này có hỗ trợ đúng Loader của chính JAR này hay không
-                boolean isCompatible = false;
+                boolean isCompatibleLoader = false;
                 for (String l : loaders) {
                     if (jarLoaderType.isCompatibleWithModrinth(l)) {
-                        isCompatible = true;
+                        isCompatibleLoader = true;
                         break;
                     }
                 }
+                if (!isCompatibleLoader) continue;
 
-                if (isCompatible && verObj.has("version_number")) {
+                // 2. Kiểm tra xem version này có hỗ trợ đúng phiên bản Minecraft của server hiện tại không
+                if (currentMcVersion != null && !currentMcVersion.trim().isEmpty()) {
+                    List<String> gameVersions = extractGameVersions(verObj);
+                    if (!gameVersions.isEmpty() && !gameVersions.contains(currentMcVersion.trim())) {
+                        continue; // Bỏ qua nếu release này không dành cho phiên bản Minecraft hiện tại của server
+                    }
+                }
+
+                if (verObj.has("version_number")) {
                     latestMatchingVersion = verObj.get("version_number").getAsString().trim();
-                    break; // Tìm thấy version mới nhất hỗ trợ đúng Loader này -> dừng duyệt
+                    latestMatchingCleanVersion = extractCleanVersion(latestMatchingVersion);
+                    break; // Tìm thấy version mới nhất hợp lệ -> dừng duyệt
                 }
             }
 
             if (latestMatchingVersion == null) {
-                // Không tìm thấy version nào trên Modrinth dành cho Loader này
                 return new CheckResult(false, cleanCurrent, cleanCurrent, jarLoaderType, downloadUrl);
             }
 
-            // So sánh số học phiên bản ngữ nghĩa (Semantic Versioning)
-            boolean hasNewer = compareVersions(latestMatchingVersion, cleanCurrent) > 0;
-            return new CheckResult(hasNewer, latestMatchingVersion, cleanCurrent, jarLoaderType, downloadUrl);
+            // So sánh số học phiên bản ngữ nghĩa (SemVer) trên Clean Version (bỏ qua build metadata sau dấu +)
+            boolean hasNewer = compareVersions(latestMatchingCleanVersion, cleanCurrent) > 0;
+            return new CheckResult(hasNewer, latestMatchingCleanVersion, cleanCurrent, jarLoaderType, downloadUrl);
 
         } catch (Throwable t) {
             return new CheckResult(false, cleanCurrent, cleanCurrent, jarLoaderType, downloadUrl);
         }
     }
 
+    public static CheckResult evaluateUpdate(String jsonRaw, JarLoaderType jarLoaderType, String currentVersion) {
+        return evaluateUpdate(jsonRaw, jarLoaderType, currentVersion, null);
+    }
+
+    /**
+     * Tách bỏ phần build metadata sau dấu '+' theo đặc tả SemVer 2.0.0.
+     * Ví dụ: "5.5.8+fabric.26.2" -> "5.5.8"
+     */
+    public static String extractCleanVersion(String version) {
+        if (version == null) return "0.0.0";
+        String v = version.trim();
+        int plusIdx = v.indexOf('+');
+        if (plusIdx >= 0) {
+            v = v.substring(0, plusIdx);
+        }
+        return v.trim();
+    }
+
     private static List<String> extractLoaders(JsonObject verObj) {
         List<String> result = new ArrayList<>();
         if (verObj.has("loaders") && verObj.get("loaders").isJsonArray()) {
             JsonArray arr = verObj.getAsJsonArray("loaders");
+            for (JsonElement el : arr) {
+                if (el.isJsonPrimitive()) {
+                    result.add(el.getAsString().trim());
+                }
+            }
+        }
+        return result;
+    }
+
+    private static List<String> extractGameVersions(JsonObject verObj) {
+        List<String> result = new ArrayList<>();
+        if (verObj.has("game_versions") && verObj.get("game_versions").isJsonArray()) {
+            JsonArray arr = verObj.getAsJsonArray("game_versions");
             for (JsonElement el : arr) {
                 if (el.isJsonPrimitive()) {
                     result.add(el.getAsString().trim());
