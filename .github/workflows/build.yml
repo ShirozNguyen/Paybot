@@ -136,19 +136,22 @@ jobs:
             fi
           done
 
-      - name: Build independent modules (neoforge-1.21.10, neoforge-1.21.11)
+      - name: Build independent modules (neoforge/fabric 1.21.10, 1.21.11)
         if: always()
         shell: bash
         run: |
           mkdir -p build-diagnostics
-          for mod in NeoForge_Loader/neoforge-1.21.10 NeoForge_Loader/neoforge-1.21.11; do
+          for mod in NeoForge_Loader/neoforge-1.21.10 NeoForge_Loader/neoforge-1.21.11 Fabric_Loader/fabric-1.21.10 Fabric_Loader/fabric-1.21.11; do
             echo "=== Building $mod (Gradle 9.2, project độc lập) ==="
             chmod +x "$mod/gradlew"
             mod_name=$(basename "$mod")
             if (cd "$mod" && ./gradlew build --build-cache --stacktrace) > "build-diagnostics/${mod_name}.log" 2>&1; then
               echo ">>> [SUCCESS] $mod built successfully"
               find "$mod/build/libs" -type f -name "*.jar" ! -name "*-dev.jar" ! -name "*-shadow.jar" ! -name "*-sources.jar" | while read -r f; do
-                cp "$f" Done/NeoForge/ 2>/dev/null || true
+                case "$mod" in
+                  */Fabric_Loader/*) cp "$f" Done/Fabric_Quilt/ 2>/dev/null || true ;;
+                  */NeoForge_Loader/*) cp "$f" Done/NeoForge/ 2>/dev/null || true ;;
+                esac
                 cp "$f" artifacts/ 2>/dev/null || true
               done
             else

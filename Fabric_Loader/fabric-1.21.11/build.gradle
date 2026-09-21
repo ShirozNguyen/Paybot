@@ -15,7 +15,12 @@ plugins {
 // root settings.gradle 'includeBuild') — KHÔNG còn nằm trong allprojects{}/subprojects{} của
 // root build.gradle nữa, nên PHẢI tự khai lại version/group/repositories/toolchain y hệt logic
 // root (trước đây thừa hưởng tự động qua allprojects{} — xem LOG.md Part 62 để biết đầy đủ).
-version = '5.5.8'
+// [PayBot Version Sync - Part 129]
+// Đọc mod_version tập trung từ root gradle.properties duy nhất của toàn bộ project.
+// KHÔNG hardcode version ở đây! Khi nâng version, chỉ cần sửa duy nhất tại root gradle.properties.
+def rootProps = new Properties()
+file("${rootDir}/../../gradle.properties").withInputStream { rootProps.load(it) }
+version = rootProps.getProperty('mod_version')
 group = 'com.paybot'
 
 repositories {

@@ -24,7 +24,12 @@ plugins {
 // java.toolchain{} bên dưới GIỮ NGUYÊN từ Part 49 (đã tự ghi đè Java 25 từ trước). Lưu ý: dòng
 // 'version = project.neoforge_version' trong khối neoForge{} bên dưới KHÁC với 'version' của
 // Gradle project (mod_version) — 2 khái niệm độc lập, không đụng nhau.
-version = '5.5.8'
+// [PayBot Version Sync - Part 129]
+// Đọc mod_version tập trung từ root gradle.properties duy nhất của toàn bộ project.
+// KHÔNG hardcode version ở đây! Khi nâng version, chỉ cần sửa duy nhất tại root gradle.properties.
+def rootProps = new Properties()
+file("${rootDir}/../../gradle.properties").withInputStream { rootProps.load(it) }
+version = rootProps.getProperty('mod_version')
 group = 'com.paybot'
 
 repositories {
