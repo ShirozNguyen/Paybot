@@ -46,7 +46,7 @@ public class ModernFallbackHoverName {
 
             if (dcClass != null) {
                 Object compType = null;
-                for (String fName : new String[]{"field_49626", "CUSTOM_NAME"}) {
+                for (String fName : new String[]{"field_49631", "CUSTOM_NAME"}) {
                     try {
                         Field f = dcClass.getField(fName);
                         compType = f.get(null);

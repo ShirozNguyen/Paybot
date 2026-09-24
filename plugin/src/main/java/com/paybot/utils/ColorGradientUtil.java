@@ -50,6 +50,16 @@ public final class ColorGradientUtil {
         matcher.appendTail(sb);
         text = sb.toString();
 
+        // 3b. Xử lý Hex #RRGGBB thuần
+        matcher = PLAIN_HEX_PATTERN.matcher(text);
+        sb = new StringBuilder();
+        while (matcher.find()) {
+            String hex = matcher.group(1);
+            matcher.appendReplacement(sb, toSpigotHex(hex));
+        }
+        matcher.appendTail(sb);
+        text = sb.toString();
+
         // 4. Color codes &a - &f, &0 - &9, &k - &r
         return ChatColor.translateAlternateColorCodes('&', text);
     }

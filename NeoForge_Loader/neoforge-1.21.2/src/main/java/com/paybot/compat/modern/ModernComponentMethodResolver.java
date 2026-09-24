@@ -34,7 +34,7 @@ public class ModernComponentMethodResolver {
                 String runtimeSetName = (String) mapMethodName.invoke(resolver, "intermediary",
                         "net.minecraft.class_1799", "method_57379", "(Lnet/minecraft/class_9331;Ljava/lang/Object;)Ljava/lang/Object;");
                 String runtimeGetName = (String) mapMethodName.invoke(resolver, "intermediary",
-                        "net.minecraft.class_9278", "method_57824", "(Lnet/minecraft/class_9331;)Ljava/lang/Object;");
+                        "net.minecraft.class_9322", "method_57824", "(Lnet/minecraft/class_9331;)Ljava/lang/Object;");
 
                 if (runtimeSetName != null && !runtimeSetName.isEmpty()) {
                     for (Method m : itemStackClass.getMethods()) {

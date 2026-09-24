@@ -58,7 +58,6 @@ public class FabricVersionAdapterModern implements VersionAdapter {
 
     private synchronized void ensureInitialized() {
         if (initialized) return;
-        initialized = true;
 
         resolveRegistry();
 
@@ -66,14 +65,19 @@ public class FabricVersionAdapterModern implements VersionAdapter {
         loreComponentType = getDataComponentType("lore");
         customDataComponentType = getDataComponentType("custom_data");
 
-        LOGGER.info("[FabricModern] Tra registry — custom_name={}, lore={}, custom_data={}",
+        // Nạp trực tiếp từ DataComponents / DataComponentTypes / class_9332 nếu registry lookup chưa ra
+        if (customNameComponentType == null || loreComponentType == null || customDataComponentType == null) {
+            resolveDirectComponentTypes();
+        }
+
+        LOGGER.info("[FabricModern] Tra components — custom_name={}, lore={}, custom_data={}",
                 customNameComponentType != null, loreComponentType != null, customDataComponentType != null);
 
         Object anchor = customNameComponentType != null ? customNameComponentType
                 : (loreComponentType != null ? loreComponentType : customDataComponentType);
 
         if (anchor == null) {
-            LOGGER.error("[FabricModern] Không lấy được BẤT KỲ DataComponentType nào qua registry.");
+            LOGGER.error("[FabricModern] Không lấy được BẤT KỲ DataComponentType nào — sẽ thử lại ở lần sau.");
             PayBotDebug.logSwallowed("FabricVersionAdapterModern.ensureInitialized: không có anchor", null);
             return;
         }
@@ -83,12 +87,50 @@ public class FabricVersionAdapterModern implements VersionAdapter {
         getComponentMethod = resolver.getGetMethod();
 
         if (!resolver.isReady()) {
-            LOGGER.error("[FabricModern] Không tìm thấy method set/get tương ứng trên ItemStack!");
+            LOGGER.error("[FabricModern] Không tìm thấy method set/get tương ứng trên ItemStack — sẽ thử lại ở lần sau!");
             PayBotDebug.logSwallowed("FabricVersionAdapterModern.ensureInitialized: resolver not ready", null);
-        } else {
-            LOGGER.info("[FabricModern] Sẵn sàng — setComponentMethod={}, getComponentMethod={}",
-                    setComponentMethod.getName(), getComponentMethod.getName());
+            return;
         }
+
+        LOGGER.info("[FabricModern] Sẵn sàng — setComponentMethod={}, getComponentMethod={}",
+                setComponentMethod.getName(), getComponentMethod.getName());
+        this.initialized = true;
+    }
+
+    private void resolveDirectComponentTypes() {
+        for (String candidate : new String[]{
+                "net.minecraft.core.component.DataComponents",
+                "net.minecraft.component.DataComponentTypes",
+                "net.minecraft.class_9332"
+        }) {
+            try {
+                Class<?> dcClass = Class.forName(candidate);
+                if (customNameComponentType == null) {
+                    customNameComponentType = getStaticFieldValue(dcClass, "CUSTOM_NAME", "field_49631");
+                }
+                if (loreComponentType == null) {
+                    loreComponentType = getStaticFieldValue(dcClass, "LORE", "field_49632");
+                }
+                if (customDataComponentType == null) {
+                    customDataComponentType = getStaticFieldValue(dcClass, "CUSTOM_DATA", "field_49634");
+                }
+                if (customNameComponentType != null && loreComponentType != null) {
+                    LOGGER.info("[FabricModern] Nạp thành công DataComponentType trực tiếp từ {}", candidate);
+                    break;
+                }
+            } catch (Throwable ignored) {}
+        }
+    }
+
+    private Object getStaticFieldValue(Class<?> clazz, String... fieldNames) {
+        for (String fName : fieldNames) {
+            try {
+                Field f = clazz.getField(fName);
+                Object val = f.get(null);
+                if (val != null) return val;
+            } catch (Throwable ignored) {}
+        }
+        return null;
     }
 
     /** Dò registry DataComponentType thật trong BuiltInRegistries. */

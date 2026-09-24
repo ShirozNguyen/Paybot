@@ -41,7 +41,12 @@ jobs:
         run: gradle --version
 
       - name: Build project
-        run: gradle build --parallel --build-cache --continue --stacktrace
+        shell: bash
+        run: |
+          mkdir -p build-diagnostics
+          if ! gradle build --parallel --build-cache --continue --stacktrace; then
+            echo "root_project" >> build-diagnostics/failed_modules.txt
+          fi
 
       - name: Harvest Root Modules JARs
         if: always()
@@ -241,7 +246,7 @@ jobs:
           echo "=== PAYBOT BUILD DIAGNOSTICS & STATUS SUMMARY ==="
           echo "========================================================"
           if [ -f build-diagnostics/failed_modules.txt ] && [ -s build-diagnostics/failed_modules.txt ]; then
-            echo "❌ THE FOLLOWING SUBMODULES FAILED TO BUILD:"
+            echo "❌ THE FOLLOWING MODULES FAILED TO BUILD:"
             cat build-diagnostics/failed_modules.txt
             echo "========================================================"
             echo "Detailed error logs are saved in 'PayBot-Diagnostics' artifact."
@@ -249,6 +254,6 @@ jobs:
             exit 1
           else
             echo "========================================================"
-            echo "✅ ALL 102 MODULES BUILT SUCCESSFULLY (100%)!"
+            echo "✅ ALL ACTIVE TARGETS BUILT SUCCESSFULLY!"
             echo "========================================================"
           fi
