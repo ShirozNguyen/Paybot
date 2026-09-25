@@ -159,7 +159,7 @@ public class NeoForgeVersionAdapterModern implements VersionAdapter {
         for (Method m : registryClass.getMethods()) {
             if (m.getParameterCount() != 1) continue;
             Class<?> p0 = m.getParameterTypes()[0];
-            if (!p0.isAssignableFrom(ResourceLocation.class)) continue;
+            if (!(p0 == ResourceLocation.class)) continue;
             Class<?> ret = m.getReturnType();
             if (ret == void.class || ret == boolean.class || ret == Boolean.class) continue;
             if (ret == Optional.class) {

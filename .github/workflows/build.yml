@@ -14,112 +14,60 @@ permissions:
   contents: read
 
 jobs:
-  build-root:
-    name: Build Root Modules (43 Targets)
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v5
-
-      - name: Setup Java 21
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.8'
-          validate-wrappers: false
-
-      - name: Check Java
-        run: java -version
-
-      - name: Check Gradle
-        run: gradle --version
-
-      - name: Build project
-        env:
-          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2048m -XX:+UseG1GC -Dorg.gradle.daemon=false"
-        shell: bash
-        run: |
-          mkdir -p build-diagnostics
-          if ! gradle build --parallel --build-cache --continue --stacktrace; then
-            echo "root_project" >> build-diagnostics/failed_root.txt
-          fi
-
-      - name: Harvest Root Modules JARs
-        if: always()
-        shell: bash
-        run: |
-          mkdir -p Done/Fabric_Quilt Done/Forge Done/NeoForge Done/Plugins
-          mkdir -p build-diagnostics
-
-          echo "=== Harvesting JARs from root project build ==="
-          find . -type f -path '*/build/libs/*.jar' | while read -r f; do
-            fname=$(basename "$f")
-            case "$fname" in
-              *-dev.jar|*-shadow.jar|*-sources.jar) continue ;;
-            esac
-            fsize=$(wc -c < "$f")
-            if [ "$fsize" -lt 1024 ]; then
-              continue
-            fi
-
-            case "$f" in
-              */Fabric_Loader/*) cp "$f" Done/Fabric_Quilt/ 2>/dev/null || true ;;
-              */Forge_Loader/*) cp "$f" Done/Forge/ 2>/dev/null || true ;;
-              */NeoForge_Loader/*) cp "$f" Done/NeoForge/ 2>/dev/null || true ;;
-              */plugin/*) cp "$f" Done/Plugins/ 2>/dev/null || true ;;
-            esac
-          done
-
-      - name: Upload Root Done
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: root-done
-          path: Done/
-          retention-days: 1
-          if-no-files-found: ignore
-
-      - name: Upload Root Diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: root-diag
-          path: build-diagnostics/
-          retention-days: 1
-          if-no-files-found: ignore
-
-  build-independent:
+  build-elastic-cluster:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: "Independent: 26.x (Fabric, Forge, NeoForge)"
-            group: "indep-26x"
-            mods: "Fabric_Loader/fabric-26.1 Fabric_Loader/fabric-26.2 NeoForge_Loader/neoforge-26.1 NeoForge_Loader/neoforge-26.2 Forge_Loader/forge-26.1 Forge_Loader/forge-26.2"
-            jvm_ram: "-Xmx2048m"
+          - name: "Node 1: [Fast: 26.x Fabric] -> [Main: Plugin & Fabric 1.16.5-1.18.2]"
+            node_id: "node-1-fabric-116-118"
+            indep_mods: "Fabric_Loader/fabric-26.1 Fabric_Loader/fabric-26.2"
+            root_batch_1: ":plugin:build :Fabric_Loader:fabric-1.16.5:build :Fabric_Loader:fabric-1.17.1:build"
+            root_batch_2: ":Fabric_Loader:fabric-1.18:build :Fabric_Loader:fabric-1.18.1:build :Fabric_Loader:fabric-1.18.2:build"
 
-          - name: "Independent: 1.21.10 & 1.21.11"
-            group: "indep-121-modern"
-            mods: "NeoForge_Loader/neoforge-1.21.10 NeoForge_Loader/neoforge-1.21.11 Fabric_Loader/fabric-1.21.10 Fabric_Loader/fabric-1.21.11"
-            jvm_ram: "-Xmx2048m"
+          - name: "Node 2: [Fast: Fabric 1.21.10-11] -> [Main: Fabric 1.19-1.19.4]"
+            node_id: "node-2-fabric-119"
+            indep_mods: "Fabric_Loader/fabric-1.21.10 Fabric_Loader/fabric-1.21.11"
+            root_batch_1: ":Fabric_Loader:fabric-1.19:build :Fabric_Loader:fabric-1.19.1:build :Fabric_Loader:fabric-1.19.2:build"
+            root_batch_2: ":Fabric_Loader:fabric-1.19.3:build :Fabric_Loader:fabric-1.19.4:build"
 
-          - name: "Independent: Fabric 1.21.2 - 1.21.9"
-            group: "indep-fabric-121"
-            mods: "Fabric_Loader/fabric-1.21.2 Fabric_Loader/fabric-1.21.3 Fabric_Loader/fabric-1.21.4 Fabric_Loader/fabric-1.21.5 Fabric_Loader/fabric-1.21.6 Fabric_Loader/fabric-1.21.7 Fabric_Loader/fabric-1.21.8 Fabric_Loader/fabric-1.21.9"
-            jvm_ram: "-Xmx1536m"
+          - name: "Node 3: [Fast: Fabric 1.21.2-5] -> [Main: Fabric 1.20-1.20.4]"
+            node_id: "node-3-fabric-120"
+            indep_mods: "Fabric_Loader/fabric-1.21.2 Fabric_Loader/fabric-1.21.3 Fabric_Loader/fabric-1.21.4 Fabric_Loader/fabric-1.21.5"
+            root_batch_1: ":Fabric_Loader:fabric-1.20:build :Fabric_Loader:fabric-1.20.1:build :Fabric_Loader:fabric-1.20.2:build"
+            root_batch_2: ":Fabric_Loader:fabric-1.20.3:build :Fabric_Loader:fabric-1.20.4:build"
 
-          - name: "Independent: NeoForge 1.21.2 - 1.21.9"
-            group: "indep-neoforge-121"
-            mods: "NeoForge_Loader/neoforge-1.21.2 NeoForge_Loader/neoforge-1.21.3 NeoForge_Loader/neoforge-1.21.4 NeoForge_Loader/neoforge-1.21.5 NeoForge_Loader/neoforge-1.21.6 NeoForge_Loader/neoforge-1.21.7 NeoForge_Loader/neoforge-1.21.8 NeoForge_Loader/neoforge-1.21.9"
-            jvm_ram: "-Xmx1536m"
+          - name: "Node 4: [Fast: Fabric 1.21.6-9] -> [Main: Fabric 1.20.5-1.21.1]"
+            node_id: "node-4-fabric-1205-1211"
+            indep_mods: "Fabric_Loader/fabric-1.21.6 Fabric_Loader/fabric-1.21.7 Fabric_Loader/fabric-1.21.8 Fabric_Loader/fabric-1.21.9"
+            root_batch_1: ":Fabric_Loader:fabric-1.20.5:build :Fabric_Loader:fabric-1.20.6:build"
+            root_batch_2: ":Fabric_Loader:fabric-1.21:build :Fabric_Loader:fabric-1.21.1:build"
+
+          - name: "Node 5: [Fast: NeoForge 1.21.10-26.2] -> [Main: Forge 1.16.2-1.18.2]"
+            node_id: "node-5-forge-116-118"
+            indep_mods: "NeoForge_Loader/neoforge-1.21.10 NeoForge_Loader/neoforge-1.21.11 NeoForge_Loader/neoforge-26.1 NeoForge_Loader/neoforge-26.2"
+            root_batch_1: ":Forge_Loader:forge-1.16.2:build :Forge_Loader:forge-1.16.3:build :Forge_Loader:forge-1.16.4:build :Forge_Loader:forge-1.16.5:build"
+            root_batch_2: ":Forge_Loader:forge-1.17.1:build :Forge_Loader:forge-1.18:build :Forge_Loader:forge-1.18.1:build :Forge_Loader:forge-1.18.2:build"
+
+          - name: "Node 6: [Fast: Forge 26.x] -> [Main: Forge 1.19-1.20.2]"
+            node_id: "node-6-forge-119-120"
+            indep_mods: "Forge_Loader/forge-26.1 Forge_Loader/forge-26.2"
+            root_batch_1: ":Forge_Loader:forge-1.19:build :Forge_Loader:forge-1.19.1:build :Forge_Loader:forge-1.19.2:build :Forge_Loader:forge-1.19.3:build"
+            root_batch_2: ":Forge_Loader:forge-1.19.4:build :Forge_Loader:forge-1.20:build :Forge_Loader:forge-1.20.1:build :Forge_Loader:forge-1.20.2:build"
+
+          - name: "Node 7: [Fast: NeoForge 1.21.2-5] -> [Main: NeoForge 1.20.2-1.20.5]"
+            node_id: "node-7-neoforge-1202-1205"
+            indep_mods: "NeoForge_Loader/neoforge-1.21.2 NeoForge_Loader/neoforge-1.21.3 NeoForge_Loader/neoforge-1.21.4 NeoForge_Loader/neoforge-1.21.5"
+            root_batch_1: ":NeoForge_Loader:neoforge-1.20.2:build :NeoForge_Loader:neoforge-1.20.3:build"
+            root_batch_2: ":NeoForge_Loader:neoforge-1.20.4:build :NeoForge_Loader:neoforge-1.20.5:build"
+
+          - name: "Node 8: [Fast: NeoForge 1.21.6-9] -> [Main: NeoForge 1.20.6-1.21.1]"
+            node_id: "node-8-neoforge-1206-1211"
+            indep_mods: "NeoForge_Loader/neoforge-1.21.6 NeoForge_Loader/neoforge-1.21.7 NeoForge_Loader/neoforge-1.21.8 NeoForge_Loader/neoforge-1.21.9"
+            root_batch_1: ":NeoForge_Loader:neoforge-1.20.6:build :NeoForge_Loader:neoforge-1.21:build"
+            root_batch_2: ":NeoForge_Loader:neoforge-1.21.1:build"
 
     steps:
       - name: Checkout source
@@ -131,28 +79,37 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Ensure Gradle Wrapper in matrix submodules
+      - name: Setup Gradle 8.8
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+          validate-wrappers: false
+
+      - name: Phase 1 - Build Small Independent Modules & Reclaim RAM/Threads
         shell: bash
         run: |
-          for d in ${{ matrix.mods }}; do
+          mkdir -p build-diagnostics Done/Fabric_Quilt Done/Forge Done/NeoForge Done/Plugins
+          TOTAL_CORES=$(nproc || echo 4)
+          MOD_ARRAY=(${{ matrix.indep_mods }})
+          TOTAL_MODS=${#MOD_ARRAY[@]}
+
+          for d in "${MOD_ARRAY[@]}"; do
             if [ -f "$d/gradlew" ]; then
               mkdir -p "$d/gradle/wrapper"
               if [ ! -s "$d/gradle/wrapper/gradle-wrapper.jar" ]; then
                 cp gradle/wrapper/gradle-wrapper.jar "$d/gradle/wrapper/gradle-wrapper.jar" 2>/dev/null || true
               fi
+              chmod +x "$d/gradlew"
             fi
           done
 
-      - name: Build independent modules
-        shell: bash
-        run: |
-          export GRADLE_OPTS="${{ matrix.jvm_ram }} -XX:+UseG1GC -Dorg.gradle.daemon=false"
-          mkdir -p build-diagnostics Done/Fabric_Quilt Done/Forge Done/NeoForge Done/Plugins
-          for mod in ${{ matrix.mods }}; do
-            chmod +x "$mod/gradlew"
-            mod_name=$(basename "$mod")
-            echo "=== Building $mod ==="
-            if (cd "$mod" && ./gradlew build --build-cache --stacktrace) > "build-diagnostics/${mod_name}.log" 2>&1; then
+          build_indep() {
+            local mod="$1"
+            local heap_mb="$2"
+            local threads="$3"
+            local mod_name=$(basename "$mod")
+            echo "=== [FAST MODULE] Building $mod (${heap_mb}MB RAM, ${threads} Threads) ==="
+            if (cd "$mod" && GRADLE_OPTS="-Xmx${heap_mb}m -XX:MaxMetaspaceSize=1024m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=${threads} -Dorg.gradle.daemon=false" ./gradlew build --parallel --max-workers=${threads} --build-cache --stacktrace) > "build-diagnostics/${mod_name}.log" 2>&1; then
               echo ">>> [SUCCESS] $mod built successfully"
               find "$mod/build/libs" -type f -name "*.jar" ! -name "*-dev.jar" ! -name "*-shadow.jar" ! -name "*-sources.jar" | while read -r f; do
                 case "$mod" in
@@ -163,27 +120,112 @@ jobs:
               done
             else
               echo ">>> [FAILED] $mod failed to build"
-              echo "$mod" >> build-diagnostics/failed_${{ matrix.group }}.txt
-              echo "--- Last 25 lines of log for $mod ---"
+              echo "$mod" >> "build-diagnostics/failed_${{ matrix.node_id }}.txt"
+              grep -E "error:|What went wrong:|Execution failed" "build-diagnostics/${mod_name}.log" | head -n 30 || true
               tail -n 25 "build-diagnostics/${mod_name}.log"
-              echo "------------------------------------"
+            fi
+          }
+
+          idx=0
+          while [ $idx -lt $TOTAL_MODS ]; do
+            rem=$(( TOTAL_MODS - idx ))
+            avail_ram=$(free -m | awk '/^Mem:/{print $7}')
+            if [ -z "$avail_ram" ] || [ "$avail_ram" -lt 4000 ]; then avail_ram=12000; fi
+
+            if [ $rem -ge 2 ]; then
+              m1="${MOD_ARRAY[$idx]}"
+              m2="${MOD_ARRAY[$((idx + 1))]}"
+              ram_each=$(( avail_ram * 42 / 100 ))
+              if [ "$ram_each" -gt 6144 ]; then ram_each=6144; fi
+              if [ "$ram_each" -lt 2560 ]; then ram_each=2560; fi
+              t_each=$(( TOTAL_CORES / 2 ))
+              if [ "$t_each" -lt 2 ]; then t_each=2; fi
+
+              build_indep "$m1" "$ram_each" "$t_each" &
+              p1=$!
+              build_indep "$m2" "$ram_each" "$t_each" &
+              p2=$!
+              wait $p1 || true
+              wait $p2 || true
+              idx=$(( idx + 2 ))
+            else
+              m1="${MOD_ARRAY[$idx]}"
+              ram_full=$(( avail_ram * 80 / 100 ))
+              if [ "$ram_full" -gt 12288 ]; then ram_full=12288; fi
+              build_indep "$m1" "$ram_full" "$TOTAL_CORES"
+              idx=$(( idx + 1 ))
             fi
           done
 
-      - name: Upload Group Done
+      - name: Phase 2 - Pour All Freed RAM & Threads Into Main Root Modules
+        shell: bash
+        run: |
+          TOTAL_CORES=$(nproc || echo 4)
+          AVAIL_RAM_1=$(free -m | awk '/^Mem:/{print $7}')
+          if [ -z "$AVAIL_RAM_1" ] || [ "$AVAIL_RAM_1" -lt 6000 ]; then AVAIL_RAM_1=13000; fi
+          TURBO_HEAP_1=$(( AVAIL_RAM_1 * 82 / 100 ))
+          if [ "$TURBO_HEAP_1" -gt 13312 ]; then TURBO_HEAP_1=13312; fi
+          if [ "$TURBO_HEAP_1" -lt 6144 ]; then TURBO_HEAP_1=6144; fi
+
+          echo ">>> [TURBO REALLOCATION] Small modules done! Pouring ${TURBO_HEAP_1}MB RAM & ${TOTAL_CORES} Threads into Main Batch 1: ${{ matrix.root_batch_1 }}"
+          export GRADLE_OPTS="-Dorg.gradle.jvmargs=\"-Xmx${TURBO_HEAP_1}m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=${TOTAL_CORES}\" -Dorg.gradle.daemon=true"
+          if ! gradle ${{ matrix.root_batch_1 }} --parallel --max-workers=${TOTAL_CORES} --build-cache --continue --stacktrace > "build-diagnostics/${{ matrix.node_id }}-main1.log" 2>&1; then
+            echo "${{ matrix.node_id }}_main1" >> "build-diagnostics/failed_${{ matrix.node_id }}.txt"
+            grep -E "error:|What went wrong:|Execution failed" "build-diagnostics/${{ matrix.node_id }}-main1.log" | head -n 40 || true
+            tail -n 35 "build-diagnostics/${{ matrix.node_id }}-main1.log"
+          fi
+
+          AVAIL_RAM_2=$(free -m | awk '/^Mem:/{print $7}')
+          if [ -z "$AVAIL_RAM_2" ] || [ "$AVAIL_RAM_2" -lt 6000 ]; then AVAIL_RAM_2=13000; fi
+          TURBO_HEAP_2=$(( AVAIL_RAM_2 * 85 / 100 ))
+          if [ "$TURBO_HEAP_2" -gt 13312 ]; then TURBO_HEAP_2=13312; fi
+          if [ "$TURBO_HEAP_2" -lt 6144 ]; then TURBO_HEAP_2=6144; fi
+
+          echo ">>> [TURBO REALLOCATION] Main Batch 1 done! Pouring ${TURBO_HEAP_2}MB RAM & ${TOTAL_CORES} Threads into Remaining Main Batch 2: ${{ matrix.root_batch_2 }}"
+          export GRADLE_OPTS="-Dorg.gradle.jvmargs=\"-Xmx${TURBO_HEAP_2}m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=${TOTAL_CORES}\" -Dorg.gradle.daemon=true"
+          if ! gradle ${{ matrix.root_batch_2 }} --parallel --max-workers=${TOTAL_CORES} --build-cache --continue --stacktrace > "build-diagnostics/${{ matrix.node_id }}-main2.log" 2>&1; then
+            echo "${{ matrix.node_id }}_main2" >> "build-diagnostics/failed_${{ matrix.node_id }}.txt"
+            grep -E "error:|What went wrong:|Execution failed" "build-diagnostics/${{ matrix.node_id }}-main2.log" | head -n 40 || true
+            tail -n 35 "build-diagnostics/${{ matrix.node_id }}-main2.log"
+          fi
+          gradle --stop || true
+
+      - name: Harvest Node JARs
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p Done/Fabric_Quilt Done/Forge Done/NeoForge Done/Plugins
+          find . -type f -path '*/build/libs/*.jar' | while read -r f; do
+            fname=$(basename "$f")
+            case "$fname" in
+              *-dev.jar|*-shadow.jar|*-sources.jar) continue ;;
+            esac
+            fsize=$(wc -c < "$f")
+            if [ "$fsize" -lt 1024 ]; then
+              continue
+            fi
+            case "$f" in
+              */Fabric_Loader/*) cp "$f" Done/Fabric_Quilt/ 2>/dev/null || true ;;
+              */Forge_Loader/*) cp "$f" Done/Forge/ 2>/dev/null || true ;;
+              */NeoForge_Loader/*) cp "$f" Done/NeoForge/ 2>/dev/null || true ;;
+              */plugin/*) cp "$f" Done/Plugins/ 2>/dev/null || true ;;
+            esac
+          done
+
+      - name: Upload Node Done
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: done-${{ matrix.group }}
+          name: done-${{ matrix.node_id }}
           path: Done/
           retention-days: 1
           if-no-files-found: ignore
 
-      - name: Upload Group Diagnostics
+      - name: Upload Node Diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: diag-${{ matrix.group }}
+          name: diag-${{ matrix.node_id }}
           path: build-diagnostics/
           retention-days: 1
           if-no-files-found: ignore
@@ -191,7 +233,7 @@ jobs:
   collect-and-verify:
     name: Collect, Audit and Package Artifacts
     runs-on: ubuntu-latest
-    needs: [build-root, build-independent]
+    needs: [build-elastic-cluster]
     if: always()
 
     steps:
@@ -209,21 +251,7 @@ jobs:
           mkdir -p Done/Fabric_Quilt Done/Forge Done/NeoForge Done/Plugins
           mkdir -p build-diagnostics artifacts
 
-      - name: Download Root Done
-        uses: actions/download-artifact@v4
-        with:
-          name: root-done
-          path: Done/
-        continue-on-error: true
-
-      - name: Download Root Diag
-        uses: actions/download-artifact@v4
-        with:
-          name: root-diag
-          path: build-diagnostics/
-        continue-on-error: true
-
-      - name: Download Matrix Done Artifacts
+      - name: Download All Done Artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: "done-*"
@@ -231,7 +259,7 @@ jobs:
           path: Done/
         continue-on-error: true
 
-      - name: Download Matrix Diag Artifacts
+      - name: Download All Diag Artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: "diag-*"
