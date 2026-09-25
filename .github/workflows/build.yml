@@ -278,7 +278,23 @@ jobs:
           path: build-diagnostics/
         continue-on-error: true
 
+      - name: Check if Global Self-Healing Compensation is Needed
+        id: check_missing
+        shell: bash
+        run: |
+          cat build-diagnostics/failed_*.txt 2>/dev/null | sort -u > build-diagnostics/global_compensate_queue.txt || true
+          rm -f build-diagnostics/failed_*.txt build-diagnostics/failed_modules.txt
+          if [ -s build-diagnostics/global_compensate_queue.txt ]; then
+            echo "needs_compensation=true" >> "$GITHUB_OUTPUT"
+            echo ">>> Found missing modules requiring Global Compensation:"
+            cat build-diagnostics/global_compensate_queue.txt
+          else
+            echo "needs_compensation=false" >> "$GITHUB_OUTPUT"
+            echo ">>> All 8 Elastic Nodes completed 100% of targets with 0 missing modules!"
+          fi
+
       - name: Setup JDK 8, 17, 21, 25 (For Global Self-Healing Compensation)
+        if: steps.check_missing.outputs.needs_compensation == 'true'
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
@@ -290,16 +306,17 @@ jobs:
           cache: 'gradle'
 
       - name: Setup Gradle 8.9 (For Global Self-Healing Compensation)
+        if: steps.check_missing.outputs.needs_compensation == 'true'
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
           cache-read-only: false
+          validate-wrappers: false
 
       - name: Global Self-Healing Compensation Engine (Build Any Missing Modules with 100% Cluster Power)
+        if: steps.check_missing.outputs.needs_compensation == 'true'
         shell: bash
         run: |
-          cat build-diagnostics/failed_*.txt 2>/dev/null | sort -u > build-diagnostics/global_compensate_queue.txt || true
-          rm -f build-diagnostics/failed_*.txt build-diagnostics/failed_modules.txt
           if [ -s build-diagnostics/global_compensate_queue.txt ]; then
             echo "========================================================"
             echo ">>> [GLOBAL SELF-HEALING COMPENSATION ENGINE ACTIVATED]"
