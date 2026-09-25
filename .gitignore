@@ -21,6 +21,8 @@ docs/
 # Temporary / generated
 trash/
 done/
+Done/
+Server/
 *.class
 *.zip
 *.tar.gz

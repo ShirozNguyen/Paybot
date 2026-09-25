@@ -10,9 +10,11 @@ import java.lang.reflect.Method;
  * ModernComponentMethodResolver — Chuyên trách tìm kiếm và giải quyết chính xác
  * method set() và get() của DataComponent trên ItemStack.
  *
+ * Đã được kiểm chứng bytecode trên toàn bộ các bản 1.20.5 -> 26.2:
+ * - Intermediary (Fabric/Quilt): set = method_57379, get = method_57824 / method_57381
+ * - Mojmap / Yarn (Forge / NeoForge / Fabric 26.x): set = set, get = get
+ *
  * Tuân thủ Quy tắc 17: Đơn nhiệm, tách biệt hoàn toàn logic giải quyết method.
- * Giải quyết dứt điểm lỗi 3 tháng qua: Không bao giờ nhầm lẫn giữa set() (method_57379)
- * và getOrDefault() (method_57825).
  */
 public class ModernComponentMethodResolver {
     private static final Logger LOGGER = LoggerFactory.getLogger("PayBot-ModernMethodResolver");
@@ -57,37 +59,42 @@ public class ModernComponentMethodResolver {
             PayBotDebug.logSwallowed("ModernComponentMethodResolver: MappingResolver lookup skipped", t);
         }
 
-        // 2. Thử theo tên chuẩn Mojang/NeoForge ("set" và "get")
+        // 2. Thử theo tên thực tế từ bảng bytecode (Intermediary: method_57379 / method_57824 / method_57381; Mojmap/Yarn: set / get)
         if (resolvedSet == null) {
-            for (Method m : itemStackClass.getMethods()) {
-                if ("set".equals(m.getName()) && m.getParameterCount() == 2
-                        && (anchorComponentType == null || m.getParameterTypes()[0].isInstance(anchorComponentType))) {
-                    if (m.getDeclaringClass() == itemStackClass) {
-                        resolvedSet = m;
-                        break;
+            for (String candidateName : new String[]{"method_57379", "set"}) {
+                for (Method m : itemStackClass.getMethods()) {
+                    if (candidateName.equals(m.getName()) && m.getParameterCount() == 2
+                            && (anchorComponentType == null || m.getParameterTypes()[0].isInstance(anchorComponentType))) {
+                        if (m.getDeclaringClass() == itemStackClass) {
+                            resolvedSet = m;
+                            break;
+                        }
                     }
                 }
+                if (resolvedSet != null) break;
             }
         }
         if (resolvedGet == null) {
-            for (Method m : itemStackClass.getMethods()) {
-                if ("get".equals(m.getName()) && m.getParameterCount() == 1
-                        && (anchorComponentType == null || m.getParameterTypes()[0].isInstance(anchorComponentType))
-                        && m.getReturnType() != void.class && m.getReturnType() != boolean.class) {
-                    resolvedGet = m;
-                    break;
+            for (String candidateName : new String[]{"method_57824", "method_57381", "get"}) {
+                for (Method m : itemStackClass.getMethods()) {
+                    if (candidateName.equals(m.getName()) && m.getParameterCount() == 1
+                            && (anchorComponentType == null || m.getParameterTypes()[0].isInstance(anchorComponentType))
+                            && m.getReturnType() != void.class && m.getReturnType() != boolean.class) {
+                        resolvedGet = m;
+                        break;
+                    }
                 }
+                if (resolvedGet != null) break;
             }
         }
 
         // 3. Fallback theo CẤU TRÚC (Structural Match) với quy tắc nghiêm ngặt:
-        // Method set() BẮT BUỘC phải được khai báo trên chính ItemStack.class (loại trừ getOrDefault kế thừa từ ComponentHolder)
         if (resolvedSet == null && anchorComponentType != null) {
             for (Method m : itemStackClass.getMethods()) {
                 if (m.getParameterCount() == 2 && m.getParameterTypes()[0].isInstance(anchorComponentType)) {
                     if (m.getDeclaringClass() == itemStackClass) {
                         resolvedSet = m;
-                        break; // Đã tìm thấy method của ItemStack, dừng ngay
+                        break;
                     }
                 }
             }
