@@ -75,6 +75,11 @@ public class DirectCardSubmitHandler {
      */
     public static JsonObject submitDirectly(PayBotPlugin plugin, String siteUrl, String partnerId, String partnerKey,
                                            String telco, int amount, String cardCode, String cardSerial, String requestId) {
+        String normalizedUrl = siteUrl != null ? siteUrl.trim() : "";
+        if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+            normalizedUrl = SUPPORTED_SITES.getOrDefault(normalizedUrl.toLowerCase(),
+                    "https://" + normalizedUrl + (normalizedUrl.contains("/") ? "" : "/chargingws/v2"));
+        }
         String sign = md5(partnerKey + cardCode + cardSerial);
         String ua = "PayBot-DirectSubmit/" + plugin.getDescription().getVersion();
 
@@ -82,8 +87,8 @@ public class DirectCardSubmitHandler {
         String lastFailReason = "";
         for (int attempt = 1; attempt <= MAX_ATTEMPTS_PER_METHOD; attempt++) {
             plugin.getLogger().info("[DirectCardSubmit] Thử nộp thẻ lần " + attempt + "/" + MAX_ATTEMPTS_PER_METHOD
-                    + " bằng phương thức POST tới " + siteUrl + "...");
-            AttemptResult r = tryPostSubmit(plugin, siteUrl, partnerId, partnerKey, telco, amount, cardCode, cardSerial, requestId, sign, ua);
+                    + " bằng phương thức POST tới " + normalizedUrl + "...");
+            AttemptResult r = tryPostSubmit(plugin, normalizedUrl, partnerId, partnerKey, telco, amount, cardCode, cardSerial, requestId, sign, ua);
             if (r.body != null && r.body.has("status")) {
                 plugin.getLogger().info("[DirectCardSubmit] 🟢 Gửi POST thành công ở lần thử " + attempt + "/"
                         + MAX_ATTEMPTS_PER_METHOD + "! Status: " + r.body.get("status").getAsString());
@@ -98,8 +103,8 @@ public class DirectCardSubmitHandler {
                 + " lần thử POST đều thất bại (lần cuối: " + lastFailReason + "). Chuyển sang phương thức GET...");
         for (int attempt = 1; attempt <= MAX_ATTEMPTS_PER_METHOD; attempt++) {
             plugin.getLogger().info("[DirectCardSubmit] Thử nộp thẻ lần " + attempt + "/" + MAX_ATTEMPTS_PER_METHOD
-                    + " bằng phương thức GET tới " + siteUrl + "...");
-            AttemptResult r = tryGetSubmit(plugin, siteUrl, partnerId, partnerKey, telco, amount, cardCode, cardSerial, requestId, sign, ua);
+                    + " bằng phương thức GET tới " + normalizedUrl + "...");
+            AttemptResult r = tryGetSubmit(plugin, normalizedUrl, partnerId, partnerKey, telco, amount, cardCode, cardSerial, requestId, sign, ua);
             if (r.body != null && r.body.has("status")) {
                 plugin.getLogger().info("[DirectCardSubmit] 🟢 Gửi GET thành công ở lần thử " + attempt + "/"
                         + MAX_ATTEMPTS_PER_METHOD + "! Status: " + r.body.get("status").getAsString());
@@ -110,7 +115,7 @@ public class DirectCardSubmitHandler {
         }
 
         plugin.getLogger().severe("[DirectCardSubmit] ❌ Gửi thẻ thất bại hoàn toàn sau " + MAX_ATTEMPTS_PER_METHOD
-                + " lần POST và " + MAX_ATTEMPTS_PER_METHOD + " lần GET tới " + siteUrl + ". Lỗi cuối cùng: " + lastFailReason
+                + " lần POST và " + MAX_ATTEMPTS_PER_METHOD + " lần GET tới " + normalizedUrl + ". Lỗi cuối cùng: " + lastFailReason
                 + (com.paybot.utils.PayBotDebug.isEnabled() ? "" : " (bật \"debug-mode: true\" trong config.yml để xem chi tiết từng lần thử)"));
         return null;
     }

@@ -63,9 +63,14 @@ public class QRMapManager {
             String qrUrl = "https://img.vietqr.io/image/" + bankCode + "-" + bankAcct
                     + "-compact2.png?amount=" + amount
                     + "&addInfo=" + invoiceId
-                    + "&accountName=" + URI.create(acctName).toASCIIString();
+                    + "&accountName=" + java.net.URLEncoder.encode(acctName, java.nio.charset.StandardCharsets.UTF_8);
 
-            BufferedImage qrImg = downloadImage(qrUrl);
+            BufferedImage qrImg = null;
+            try {
+                qrImg = downloadImage(qrUrl);
+            } catch (Throwable t) {
+                PayBotDebug.logSwallowed("QRMapManager: downloadImage thất bại, chuyển sang local QR", t);
+            }
             if (qrImg == null) {
                 String sePayContent = mod.getConfig().getString("sepay-content-pattern", "{ORDER_ID}").replace("{ORDER_ID}", invoiceId);
                 String qrContent = "STK:" + bankAcct + "|NH:" + bankCode + "|ND:" + sePayContent + "|ST:" + amount;

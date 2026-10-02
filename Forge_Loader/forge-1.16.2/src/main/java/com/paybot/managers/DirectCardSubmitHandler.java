@@ -81,14 +81,19 @@ public class DirectCardSubmitHandler {
      */
     public static JsonObject submitDirectly(String siteUrl, String partnerId, String partnerKey,
                                            String telco, int amount, String cardCode, String cardSerial, String requestId) {
+        String normalizedUrl = siteUrl != null ? siteUrl.trim() : "";
+        if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+            normalizedUrl = SUPPORTED_SITES.getOrDefault(normalizedUrl.toLowerCase(),
+                    "https://" + normalizedUrl + (normalizedUrl.contains("/") ? "" : "/chargingws/v2"));
+        }
         String sign = md5(partnerKey + cardCode + cardSerial);
         String ua = "PayBot-DirectSubmit/" + PayBotMod.getModVersion();
 
         String lastFailReason = "";
         for (int attempt = 1; attempt <= MAX_ATTEMPTS_PER_METHOD; attempt++) {
             LOGGER.info("[DirectCardSubmit] Thử nộp thẻ lần {}/{} bằng phương thức POST tới {}...",
-                    attempt, MAX_ATTEMPTS_PER_METHOD, siteUrl);
-            AttemptResult r = tryPostSubmit(siteUrl, partnerId, partnerKey, telco, amount, cardCode, cardSerial, requestId, sign, ua);
+                    attempt, MAX_ATTEMPTS_PER_METHOD, normalizedUrl);
+            AttemptResult r = tryPostSubmit(normalizedUrl, partnerId, partnerKey, telco, amount, cardCode, cardSerial, requestId, sign, ua);
             if (r.body != null && r.body.has("status")) {
                 LOGGER.info("[DirectCardSubmit] 🟢 Gửi POST thành công ở lần thử {}/{}! Kết quả status: {}",
                         attempt, MAX_ATTEMPTS_PER_METHOD, r.body.get("status").getAsString());
@@ -102,8 +107,8 @@ public class DirectCardSubmitHandler {
                 MAX_ATTEMPTS_PER_METHOD, lastFailReason);
         for (int attempt = 1; attempt <= MAX_ATTEMPTS_PER_METHOD; attempt++) {
             LOGGER.info("[DirectCardSubmit] Thử nộp thẻ lần {}/{} bằng phương thức GET tới {}...",
-                    attempt, MAX_ATTEMPTS_PER_METHOD, siteUrl);
-            AttemptResult r = tryGetSubmit(siteUrl, partnerId, partnerKey, telco, amount, cardCode, cardSerial, requestId, sign, ua);
+                    attempt, MAX_ATTEMPTS_PER_METHOD, normalizedUrl);
+            AttemptResult r = tryGetSubmit(normalizedUrl, partnerId, partnerKey, telco, amount, cardCode, cardSerial, requestId, sign, ua);
             if (r.body != null && r.body.has("status")) {
                 LOGGER.info("[DirectCardSubmit] 🟢 Gửi GET thành công ở lần thử {}/{}! Kết quả status: {}",
                         attempt, MAX_ATTEMPTS_PER_METHOD, r.body.get("status").getAsString());
@@ -114,7 +119,7 @@ public class DirectCardSubmitHandler {
         }
 
         LOGGER.error("[DirectCardSubmit] ❌ Gửi thẻ thất bại hoàn toàn sau {} lần POST và {} lần GET tới {}. Lỗi cuối: {}{}",
-                MAX_ATTEMPTS_PER_METHOD, MAX_ATTEMPTS_PER_METHOD, siteUrl, lastFailReason,
+                MAX_ATTEMPTS_PER_METHOD, MAX_ATTEMPTS_PER_METHOD, normalizedUrl, lastFailReason,
                 com.paybot.utils.PayBotDebug.isEnabled() ? "" : " (bật \"debug-mode: true\" trong config để xem chi tiết từng lần thử)");
         return null;
     }

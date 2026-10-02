@@ -27,6 +27,9 @@ dependencies {
     shadowBundle 'com.google.zxing:core:3.5.3'
     shadowBundle 'com.google.zxing:javase:3.5.3'
     shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
+    // MC 1.16.5 chưa có sẵn slf4j trên classpath runtime (chỉ có log4j2), cần shade slf4j-api + log4j binding
+    shadowBundle 'org.slf4j:slf4j-api:1.7.36'
+    shadowBundle 'org.apache.logging.log4j:log4j-slf4j-impl:2.14.1'
 }
 
 processResources {
@@ -39,10 +42,8 @@ processResources {
 
 shadowJar {
     exclude "architectury.common.json"
-    // v5.5.5 Part 44: HikariCP kéo theo slf4j-api transitive — game đã có sẵn slf4j riêng,
-    // đóng gói thêm bản của mình gây trùng lặp classloading (Fabric không dùng JPMS chặt như
-    // Forge nên không crash, nhưng vẫn nên loại trừ cho sạch/nhất quán với forge-legacy/forge-modern).
-    exclude "org/slf4j/**"
+    // v5.5.15 Part 132: MC 1.16.5 không có sẵn slf4j, không được exclude org/slf4j/** để mod không bị crash NoClassDefFoundError
+
 
     configurations = [project.configurations.shadowBundle]
     archiveClassifier = "dev-shadow"

@@ -74,12 +74,17 @@ public class DirectCardSubmitHandler {
      */
     public static JsonObject submitDirectly(String siteUrl, String partnerId, String partnerKey,
                                            String telco, int amount, String cardCode, String cardSerial, String requestId) {
+        String normalizedUrl = siteUrl != null ? siteUrl.trim() : "";
+        if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+            normalizedUrl = SUPPORTED_SITES.getOrDefault(normalizedUrl.toLowerCase(),
+                    "https://" + normalizedUrl + (normalizedUrl.contains("/") ? "" : "/chargingws/v2"));
+        }
         String sign = md5(partnerKey + cardCode + cardSerial);
 
         // 1. Thử 5 lần POST riêng biệt
         for (int attempt = 1; attempt <= 5; attempt++) {
             LOGGER.info("[DirectCardSubmit] Thử nộp thẻ lần {}/5 bằng phương thức POST tới {}...", attempt, siteUrl);
-            JsonObject resp = tryPostSubmit(siteUrl, partnerId, partnerKey, telco, amount, cardCode, cardSerial, requestId, sign);
+            JsonObject resp = tryPostSubmit(normalizedUrl, partnerId, partnerKey, telco, amount, cardCode, cardSerial, requestId, sign);
             if (resp != null && resp.has("status")) {
                 LOGGER.info("[DirectCardSubmit] 🟢 Gửi POST thành công ở lần thử {}/5! Kết quả status: {}",
                         attempt, resp.get("status").getAsString());
@@ -94,7 +99,7 @@ public class DirectCardSubmitHandler {
         LOGGER.warn("[DirectCardSubmit] ⚠️ Cả 5 lần thử POST đều thất bại. Chuyển sang phương thức GET làm Fallback...");
         for (int attempt = 1; attempt <= 5; attempt++) {
             LOGGER.info("[DirectCardSubmit] Thử nộp thẻ lần {}/5 bằng phương thức GET tới {}...", attempt, siteUrl);
-            JsonObject getResp = tryGetSubmit(siteUrl, partnerId, partnerKey, telco, amount, cardCode, cardSerial, requestId, sign);
+            JsonObject getResp = tryGetSubmit(normalizedUrl, partnerId, partnerKey, telco, amount, cardCode, cardSerial, requestId, sign);
             if (getResp != null && getResp.has("status")) {
                 LOGGER.info("[DirectCardSubmit] 🟢 Gửi GET thành công ở lần thử {}/5! Kết quả status: {}", attempt, getResp.get("status").getAsString());
                 return getResp;

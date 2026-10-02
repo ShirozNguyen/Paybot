@@ -10,13 +10,37 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Set;
 
 /**
  * LegacyItemTagHelper — Quản lý an toàn Item Name, Lore và NBT Data cho Minecraft < 1.20.5 (NBT Era).
+ * Hỗ trợ đa hệ thống mapping: Mojmap, Fabric Intermediary, Fabric Yarn, Forge SRG, Forge MCP.
  * Tuân thủ Quy tắc 17: Tách biệt hoàn toàn thành 1 class đơn nhiệm độc lập.
  */
 public final class LegacyItemTagHelper {
+
+    private static final Set<String> HOVER_NAME_METHODS = Set.of(
+            "setHoverName", "method_7977", "setCustomName",
+            "m_41714_", "m_41784_", "m_41794_", "func_200302_a", "func_200292_b"
+    );
+
+    private static final Set<String> GET_OR_CREATE_TAG_METHODS = Set.of(
+            "getOrCreateTag", "method_7948", "getOrCreateNbt", "m_41784_", "func_196082_o"
+    );
+
+    private static final Set<String> GET_TAG_METHODS = Set.of(
+            "getTag", "method_7969", "getNbt", "m_41783_", "func_77978_p"
+    );
+
+    private static final Set<String> SET_TAG_METHODS = Set.of(
+            "setTag", "method_7980", "setNbt", "m_41751_", "func_77982_d"
+    );
+
+    private static final Set<String> GET_SUB_TAG_METHODS = Set.of(
+            "getOrCreateTagElement", "method_7967", "getOrCreateSubNbt", "m_41737_", "func_196084_a"
+    );
 
     private LegacyItemTagHelper() {}
 
@@ -33,14 +57,22 @@ public final class LegacyItemTagHelper {
     public static void setName(ItemStack stack, Component nameComponent) {
         if (stack == null || stack.isEmpty() || nameComponent == null) return;
         try {
-            boolean _shnCalled = false;
-            for (java.lang.reflect.Method _shnM : stack.getClass().getMethods()) {
-                String _shnN = _shnM.getName();
-                if ((_shnN.equals("setHoverName") || _shnN.equals("m_41794_") || _shnN.equals("func_200292_b"))
-                        && _shnM.getParameterCount() == 1) {
-                    _shnM.invoke(stack, nameComponent);
-                    _shnCalled = true;
+            boolean called = false;
+            for (Method m : stack.getClass().getMethods()) {
+                if (HOVER_NAME_METHODS.contains(m.getName()) && m.getParameterCount() == 1) {
+                    m.invoke(stack, nameComponent);
+                    called = true;
                     break;
+                }
+            }
+            if (!called) {
+                // Fallback duyệt theo kiểu tham số Component
+                for (Method m : stack.getClass().getMethods()) {
+                    if (m.getParameterCount() == 1
+                            && m.getParameterTypes()[0].isAssignableFrom(nameComponent.getClass())) {
+                        m.invoke(stack, nameComponent);
+                        break;
+                    }
                 }
             }
         } catch (Throwable t) {
@@ -112,13 +144,16 @@ public final class LegacyItemTagHelper {
         return null;
     }
 
-    // Pure reflection — no direct fallback (direct call fails compile on MC 1.20.5+)
+    // Pure reflection — hỗ trợ đầy đủ 5 hệ mapping
     private static CompoundTag getOrCreateTag(ItemStack stack) {
         try {
-            Method m = stack.getClass().getMethod("getOrCreateTag");
-            Object result = m.invoke(stack);
-            if (result instanceof CompoundTag) return (CompoundTag) result;
-            if (result != null) return unwrapOptionalCompoundTag(result);
+            for (Method m : stack.getClass().getMethods()) {
+                if (GET_OR_CREATE_TAG_METHODS.contains(m.getName()) && m.getParameterCount() == 0) {
+                    Object result = m.invoke(stack);
+                    if (result instanceof CompoundTag) return (CompoundTag) result;
+                    if (result != null) return unwrapOptionalCompoundTag(result);
+                }
+            }
         } catch (Throwable ignored) {}
         try {
             CompoundTag tag = new CompoundTag();
@@ -130,13 +165,16 @@ public final class LegacyItemTagHelper {
         }
     }
 
-    // Pure reflection — no direct fallback (direct call fails compile on MC 1.20.5+)
+    // Pure reflection — hỗ trợ đầy đủ 5 hệ mapping
     private static CompoundTag getTag(ItemStack stack) {
         try {
-            Method m = stack.getClass().getMethod("getTag");
-            Object result = m.invoke(stack);
-            if (result instanceof CompoundTag) return (CompoundTag) result;
-            if (result != null) return unwrapOptionalCompoundTag(result);
+            for (Method m : stack.getClass().getMethods()) {
+                if (GET_TAG_METHODS.contains(m.getName()) && m.getParameterCount() == 0) {
+                    Object result = m.invoke(stack);
+                    if (result instanceof CompoundTag) return (CompoundTag) result;
+                    if (result != null) return unwrapOptionalCompoundTag(result);
+                }
+            }
         } catch (Throwable ignored) {}
         return null;
     }
@@ -147,7 +185,14 @@ public final class LegacyItemTagHelper {
         try {
             CompoundTag display = null;
             try {
-                display = (CompoundTag) stack.getClass().getMethod("getOrCreateTagElement", String.class).invoke(stack, "display");
+                for (Method m : stack.getClass().getMethods()) {
+                    if (GET_SUB_TAG_METHODS.contains(m.getName())
+                            && m.getParameterCount() == 1
+                            && m.getParameterTypes()[0] == String.class) {
+                        display = (CompoundTag) m.invoke(stack, "display");
+                        break;
+                    }
+                }
             } catch (Throwable ignored) {}
             if (display == null) {
                 display = getCompoundTagSafe(root, "display");
@@ -163,25 +208,56 @@ public final class LegacyItemTagHelper {
     public static String safeComponentToJson(Component comp) {
         if (comp == null) return "{\"text\":\"\"}";
         try {
-            // Reflection — Component.Serializer.toJson signature changed in MC 1.21.x+
-            Class<?> _serCls = Class.forName("net.minecraft.network.chat.Component$Serializer");
-            for (java.lang.reflect.Method _serM : _serCls.getMethods()) {
-                if (_serM.getName().equals("toJson")
-                        && java.lang.reflect.Modifier.isStatic(_serM.getModifiers())
-                        && _serM.getParameterCount() == 1
-                        && _serM.getParameterTypes()[0].isAssignableFrom(comp.getClass())) {
-                    Object _serR = _serM.invoke(null, comp);
-                    if (_serR != null) return _serR.toString();
-                }
+            // 1. Thử duyệt inner classes của Component.class để tìm method toJson(Component)
+            for (Class<?> inner : Component.class.getClasses()) {
+                String res = invokeToJsonMethod(inner, comp);
+                if (res != null) return res;
             }
-            throw new ReflectiveOperationException("Component.Serializer.toJson(Component) not found");
+            for (Class<?> inner : Component.class.getDeclaredClasses()) {
+                String res = invokeToJsonMethod(inner, comp);
+                if (res != null) return res;
+            }
+
+            // 2. Thử các candidate class names cho từng loader/mapping
+            String[] candidateClassNames = {
+                "net.minecraft.network.chat.Component$Serializer",
+                "net.minecraft.class_2561$class_2562",
+                "net.minecraft.class_2561$class_2563",
+                "net.minecraft.util.text.ITextComponent$Serializer"
+            };
+            for (String clsName : candidateClassNames) {
+                try {
+                    Class<?> cls = Class.forName(clsName);
+                    String res = invokeToJsonMethod(cls, comp);
+                    if (res != null) return res;
+                } catch (Throwable ignored) {}
+            }
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("LegacyItemTagHelper.safeComponentToJson", t);
-            JsonObject obj = new JsonObject();
-            obj.addProperty("text", comp.getString());
-            return obj.toString();
         }
+
+        // 3. Fallback JsonObject an toàn
+        JsonObject obj = new JsonObject();
+        obj.addProperty("text", comp.getString());
+        return obj.toString();
     }
+
+    private static String invokeToJsonMethod(Class<?> cls, Component comp) {
+        if (cls == null) return null;
+        for (Method m : cls.getMethods()) {
+            if (m.getName().equals("toJson")
+                    && Modifier.isStatic(m.getModifiers())
+                    && m.getParameterCount() == 1
+                    && m.getParameterTypes()[0].isAssignableFrom(comp.getClass())) {
+                try {
+                    Object res = m.invoke(null, comp);
+                    if (res != null) return res.toString();
+                } catch (Throwable ignored) {}
+            }
+        }
+        return null;
+    }
+
     // ─── Pure-reflection helpers (compile-safe on any MC version) ─────────────────
 
     /** Unwrap Optional<CompoundTag> — MC 26.x changed getTag/getCompound return type */
@@ -198,8 +274,7 @@ public final class LegacyItemTagHelper {
     private static void setTagReflect(ItemStack stack, CompoundTag tag) {
         try {
             for (Method m : stack.getClass().getMethods()) {
-                String n = m.getName();
-                if ((n.equals("setTag") || n.equals("m_41751_") || n.equals("func_77982_d"))
+                if (SET_TAG_METHODS.contains(m.getName())
                         && m.getParameterCount() == 1
                         && m.getParameterTypes()[0].isAssignableFrom(CompoundTag.class)) {
                     m.invoke(stack, tag);
@@ -224,5 +299,4 @@ public final class LegacyItemTagHelper {
         } catch (Throwable ignored) {}
         return new CompoundTag();
     }
-
 }
