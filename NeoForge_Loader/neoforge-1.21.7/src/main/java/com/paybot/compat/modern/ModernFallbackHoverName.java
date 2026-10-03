@@ -1,3 +1,4 @@
+// v5.5.16 Part 138: Add SRG & Intermediary field candidates for CUSTOM_NAME
 package com.paybot.compat.modern;
 
 import com.paybot.utils.PayBotDebug;
@@ -46,7 +47,7 @@ public class ModernFallbackHoverName {
 
             if (dcClass != null) {
                 Object compType = null;
-                for (String fName : new String[]{"field_49631", "CUSTOM_NAME"}) {
+                for (String fName : new String[]{"CUSTOM_NAME", "field_49631", "f_314548_"}) {
                     try {
                         Field f = dcClass.getField(fName);
                         compType = f.get(null);

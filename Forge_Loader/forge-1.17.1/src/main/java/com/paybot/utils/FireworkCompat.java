@@ -34,43 +34,53 @@ public class FireworkCompat {
 
         if (MinecraftVersionDetector.isDataComponentsEra()) {
             try {
-                Class<?> shapeClass = Class.forName("net.minecraft.world.item.component.FireworkExplosion$Shape");
-                Object shapeObj = Enum.valueOf((Class<Enum>) shapeClass, amount >= 100_000 ? "LARGE_BALL" : "BURST");
+                Class<?> shapeClass = null;
+                try {
+                    shapeClass = Class.forName("net.minecraft.world.item.component.FireworkExplosion$Shape");
+                } catch (ClassNotFoundException ignored) {
+                    // Trên Fabric Intermediary mapping, class Mojmap này không tồn tại
+                }
 
-                Class<?> intListClass = Class.forName("it.unimi.dsi.fastutil.ints.IntArrayList");
-                Constructor<?> intListCons = intListClass.getConstructor(int[].class);
-                Object colorsList = intListCons.newInstance(new int[]{c1, c2});
-                Object fadeColorsList = intListCons.newInstance(new int[]{0xFFFFFF});
+                if (shapeClass != null) {
+                    Object shapeObj = Enum.valueOf((Class<Enum>) shapeClass, amount >= 100_000 ? "LARGE_BALL" : "BURST");
 
-                Class<?> explosionClass = Class.forName("net.minecraft.world.item.component.FireworkExplosion");
-                Constructor<?> expCons = explosionClass.getConstructor(
-                        shapeClass,
-                        Class.forName("it.unimi.dsi.fastutil.ints.IntList"),
-                        Class.forName("it.unimi.dsi.fastutil.ints.IntList"),
-                        boolean.class,
-                        boolean.class
-                );
-                Object explosionObj = expCons.newInstance(shapeObj, colorsList, fadeColorsList, true, amount >= 100_000);
+                    Class<?> intListClass = Class.forName("it.unimi.dsi.fastutil.ints.IntArrayList");
+                    Constructor<?> intListCons = intListClass.getConstructor(int[].class);
+                    Object colorsList = intListCons.newInstance(new int[]{c1, c2});
+                    Object fadeColorsList = intListCons.newInstance(new int[]{0xFFFFFF});
 
-                Class<?> fireworksClass = Class.forName("net.minecraft.world.item.component.Fireworks");
-                Constructor<?> fwCons = fireworksClass.getConstructor(int.class, List.class);
-                Object fireworksObj = fwCons.newInstance(amount >= 100_000 ? 2 : 1, List.of(explosionObj));
+                    Class<?> explosionClass = Class.forName("net.minecraft.world.item.component.FireworkExplosion");
+                    Constructor<?> expCons = explosionClass.getConstructor(
+                            shapeClass,
+                            Class.forName("it.unimi.dsi.fastutil.ints.IntList"),
+                            Class.forName("it.unimi.dsi.fastutil.ints.IntList"),
+                            boolean.class,
+                            boolean.class
+                    );
+                    Object explosionObj = expCons.newInstance(shapeObj, colorsList, fadeColorsList, true, amount >= 100_000);
 
-                Class<?> dataComponentsClass = Class.forName("net.minecraft.core.component.DataComponents");
-                Object fireworksType = dataComponentsClass.getField("FIREWORKS").get(null);
+                    Class<?> fireworksClass = Class.forName("net.minecraft.world.item.component.Fireworks");
+                    Constructor<?> fwCons = fireworksClass.getConstructor(int.class, List.class);
+                    Object fireworksObj = fwCons.newInstance(amount >= 100_000 ? 2 : 1, List.of(explosionObj));
 
-                Method setMethod = ItemStack.class.getMethod("set", Class.forName("net.minecraft.core.component.DataComponentType"), Object.class);
-                setMethod.invoke(rocket, fireworksType, fireworksObj);
+                    Class<?> dataComponentsClass = Class.forName("net.minecraft.core.component.DataComponents");
+                    Object fireworksType = dataComponentsClass.getField("FIREWORKS").get(null);
+
+                    Method setMethod = ItemStack.class.getMethod("set", Class.forName("net.minecraft.core.component.DataComponentType"), Object.class);
+                    setMethod.invoke(rocket, fireworksType, fireworksObj);
+                }
 
                 FireworkRocketEntity entity = new FireworkRocketEntity(world, x, y + 1.0, z, rocket);
                 world.addFreshEntity(entity);
                 return;
             } catch (Throwable t) {
-                // [v5.5.5] LOGGER.debug() trước đây hiệu quả im lặng (mức DEBUG thường không in ra
-                // theo cấu hình log mặc định) — route qua PayBotDebug để nhất quán với phần còn lại
-                // của dự án, admin bật debug-mode sẽ thấy rõ tại sao pháo hoa DataComponents thất bại
-                // (rơi về NBT fallback bên dưới — vẫn hoạt động, chỉ là đường vòng, không phải lỗi nặng).
-                PayBotDebug.logSwallowed("FireworkCompat: pháo hoa kiểu DataComponents thất bại, dùng NBT fallback", t);
+                // Fallback an toàn cho DataComponents Era: spawn rocket entity chuẩn mà không in lỗi
+                try {
+                    FireworkRocketEntity entity = new FireworkRocketEntity(world, x, y + 1.0, z, rocket);
+                    world.addFreshEntity(entity);
+                    return;
+                } catch (Throwable ignored) {
+                }
             }
         }
 

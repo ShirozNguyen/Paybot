@@ -1,3 +1,4 @@
+// v5.5.15 Part 137: Fix getByCode NoSuchMethodError in Dedicated Server
 // v5.5.5 Part 79: Fix getByCode and applyFormat in ComponentColorParser for fabric-1.16.5
 // v5.5.5 Part 74: Fix ChatFormatting.code for 1.16.5
 // v5.5.5 Part 73: Fix ChatFormatting.code and Style Boolean setters for 1.16.5
@@ -171,7 +172,12 @@ public class ComponentColorParser {
     }
 
     private static ChatFormatting getByCode(char code) {
-        return ChatFormatting.getByCode(code);
+        for (ChatFormatting cf : ChatFormatting.values()) {
+            if (cf.getChar() == code) {
+                return cf;
+            }
+        }
+        return null;
     }
 
     private static Style applyFormat(Style style, ChatFormatting format) {

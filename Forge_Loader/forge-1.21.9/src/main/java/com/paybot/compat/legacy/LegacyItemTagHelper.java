@@ -1,3 +1,4 @@
+// v5.5.16 Part 138: Fix safeComponentToJson and hoverName reflection on production runtime
 package com.paybot.compat.legacy;
 
 import com.google.gson.JsonObject;
@@ -56,21 +57,22 @@ public final class LegacyItemTagHelper {
 
     public static void setName(ItemStack stack, Component nameComponent) {
         if (stack == null || stack.isEmpty() || nameComponent == null) return;
+        boolean setHoverNameSuccess = false;
         try {
-            boolean called = false;
             for (Method m : stack.getClass().getMethods()) {
                 if (HOVER_NAME_METHODS.contains(m.getName()) && m.getParameterCount() == 1) {
                     m.invoke(stack, nameComponent);
-                    called = true;
+                    setHoverNameSuccess = true;
                     break;
                 }
             }
-            if (!called) {
+            if (!setHoverNameSuccess) {
                 // Fallback duyệt theo kiểu tham số Component
                 for (Method m : stack.getClass().getMethods()) {
                     if (m.getParameterCount() == 1
                             && m.getParameterTypes()[0].isAssignableFrom(nameComponent.getClass())) {
                         m.invoke(stack, nameComponent);
+                        setHoverNameSuccess = true;
                         break;
                     }
                 }
@@ -78,13 +80,15 @@ public final class LegacyItemTagHelper {
         } catch (Throwable t) {
             PayBotDebug.logSwallowed("LegacyItemTagHelper.setName: setHoverName() lỗi", t);
         }
-        try {
-            CompoundTag displayTag = getOrCreateDisplayTag(stack);
-            if (displayTag != null) {
-                displayTag.putString("Name", safeComponentToJson(nameComponent));
+        if (!setHoverNameSuccess) {
+            try {
+                CompoundTag displayTag = getOrCreateDisplayTag(stack);
+                if (displayTag != null) {
+                    displayTag.putString("Name", safeComponentToJson(nameComponent));
+                }
+            } catch (Throwable t) {
+                PayBotDebug.logSwallowed("LegacyItemTagHelper.setName: set display.Name lỗi", t);
             }
-        } catch (Throwable t) {
-            PayBotDebug.logSwallowed("LegacyItemTagHelper.setName: set display.Name lỗi", t);
         }
     }
 
@@ -242,17 +246,30 @@ public final class LegacyItemTagHelper {
         return obj.toString();
     }
 
+    private static final Set<String> TO_JSON_METHODS = Set.of(
+            "toJson", "method_10867", "func_150696_a", "m_130703_"
+    );
+
     private static String invokeToJsonMethod(Class<?> cls, Component comp) {
-        if (cls == null) return null;
+        if (cls == null || comp == null) return null;
         for (Method m : cls.getMethods()) {
-            if (m.getName().equals("toJson")
-                    && Modifier.isStatic(m.getModifiers())
-                    && m.getParameterCount() == 1
-                    && m.getParameterTypes()[0].isAssignableFrom(comp.getClass())) {
-                try {
-                    Object res = m.invoke(null, comp);
-                    if (res != null) return res.toString();
-                } catch (Throwable ignored) {}
+            if (Modifier.isStatic(m.getModifiers()) && m.getParameterCount() == 1) {
+                boolean nameMatch = TO_JSON_METHODS.contains(m.getName()) || m.getName().toLowerCase().contains("json");
+                boolean typeMatch = m.getReturnType().equals(String.class);
+                if (nameMatch || typeMatch) {
+                    Class<?> p0 = m.getParameterTypes()[0];
+                    if (Component.class.isAssignableFrom(p0)
+                            || p0.isAssignableFrom(comp.getClass())
+                            || p0.getName().contains("class_2561")
+                            || p0.getName().contains("ITextComponent")
+                            || p0.getName().contains("Component")) {
+                        try {
+                            m.setAccessible(true);
+                            Object res = m.invoke(null, comp);
+                            if (res != null && !res.toString().isEmpty()) return res.toString();
+                        } catch (Throwable ignored) {}
+                    }
+                }
             }
         }
         return null;

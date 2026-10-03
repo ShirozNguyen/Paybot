@@ -1,3 +1,4 @@
+// v5.5.16 Part 138: Direct DataComponents static field lookup with Registry fallback & Holder unwrap
 package com.paybot.fabric.v_modern;
 
 import com.paybot.compat.modern.ModernComponentMethodResolver;
@@ -59,11 +60,14 @@ public class FabricVersionAdapterModern implements VersionAdapter {
     private synchronized void ensureInitialized() {
         if (initialized) return;
 
-        resolveRegistry();
+        resolveDataComponentTypesDirect();
 
-        customNameComponentType = getDataComponentType("custom_name");
-        loreComponentType = getDataComponentType("lore");
-        customDataComponentType = getDataComponentType("custom_data");
+        if (customNameComponentType == null || loreComponentType == null || customDataComponentType == null) {
+            resolveRegistry();
+            if (customNameComponentType == null) customNameComponentType = getDataComponentType("custom_name");
+            if (loreComponentType == null) loreComponentType = getDataComponentType("lore");
+            if (customDataComponentType == null) customDataComponentType = getDataComponentType("custom_data");
+        }
 
         // Nạp trực tiếp từ DataComponents / DataComponentTypes / class_9332 nếu registry lookup chưa ra
         if (customNameComponentType == null || loreComponentType == null || customDataComponentType == null) {
@@ -335,9 +339,18 @@ public class FabricVersionAdapterModern implements VersionAdapter {
     // ===================== TIỆN ÍCH DÙNG CHUNG =====================
 
     private Object unwrapOptional(Object value) {
-        if (!(value instanceof Optional)) return value;
-        Optional<?> opt = (Optional<?>) value;
-        return opt.isPresent() ? opt.get() : null;
+        if (value == null) return null;
+        if (value instanceof Optional) {
+            Optional<?> opt = (Optional<?>) value;
+            value = opt.isPresent() ? opt.get() : null;
+        }
+        if (value != null) {
+            try {
+                Method mVal = value.getClass().getMethod("value");
+                return mVal.invoke(value);
+            } catch (Throwable ignored) {}
+        }
+        return value;
     }
 
     private Object invokeSilently(Method m, Object target, Object... args) {

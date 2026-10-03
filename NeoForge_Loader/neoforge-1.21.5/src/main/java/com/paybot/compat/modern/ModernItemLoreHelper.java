@@ -1,3 +1,4 @@
+// v5.5.16 Part 138: Improve ItemLore constructor resolution and List compatibility
 package com.paybot.compat.modern;
 
 import com.paybot.utils.PayBotDebug;
@@ -66,7 +67,7 @@ public class ModernItemLoreHelper {
             for (Constructor<?> ctor : loreClass.getDeclaredConstructors()) {
                 ctor.setAccessible(true);
                 Class<?>[] pTypes = ctor.getParameterTypes();
-                if (pTypes.length == 1 && pTypes[0].isAssignableFrom(List.class)) {
+                if (pTypes.length == 1 && (List.class.isAssignableFrom(pTypes[0]) || pTypes[0].isAssignableFrom(List.class))) {
                     return ctor.newInstance(componentList);
                 }
             }
@@ -79,7 +80,7 @@ public class ModernItemLoreHelper {
             for (Constructor<?> ctor : loreClass.getDeclaredConstructors()) {
                 ctor.setAccessible(true);
                 Class<?>[] pTypes = ctor.getParameterTypes();
-                if (pTypes.length == 2 && pTypes[0].isAssignableFrom(List.class) && pTypes[1].isAssignableFrom(List.class)) {
+                if (pTypes.length == 2 && (List.class.isAssignableFrom(pTypes[0]) || pTypes[0].isAssignableFrom(List.class)) && (List.class.isAssignableFrom(pTypes[1]) || pTypes[1].isAssignableFrom(List.class))) {
                     return ctor.newInstance(componentList, componentList);
                 }
             }
@@ -93,7 +94,7 @@ public class ModernItemLoreHelper {
                 if (!Modifier.isStatic(m.getModifiers())) continue;
                 if (!loreClass.isAssignableFrom(m.getReturnType())) continue;
                 Class<?>[] pTypes = m.getParameterTypes();
-                if (pTypes.length == 1 && pTypes[0].isAssignableFrom(List.class)) {
+                if (pTypes.length == 1 && (List.class.isAssignableFrom(pTypes[0]) || pTypes[0].isAssignableFrom(List.class))) {
                     m.setAccessible(true);
                     return m.invoke(null, componentList);
                 }
