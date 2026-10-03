@@ -171,8 +171,52 @@ public class ComponentColorParser {
         return sb.toString();
     }
 
+    private static final ChatFormatting[] CODE_LOOKUP = new ChatFormatting[256];
+
+    static {
+        for (ChatFormatting cf : ChatFormatting.values()) {
+            char code = getCodeFromEnum(cf);
+            if (code != 0 && code < 256) {
+                CODE_LOOKUP[Character.toLowerCase(code)] = cf;
+            }
+        }
+    }
+
+    private static char getCodeFromEnum(ChatFormatting cf) {
+        String name = cf.name();
+        switch (name) {
+            case "BLACK": return '0';
+            case "DARK_BLUE": return '1';
+            case "DARK_GREEN": return '2';
+            case "DARK_AQUA": return '3';
+            case "DARK_RED": return '4';
+            case "DARK_PURPLE": return '5';
+            case "GOLD": return '6';
+            case "GRAY": return '7';
+            case "DARK_GRAY": return '8';
+            case "BLUE": return '9';
+            case "GREEN": return 'a';
+            case "AQUA": return 'b';
+            case "RED": return 'c';
+            case "LIGHT_PURPLE": return 'd';
+            case "YELLOW": return 'e';
+            case "WHITE": return 'f';
+            case "OBFUSCATED": return 'k';
+            case "BOLD": return 'l';
+            case "STRIKETHROUGH": return 'm';
+            case "UNDERLINE": return 'n';
+            case "ITALIC": return 'o';
+            case "RESET": return 'r';
+            default: return 0;
+        }
+    }
+
     private static ChatFormatting getByCode(char code) {
-        return ChatFormatting.getByCode(code);
+        char lower = Character.toLowerCase(code);
+        if (lower < 256) {
+            return CODE_LOOKUP[lower];
+        }
+        return null;
     }
 
     private static Style applyFormat(Style style, ChatFormatting format) {
