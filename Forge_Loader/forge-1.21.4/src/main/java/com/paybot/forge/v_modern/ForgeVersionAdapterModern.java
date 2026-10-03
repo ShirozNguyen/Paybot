@@ -111,6 +111,44 @@ public class ForgeVersionAdapterModern implements VersionAdapter {
         }
     }
 
+    
+    /**
+     * Dò trực tiếp DataComponentType từ DataComponents static fields (Mojmap hoặc Intermediary).
+     */
+    private void resolveDataComponentTypesDirect() {
+        try {
+            Class<?> dcClass = null;
+            for (String cn : new String[]{
+                    "net.minecraft.core.component.DataComponents",
+                    "net.minecraft.class_9334"
+            }) {
+                try {
+                    dcClass = Class.forName(cn);
+                    break;
+                } catch (Throwable ignored) {}
+            }
+            if (dcClass == null) return;
+
+            for (Field f : dcClass.getFields()) {
+                if (!Modifier.isStatic(f.getModifiers())) continue;
+                String name = f.getName().toLowerCase();
+                try {
+                    Object val = unwrapOptional(f.get(null));
+                    if (val == null) continue;
+                    if (customNameComponentType == null && (name.equals("custom_name") || name.equals("field_49603"))) {
+                        customNameComponentType = val;
+                    } else if (loreComponentType == null && (name.equals("lore") || name.equals("field_49604"))) {
+                        loreComponentType = val;
+                    } else if (customDataComponentType == null && (name.equals("custom_data") || name.equals("field_49602"))) {
+                        customDataComponentType = val;
+                    }
+                } catch (Throwable ignored) {}
+            }
+        } catch (Throwable t) {
+            PayBotDebug.logSwallowed("resolveDataComponentTypesDirect", t);
+        }
+    }
+
     private void resolveRegistry() {
         Field[] fields;
         try {

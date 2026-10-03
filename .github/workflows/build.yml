@@ -293,7 +293,7 @@ jobs:
             echo ">>> All 8 Elastic Nodes completed 100% of targets with 0 missing modules!"
           fi
 
-      - name: Setup JDK 8, 17, 21, 25 (For Global Self-Healing Compensation)
+      - name: Setup JDK 8, 17, 25, 21 (For Global Self-Healing Compensation)
         if: steps.check_missing.outputs.needs_compensation == 'true'
         uses: actions/setup-java@v5
         with:
@@ -301,8 +301,8 @@ jobs:
           java-version: |
             8
             17
-            21
             25
+            21
           cache: 'gradle'
 
       - name: Setup Gradle 8.9 (For Global Self-Healing Compensation)
@@ -323,6 +323,8 @@ jobs:
             echo ">>> All 8 Nodes finished -> Pouring 100% Runner Power (13,312MB RAM + 4 Threads) to compensate missing modules:"
             cat build-diagnostics/global_compensate_queue.txt
             echo "========================================================"
+            export JAVA_HOME="$JAVA_HOME_21_X64"
+            export PATH="$JAVA_HOME/bin:$PATH"
             while read -r target; do
               [ -z "$target" ] && continue
               if [ -d "$target" ] && [ -f "$target/gradlew" ]; then

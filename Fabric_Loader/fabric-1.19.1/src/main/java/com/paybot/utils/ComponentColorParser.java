@@ -167,12 +167,7 @@ public class ComponentColorParser {
     }
 
     private static ChatFormatting getByCode(char code) {
-        for (ChatFormatting cf : ChatFormatting.values()) {
-            if (cf.getChar() == code) {
-                return cf;
-            }
-        }
-        return null;
+        return ChatFormatting.getByCode(code);
     }
 
     private static Style applyFormat(Style style, ChatFormatting format) {
