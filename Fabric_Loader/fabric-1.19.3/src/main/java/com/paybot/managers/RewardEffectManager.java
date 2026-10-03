@@ -36,7 +36,9 @@ public class RewardEffectManager {
         boolean notification = mod.isNotifEnabled("notification");
 
         // Action bar thông báo
+        // Action bar & Title to giữa màn hình
         if (notification) {
+            sendSuccessTitle(player, amount);
             player.displayClientMessage(Component.literal("§a§l✓ §fNạp §a§l" + PayBotMod.formatVnd(amount) + " VND §a§lthành công!"), true);
         }
 
