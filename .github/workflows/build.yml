@@ -178,8 +178,7 @@ jobs:
               echo ">>> [SUCCESS - JAR GENERATED] $mod produced valid JAR"
               return 0
             else
-              echo ">>> [QUEUED FOR COMPENSATION] $mod will be retried with full cumulative resources"
-              echo "INDEP:$mod" >> "$ROOT_DIR/build-diagnostics/compensate_${{ matrix.node_id }}.txt"
+              echo ">>> [FAILED] $mod failed to build on single pass"
               return 1
             fi
           }
@@ -195,67 +194,27 @@ jobs:
             DONE_STEPS=$(( DONE_STEPS + 1 ))
           done
 
-          # Phase 2: Dồn cấp số cộng từ các module nhỏ vừa xong sang Main Batch 1 & Main Batch 2
+          # Phase 2: Dồn tài nguyên sang Main Batch 1 & Main Batch 2
           HEAP_MAIN_1=$(( BASE_RAM + DONE_STEPS * STEP_RAM ))
           if [ "$HEAP_MAIN_1" -lt 9216 ]; then HEAP_MAIN_1=9216; fi
           if [ "$HEAP_MAIN_1" -gt "$MAX_RAM" ]; then HEAP_MAIN_1=$MAX_RAM; fi
           THREADS_MAIN_1=$(( BASE_THREADS + DONE_STEPS ))
           if [ "$THREADS_MAIN_1" -gt "$TOTAL_CORES" ]; then THREADS_MAIN_1=$TOTAL_CORES; fi
 
-          echo ">>> [ADDITIVE CASCADE -> MAIN 1] Completed=${DONE_STEPS} -> Pouring ${HEAP_MAIN_1}MB RAM & ${THREADS_MAIN_1} Threads into: ${{ matrix.root_batch_1 }}"
+          echo ">>> [CASCADE -> MAIN 1] Completed=${DONE_STEPS} -> Pouring ${HEAP_MAIN_1}MB RAM & ${THREADS_MAIN_1} Threads into: ${{ matrix.root_batch_1 }}"
           export GRADLE_OPTS="-Dorg.gradle.jvmargs=\"-Xmx${HEAP_MAIN_1}m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=${THREADS_MAIN_1}\" -Dorg.gradle.daemon=true"
           if (gradle ${{ matrix.root_batch_1 }} --console=plain --parallel --max-workers=${THREADS_MAIN_1} --build-cache --continue --stacktrace 2>&1 | tee "$ROOT_DIR/build-diagnostics/${{ matrix.node_id }}-main1.log"); then
             DONE_STEPS=$(( DONE_STEPS + 3 ))
-          else
-            for task in ${{ matrix.root_batch_1 }}; do
-              echo "ROOT:$task" >> "$ROOT_DIR/build-diagnostics/compensate_${{ matrix.node_id }}.txt"
-            done
           fi
 
           HEAP_MAIN_2=$(( BASE_RAM + DONE_STEPS * STEP_RAM ))
           if [ "$HEAP_MAIN_2" -lt 11264 ]; then HEAP_MAIN_2=11264; fi
           if [ "$HEAP_MAIN_2" -gt "$MAX_RAM" ]; then HEAP_MAIN_2=$MAX_RAM; fi
 
-          echo ">>> [ADDITIVE CASCADE -> MAIN 2] Completed=${DONE_STEPS} -> Pouring ${HEAP_MAIN_2}MB RAM & ${TOTAL_CORES} Threads into: ${{ matrix.root_batch_2 }}"
+          echo ">>> [CASCADE -> MAIN 2] Completed=${DONE_STEPS} -> Pouring ${HEAP_MAIN_2}MB RAM & ${TOTAL_CORES} Threads into: ${{ matrix.root_batch_2 }}"
           export GRADLE_OPTS="-Dorg.gradle.jvmargs=\"-Xmx${HEAP_MAIN_2}m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=${TOTAL_CORES}\" -Dorg.gradle.daemon=true"
           if (gradle ${{ matrix.root_batch_2 }} --console=plain --parallel --max-workers=${TOTAL_CORES} --build-cache --continue --stacktrace 2>&1 | tee "$ROOT_DIR/build-diagnostics/${{ matrix.node_id }}-main2.log"); then
             DONE_STEPS=$(( DONE_STEPS + 3 ))
-          else
-            for task in ${{ matrix.root_batch_2 }}; do
-              echo "ROOT:$task" >> "$ROOT_DIR/build-diagnostics/compensate_${{ matrix.node_id }}.txt"
-            done
-          fi
-
-          # Phase 3: Cơ chế Tự Động Bù (Self-Healing Compensation) - Nếu còn bất kỳ module nào thiếu/lỗi,
-          # dồn 100% tài nguyên tích lũy cực đại (13,312MB RAM + toàn bộ CPU Threads) để build bù từng cái cho tới khi xong!
-          if [ -f "$ROOT_DIR/build-diagnostics/compensate_${{ matrix.node_id }}.txt" ]; then
-            echo ">>> [SELF-HEALING COMPENSATION] Pouring 100% Cumulative Power (${MAX_RAM}MB RAM + ${TOTAL_CORES} Threads) into remaining targets..."
-            gradle --stop || true
-            while read -r item; do
-              [ -z "$item" ] && continue
-              kind="${item%%:*}"
-              target="${item#*:}"
-              if [ "$kind" = "INDEP" ]; then
-                mod_name=$(basename "$target")
-                mc_ver="${mod_name#*-}"
-                echo ">>> [COMPENSATE INDEP] Cleaning stale Loom cache for ${mod_name} (${mc_ver}) and rebuilding with ${MAX_RAM}MB RAM..."
-                rm -rf ~/.gradle/caches/fabric-loom/"${mc_ver}" "$target/.gradle" "$target/build" 2>/dev/null || true
-                if (cd "$target" && GRADLE_OPTS="-Xmx${MAX_RAM}m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:ActiveProcessorCount=${TOTAL_CORES} -Dorg.gradle.daemon=false" ./gradlew build --console=plain --parallel --max-workers=${TOTAL_CORES} --stacktrace 2>&1 | tee "$ROOT_DIR/build-diagnostics/${mod_name}.log"); then
-                  echo ">>> [COMPENSATE SUCCESS] $target recovered and built!"
-                elif find "$target/build/libs" -type f -name "*.jar" ! -name "*-dev.jar" ! -name "*-shadow.jar" ! -name "*-sources.jar" 2>/dev/null | grep -q .; then
-                  echo ">>> [COMPENSATE SUCCESS - JAR FOUND] $target produced valid JAR!"
-                else
-                  echo "$target" >> "$ROOT_DIR/build-diagnostics/failed_${{ matrix.node_id }}.txt"
-                fi
-              else
-                echo ">>> [COMPENSATE ROOT] Rebuilding $target with ${MAX_RAM}MB RAM..."
-                if (gradle "$target" --console=plain --parallel --max-workers=${TOTAL_CORES} --stacktrace 2>&1 | tee -a "$ROOT_DIR/build-diagnostics/${{ matrix.node_id }}-compensate.log"); then
-                  echo ">>> [COMPENSATE SUCCESS] $target recovered and built!"
-                else
-                  echo "$target" >> "$ROOT_DIR/build-diagnostics/failed_${{ matrix.node_id }}.txt"
-                fi
-              fi
-            done < "$ROOT_DIR/build-diagnostics/compensate_${{ matrix.node_id }}.txt"
           fi
           gradle --stop || true
 
@@ -336,110 +295,6 @@ jobs:
           merge-multiple: true
           path: build-diagnostics/
 
-      - name: Check if Global Self-Healing Compensation is Needed
-        id: check_missing
-        shell: bash
-        run: |
-          cat build-diagnostics/failed_*.txt 2>/dev/null | sort -u > build-diagnostics/global_compensate_queue.txt || true
-          rm -f build-diagnostics/failed_*.txt build-diagnostics/failed_modules.txt
-          if [ -s build-diagnostics/global_compensate_queue.txt ]; then
-            echo "needs_compensation=true" >> "$GITHUB_OUTPUT"
-            echo ">>> Found missing modules requiring Global Compensation:"
-            cat build-diagnostics/global_compensate_queue.txt
-          else
-            echo "needs_compensation=false" >> "$GITHUB_OUTPUT"
-            echo ">>> All 8 Elastic Nodes completed 100% of targets with 0 missing modules!"
-          fi
-
-      - name: Setup JDK 8, 17, 25, 21 (For Global Self-Healing Compensation)
-        if: steps.check_missing.outputs.needs_compensation == 'true'
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: |
-            8
-            17
-            25
-            21
-          cache: 'gradle'
-
-      - name: Setup Gradle 8.9 (For Global Self-Healing Compensation)
-        if: steps.check_missing.outputs.needs_compensation == 'true'
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
-          cache-read-only: false
-          validate-wrappers: false
-
-      - name: Global Self-Healing Compensation Engine (Build Any Missing Modules with 100% Cluster Power)
-        if: steps.check_missing.outputs.needs_compensation == 'true'
-        shell: bash
-        run: |
-          set -o pipefail
-          ROOT_DIR="$PWD"
-          if [ -s build-diagnostics/global_compensate_queue.txt ]; then
-            echo "========================================================"
-            echo ">>> [GLOBAL SELF-HEALING COMPENSATION ENGINE ACTIVATED]"
-            echo ">>> All 8 Nodes finished -> Pouring 100% Runner Power (13,312MB RAM + 4 Threads) to compensate missing modules:"
-            cat build-diagnostics/global_compensate_queue.txt
-            echo "========================================================"
-            export JAVA_HOME="$JAVA_HOME_21_X64"
-            export PATH="$JAVA_HOME/bin:$PATH"
-            while read -r target; do
-              [ -z "$target" ] && continue
-              if [ -d "$target" ] && [ -f "$target/gradlew" ]; then
-                chmod +x "$target/gradlew"
-                mod_name=$(basename "$target")
-                mc_ver="${mod_name#*-}"
-                echo ">>> [GLOBAL COMPENSATE INDEP] Cleaning Loom cache for ${mod_name} (${mc_ver}) & Building with 13,312MB RAM + 4 Threads..."
-                rm -rf ~/.gradle/caches/fabric-loom/"${mc_ver}" "$target/.gradle" "$target/build" 2>/dev/null || true
-                if (cd "$target" && GRADLE_OPTS="-Xmx13312m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=4 -Dorg.gradle.daemon=false" ./gradlew build --console=plain --parallel --max-workers=4 --stacktrace 2>&1 | tee "$ROOT_DIR/build-diagnostics/${mod_name}.log"); then
-                  echo ">>> [GLOBAL COMPENSATE SUCCESS] $target built!"
-                  find "$target/build/libs" -type f -name "*.jar" ! -name "*-dev.jar" ! -name "*-shadow.jar" ! -name "*-sources.jar" | while read -r f; do
-                    case "$target" in
-                      *Fabric_Loader*) cp "$f" Done/Fabric_Quilt/ 2>/dev/null || true ;;
-                      *Forge_Loader*) cp "$f" Done/Forge/ 2>/dev/null || true ;;
-                      *NeoForge_Loader*) cp "$f" Done/NeoForge/ 2>/dev/null || true ;;
-                      *plugin*) cp "$f" Done/Plugins/ 2>/dev/null || true ;;
-                    esac
-                  done
-                elif find "$target/build/libs" -type f -name "*.jar" ! -name "*-dev.jar" ! -name "*-shadow.jar" ! -name "*-sources.jar" 2>/dev/null | grep -q .; then
-                  echo ">>> [GLOBAL COMPENSATE SUCCESS - JAR FOUND] $target produced valid JAR!"
-                  find "$target/build/libs" -type f -name "*.jar" ! -name "*-dev.jar" ! -name "*-shadow.jar" ! -name "*-sources.jar" | while read -r f; do
-                    case "$target" in
-                      *Fabric_Loader*) cp "$f" Done/Fabric_Quilt/ 2>/dev/null || true ;;
-                      *Forge_Loader*) cp "$f" Done/Forge/ 2>/dev/null || true ;;
-                      *NeoForge_Loader*) cp "$f" Done/NeoForge/ 2>/dev/null || true ;;
-                      *plugin*) cp "$f" Done/Plugins/ 2>/dev/null || true ;;
-                    esac
-                  done
-                else
-                  echo ">>> [GLOBAL COMPENSATE FAILED] $target still failed!"
-                  echo "$target" >> build-diagnostics/failed_modules.txt
-                fi
-              else
-                echo ">>> [GLOBAL COMPENSATE ROOT] Building $target with 13,312MB RAM + 4 Threads..."
-                export GRADLE_OPTS="-Dorg.gradle.jvmargs=\"-Xmx13312m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=4\" -Dorg.gradle.daemon=false"
-                if (gradle "$target" --console=plain --parallel --max-workers=4 --stacktrace 2>&1 | tee -a "$ROOT_DIR/build-diagnostics/global-root-compensate.log"); then
-                  echo ">>> [GLOBAL COMPENSATE SUCCESS] $target built!"
-                  find . -type f -path '*/build/libs/*.jar' ! -name "*-dev.jar" ! -name "*-shadow.jar" ! -name "*-sources.jar" | while read -r f; do
-                    case "$f" in
-                      */Fabric_Loader/*) cp "$f" Done/Fabric_Quilt/ 2>/dev/null || true ;;
-                      */Forge_Loader/*) cp "$f" Done/Forge/ 2>/dev/null || true ;;
-                      */NeoForge_Loader/*) cp "$f" Done/NeoForge/ 2>/dev/null || true ;;
-                      */plugin/*) cp "$f" Done/Plugins/ 2>/dev/null || true ;;
-                    esac
-                  done
-                else
-                  echo ">>> [GLOBAL COMPENSATE FAILED] $target still failed!"
-                  echo "$target" >> build-diagnostics/failed_modules.txt
-                fi
-              fi
-            done < build-diagnostics/global_compensate_queue.txt
-          else
-            echo ">>> [GLOBAL SELF-HEALING COMPENSATION] 0 missing modules from the 8 Elastic Nodes!"
-          fi
-
       - name: Synchronize artifacts folder
         shell: bash
         run: |
@@ -472,17 +327,18 @@ jobs:
         shell: bash
         run: |
           echo "========================================================"
-          echo "=== PAYBOT BUILD DIAGNOSTICS & STATUS SUMMARY ==="
+          echo "=== PAYBOT BUILD AUDIT & STATUS SUMMARY ==="
           echo "========================================================"
-          if [ -f build-diagnostics/failed_modules.txt ] && [ -s build-diagnostics/failed_modules.txt ]; then
-            echo "❌ THE FOLLOWING MODULES FAILED TO BUILD AFTER ALL COMPENSATION PASSES:"
-            cat build-diagnostics/failed_modules.txt
-            echo "========================================================"
-            echo "Detailed error logs are saved in 'PayBot-Diagnostics' artifact."
-            echo "All successfully built JARs have been packaged into 'PayBot-Done'."
+          TOTAL_JARS=$(find Done -type f -name "*.jar" 2>/dev/null | wc -l)
+          echo ">>> Total production JARs collected: $TOTAL_JARS"
+          find Done -type f -name "*.jar" | sort | while read -r j; do
+            echo "  - $(basename "$j") ($(wc -c < "$j") bytes)"
+          done
+          echo "========================================================"
+          if [ "$TOTAL_JARS" -lt 50 ]; then
+            echo "❌ Less than expected JARs found ($TOTAL_JARS)!"
             exit 1
           else
-            echo "========================================================"
-            echo "✅ ALL ACTIVE TARGETS BUILT SUCCESSFULLY!"
+            echo "✅ BUILD COMPLETED SUCCESSFULLY WITH $TOTAL_JARS PRODUCTION JARS!"
             echo "========================================================"
           fi
