@@ -28,9 +28,9 @@ dependencies {
     shadowBundle 'com.google.zxing:javase:3.5.3'
     shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
 
-// FastStats Telemetry Subsystem (Fabric & Quilt)
-    modImplementation 'dev.faststats.metrics:fabric:0.30.2+mc1.16.1-1.17.1'
-    include 'dev.faststats.metrics:fabric:0.30.2+mc1.16.1-1.17.1'
+// FastStats Telemetry Subsystem (Core + Config Adapter)
+    shadowBundle 'dev.faststats.metrics:core:0.30.2'
+    shadowBundle 'dev.faststats.metrics:config:0.30.2'
 }
 
 processResources {

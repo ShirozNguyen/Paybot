@@ -102,7 +102,7 @@ jar {
 tasks.named("assemble") {
     dependsOn jar
 
-    // FastStats Telemetry Subsystem
-    implementation 'dev.faststats.metrics:neoforge:0.30.2+mc26.1-26.2'
-    include 'dev.faststats.metrics:neoforge:0.30.2+mc26.1-26.2'
+    // FastStats Telemetry Subsystem (Core + Config Adapter)
+    shadowBundle 'dev.faststats.metrics:core:0.30.2'
+    shadowBundle 'dev.faststats.metrics:config:0.30.2'
 }

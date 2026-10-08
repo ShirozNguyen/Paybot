@@ -31,9 +31,9 @@ dependencies {
     shadowBundle 'org.slf4j:slf4j-api:1.7.36'
     shadowBundle 'org.apache.logging.log4j:log4j-slf4j-impl:2.14.1'
 
-// FastStats Telemetry Subsystem (Fabric & Quilt)
-    modImplementation 'dev.faststats.metrics:fabric:0.30.2+mc1.16.1-1.17.1'
-    include 'dev.faststats.metrics:fabric:0.30.2+mc1.16.1-1.17.1'
+// FastStats Telemetry Subsystem (Core + Config Adapter)
+    shadowBundle 'dev.faststats.metrics:core:0.30.2'
+    shadowBundle 'dev.faststats.metrics:config:0.30.2'
 }
 
 processResources {

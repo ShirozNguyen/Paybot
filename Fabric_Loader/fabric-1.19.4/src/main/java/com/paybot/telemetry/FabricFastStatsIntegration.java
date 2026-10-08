@@ -1,15 +1,14 @@
 package com.paybot.telemetry;
 
 import com.paybot.PayBotMod;
-import dev.faststats.Metrics;
-import dev.faststats.fabric.FabricContext;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.server.MinecraftServer;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Quản trị vòng đời tích hợp FastStats Telemetry trên Fabric Loader & Quilt Loader.
- * BẮT BUỘC: Fabric và Quilt dùng CHUNG 100% implementation này.
+ * BẮT BUỘC: Fabric và Quilt dùng CHUNG 100% implementation này (FastStats Core + Config).
  * Cơ chế Fail-Safe tuyệt đối: Lỗi telemetry KHÔNG BAO GIỜ làm crash hay gián đoạn PayBot.
  * Tuân thủ Quy Tắc 17: Class đơn nhiệm điều phối vòng đời telemetry Fabric & Quilt.
  */
@@ -18,18 +17,15 @@ public final class FabricFastStatsIntegration {
     private static final AtomicReference<FabricFastStatsIntegration> INSTANCE = new AtomicReference<>();
 
     private final FastStatsState state;
-    private final FabricContext context;
+    private final FabricFastStatsContext context;
     private final FabricSnapshotProvider snapshotProvider;
 
-    private FabricFastStatsIntegration(FabricContext context, FabricSnapshotProvider snapshotProvider, FastStatsState state) {
+    private FabricFastStatsIntegration(FabricFastStatsContext context, FabricSnapshotProvider snapshotProvider, FastStatsState state) {
         this.context = context;
         this.snapshotProvider = snapshotProvider;
         this.state = state;
     }
 
-    /**
-     * Khởi tạo FastStats Telemetry cho Fabric & Quilt.
-     */
     public static synchronized void initialize() {
         FabricFastStatsIntegration existing = INSTANCE.get();
         if (existing != null && existing.state != FastStatsState.SHUTDOWN) {
@@ -52,14 +48,12 @@ public final class FabricFastStatsIntegration {
             }
 
             FabricSnapshotProvider snapshotProvider = new FabricSnapshotProvider();
-            FabricFastStatsMetricsRegistry metricsRegistry = new FabricFastStatsMetricsRegistry(snapshotProvider);
 
-            FabricContext context = new FabricContext.Factory(PayBotMod.MOD_ID, token)
-                    .metrics(factory -> metricsRegistry.registerMetrics(Metrics.Factory.create()))
-                    .create();
-
-            // Đăng ký cập nhật server snapshot khi server khởi động
-            ServerLifecycleEvents.SERVER_STARTED.register(snapshotProvider::updateServer);
+            FabricFastStatsContext context = new FabricFastStatsContext.Factory(
+                    PayBotMod.MOD_ID,
+                    token,
+                    snapshotProvider
+            ).create();
 
             FabricFastStatsIntegration integration = new FabricFastStatsIntegration(
                     context,
@@ -67,10 +61,16 @@ public final class FabricFastStatsIntegration {
                     FastStatsState.READY
             );
             INSTANCE.set(integration);
+
+            try {
+                ServerLifecycleEvents.SERVER_STARTED.register(FabricFastStatsIntegration::onServerStarted);
+                ServerLifecycleEvents.SERVER_STOPPING.register(server -> onServerStopping());
+            } catch (Throwable ignored) {
+            }
+
             PayBotMod.LOGGER.info("[FastStats] Telemetry khoi tao thanh cong cho Fabric/Quilt.");
 
         } catch (Throwable t) {
-            // BEST EFFORT: Tuyệt đối không ném ngoại lệ làm gián đoạn mod PayBot
             INSTANCE.set(new FabricFastStatsIntegration(null, null, FastStatsState.DISABLED));
             try {
                 PayBotMod.LOGGER.warn("[FastStats] Khong the khoi tao telemetry (Best Effort): {}", t.getMessage());
@@ -79,9 +79,21 @@ public final class FabricFastStatsIntegration {
         }
     }
 
-    /**
-     * Dừng telemetry và giải phóng tài nguyên khi server dừng.
-     */
+    public static void onServerStarted(MinecraftServer server) {
+        FabricFastStatsIntegration current = INSTANCE.get();
+        if (current != null && current.context != null && current.snapshotProvider != null) {
+            try {
+                current.snapshotProvider.updateServer(server);
+                current.context.ready();
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    public static void onServerStopping() {
+        shutdown();
+    }
+
     public static synchronized void shutdown() {
         FabricFastStatsIntegration current = INSTANCE.getAndSet(null);
         if (current == null || current.context == null) {

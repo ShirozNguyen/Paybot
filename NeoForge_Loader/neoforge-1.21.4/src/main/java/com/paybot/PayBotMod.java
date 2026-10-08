@@ -84,11 +84,13 @@ public class PayBotMod {
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
         onServerStart(event.getServer());
+        try { com.paybot.telemetry.NeoForgeFastStatsIntegration.onServerStarted(event.getServer()); } catch (Throwable ignored) {}
     }
 
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
         onServerStop();
+        try { com.paybot.telemetry.NeoForgeFastStatsIntegration.onServerStopping(); } catch (Throwable ignored) {}
     }
 
     @SubscribeEvent

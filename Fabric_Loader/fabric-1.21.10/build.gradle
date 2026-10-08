@@ -110,7 +110,7 @@ remapJar {
     dependsOn jar
     archiveClassifier = null
 
-    // FastStats Telemetry Subsystem (Fabric & Quilt)
-    modImplementation 'dev.faststats.metrics:fabric:0.30.2+mc1.21.9-1.21.11'
-    include 'dev.faststats.metrics:fabric:0.30.2+mc1.21.9-1.21.11'
+    // FastStats Telemetry Subsystem (Core + Config Adapter)
+    shadowBundle 'dev.faststats.metrics:core:0.30.2'
+    shadowBundle 'dev.faststats.metrics:config:0.30.2'
 }
