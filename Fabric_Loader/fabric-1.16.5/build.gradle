@@ -30,6 +30,10 @@ dependencies {
     // MC 1.16.5 chưa có sẵn slf4j trên classpath runtime (chỉ có log4j2), cần shade slf4j-api + log4j binding
     shadowBundle 'org.slf4j:slf4j-api:1.7.36'
     shadowBundle 'org.apache.logging.log4j:log4j-slf4j-impl:2.14.1'
+
+// FastStats Telemetry Subsystem (Fabric & Quilt)
+    modImplementation 'dev.faststats.metrics:fabric:0.30.2+mc1.16.1-1.17.1'
+    include 'dev.faststats.metrics:fabric:0.30.2+mc1.16.1-1.17.1'
 }
 
 processResources {
@@ -58,7 +62,4 @@ remapJar {
 jar {
     archiveClassifier = "dev"
 
-    // FastStats Telemetry Subsystem (Fabric & Quilt)
-    modImplementation 'dev.faststats.metrics:fabric:0.30.2+mc1.16.1-1.17.1'
-    include 'dev.faststats.metrics:fabric:0.30.2+mc1.16.1-1.17.1'
-}
+    }

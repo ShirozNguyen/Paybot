@@ -27,6 +27,10 @@ dependencies {
     shadowBundle 'com.google.zxing:core:3.5.3'
     shadowBundle 'com.google.zxing:javase:3.5.3'
     shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
+
+// FastStats Telemetry Subsystem (Fabric & Quilt)
+    modImplementation 'dev.faststats.metrics:fabric:0.30.2+mc1.18-1.21.8'
+    include 'dev.faststats.metrics:fabric:0.30.2+mc1.18-1.21.8'
 }
 
 processResources {
@@ -55,7 +59,4 @@ remapJar {
 jar {
     archiveClassifier = "dev"
 
-    // FastStats Telemetry Subsystem (Fabric & Quilt)
-    modImplementation 'dev.faststats.metrics:fabric:0.30.2+mc1.18-1.21.8'
-    include 'dev.faststats.metrics:fabric:0.30.2+mc1.18-1.21.8'
-}
+    }
