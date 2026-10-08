@@ -81,8 +81,12 @@ dependencies {
     shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
 
     // FastStats Telemetry Subsystem (Core + Config Adapter)
-    shadowBundle 'dev.faststats.metrics:core:0.30.2'
-    shadowBundle 'dev.faststats.metrics:config:0.30.2'
+    shadowBundle('dev.faststats.metrics:core:0.30.2') {
+        exclude group: 'com.google.code.gson', module: 'gson'
+    }
+    shadowBundle('dev.faststats.metrics:config:0.30.2') {
+        exclude group: 'com.google.code.gson', module: 'gson'
+    }
 }
 
 processResources {
