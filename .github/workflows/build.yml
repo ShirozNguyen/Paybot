@@ -210,7 +210,7 @@ jobs:
           if [ -n "${{ matrix.root_batch_1 }}" ]; then
             echo ">>> [CASCADE -> MAIN 1] Completed=${DONE_STEPS} -> Pouring ${HEAP_MAIN_1}MB RAM & ${THREADS_MAIN_1} Threads into: ${{ matrix.root_batch_1 }}"
             export GRADLE_OPTS="-Dorg.gradle.jvmargs=\"-Xmx${HEAP_MAIN_1}m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=${THREADS_MAIN_1}\" -Dorg.gradle.daemon=true"
-            if (gradle ${{ matrix.root_batch_1 }} --console=plain --parallel --max-workers=${THREADS_MAIN_1} --build-cache --continue --stacktrace 2>&1 | tee "$ROOT_DIR/build-diagnostics/${{ matrix.node_id }}-main1.log"); then
+            if (gradle ${{ matrix.root_batch_1 }} --configure-on-demand --console=plain --parallel --max-workers=${THREADS_MAIN_1} --build-cache --continue --stacktrace 2>&1 | tee "$ROOT_DIR/build-diagnostics/${{ matrix.node_id }}-main1.log"); then
               DONE_STEPS=$(( DONE_STEPS + 3 ))
             fi
           fi
@@ -222,7 +222,7 @@ jobs:
 
             echo ">>> [CASCADE -> MAIN 2] Completed=${DONE_STEPS} -> Pouring ${HEAP_MAIN_2}MB RAM & ${TOTAL_CORES} Threads into: ${{ matrix.root_batch_2 }}"
             export GRADLE_OPTS="-Dorg.gradle.jvmargs=\"-Xmx${HEAP_MAIN_2}m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=${TOTAL_CORES}\" -Dorg.gradle.daemon=true"
-            if (gradle ${{ matrix.root_batch_2 }} --console=plain --parallel --max-workers=${TOTAL_CORES} --build-cache --continue --stacktrace 2>&1 | tee "$ROOT_DIR/build-diagnostics/${{ matrix.node_id }}-main2.log"); then
+            if (gradle ${{ matrix.root_batch_2 }} --configure-on-demand --console=plain --parallel --max-workers=${TOTAL_CORES} --build-cache --continue --stacktrace 2>&1 | tee "$ROOT_DIR/build-diagnostics/${{ matrix.node_id }}-main2.log"); then
               DONE_STEPS=$(( DONE_STEPS + 3 ))
             fi
           fi
