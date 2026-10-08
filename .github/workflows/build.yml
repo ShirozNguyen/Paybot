@@ -14,6 +14,54 @@ permissions:
   contents: read
 
 jobs:
+  build-plugin:
+    name: "Plugin: Paper / Folia / Purpur"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v5
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle 8.8
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.8'
+          validate-wrappers: false
+
+      - name: Build Plugin
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p build-diagnostics Done/Plugins
+          echo "=== Building PayBot Plugin (Paper / Purpur / Folia) ==="
+          gradle :plugin:build --console=plain --configure-on-demand --build-cache --stacktrace 2>&1 | tee "build-diagnostics/plugin.log"
+          find plugin/build/libs -type f -name "*.jar" ! -name "*-dev.jar" ! -name "*-shadow.jar" ! -name "*-sources.jar" | while read -r f; do
+            cp "$f" Done/Plugins/ 2>/dev/null || true
+          done
+
+      - name: Upload Plugin Done
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: done-plugin
+          path: Done/
+          retention-days: 1
+          if-no-files-found: ignore
+
+      - name: Upload Plugin Diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diag-plugin
+          path: build-diagnostics/
+          retention-days: 1
+          if-no-files-found: ignore
+
   build-elastic-cluster:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
@@ -21,10 +69,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: "Node 1: [Fast: 26.x Fabric] -> [Main: Plugin & Fabric 1.16.5-1.18.2]"
+          - name: "Node 1: [Fast: 26.x Fabric] -> [Main: Fabric 1.16.5-1.18.2]"
             node_id: "node-1-fabric-116-118"
             indep_mods: "Fabric_Loader/fabric-26.1 Fabric_Loader/fabric-26.2"
-            root_batch_1: ":plugin:build :Fabric_Loader:fabric-1.16.5:build :Fabric_Loader:fabric-1.17.1:build"
+            root_batch_1: ":Fabric_Loader:fabric-1.16.5:build :Fabric_Loader:fabric-1.17.1:build"
             root_batch_2: ":Fabric_Loader:fabric-1.18:build :Fabric_Loader:fabric-1.18.1:build :Fabric_Loader:fabric-1.18.2:build"
 
           - name: "Node 2: [Fast: Fabric 1.21.10-11] -> [Main: Fabric 1.19-1.19.4]"
@@ -88,6 +136,7 @@ jobs:
       - name: Additive Cascade Build & Self-Healing Compensation Engine
         shell: bash
         run: |
+          set -o pipefail
           mkdir -p build-diagnostics Done/Fabric_Quilt Done/Forge Done/NeoForge Done/Plugins
           TOTAL_CORES=$(nproc || echo 4)
           MOD_ARRAY=(${{ matrix.indep_mods }})
@@ -118,7 +167,7 @@ jobs:
             local mc_ver="${mod_name#*-}"
             find ~/.gradle/caches/fabric-loom/"${mc_ver}" -name "*at-patched.jar" -delete 2>/dev/null || true
             echo "=== [ADDITIVE CASCADE] Building $mod (Allocated: ${heap_mb}MB RAM, ${threads} Threads | Completed steps: ${DONE_STEPS}) ==="
-            if (cd "$mod" && GRADLE_OPTS="-Xmx${heap_mb}m -XX:MaxMetaspaceSize=1536m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=${threads} -Dorg.gradle.daemon=false" ./gradlew build --parallel --max-workers=${threads} --build-cache --stacktrace) > "build-diagnostics/${mod_name}.log" 2>&1; then
+            if (cd "$mod" && GRADLE_OPTS="-Xmx${heap_mb}m -XX:MaxMetaspaceSize=1536m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=${threads} -Dorg.gradle.daemon=false" ./gradlew build --console=plain --parallel --max-workers=${threads} --build-cache --stacktrace 2>&1 | tee "build-diagnostics/${mod_name}.log"); then
               echo ">>> [SUCCESS] $mod built successfully"
               return 0
             else
@@ -148,7 +197,7 @@ jobs:
 
           echo ">>> [ADDITIVE CASCADE -> MAIN 1] Completed=${DONE_STEPS} -> Pouring ${HEAP_MAIN_1}MB RAM & ${THREADS_MAIN_1} Threads into: ${{ matrix.root_batch_1 }}"
           export GRADLE_OPTS="-Dorg.gradle.jvmargs=\"-Xmx${HEAP_MAIN_1}m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=${THREADS_MAIN_1}\" -Dorg.gradle.daemon=true"
-          if gradle ${{ matrix.root_batch_1 }} --parallel --max-workers=${THREADS_MAIN_1} --build-cache --continue --stacktrace > "build-diagnostics/${{ matrix.node_id }}-main1.log" 2>&1; then
+          if (gradle ${{ matrix.root_batch_1 }} --console=plain --configure-on-demand --parallel --max-workers=${THREADS_MAIN_1} --build-cache --continue --stacktrace 2>&1 | tee "build-diagnostics/${{ matrix.node_id }}-main1.log"); then
             DONE_STEPS=$(( DONE_STEPS + 3 ))
           else
             for task in ${{ matrix.root_batch_1 }}; do
@@ -162,7 +211,7 @@ jobs:
 
           echo ">>> [ADDITIVE CASCADE -> MAIN 2] Completed=${DONE_STEPS} -> Pouring ${HEAP_MAIN_2}MB RAM & ${TOTAL_CORES} Threads into: ${{ matrix.root_batch_2 }}"
           export GRADLE_OPTS="-Dorg.gradle.jvmargs=\"-Xmx${HEAP_MAIN_2}m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=${TOTAL_CORES}\" -Dorg.gradle.daemon=true"
-          if gradle ${{ matrix.root_batch_2 }} --parallel --max-workers=${TOTAL_CORES} --build-cache --continue --stacktrace > "build-diagnostics/${{ matrix.node_id }}-main2.log" 2>&1; then
+          if (gradle ${{ matrix.root_batch_2 }} --console=plain --configure-on-demand --parallel --max-workers=${TOTAL_CORES} --build-cache --continue --stacktrace 2>&1 | tee "build-diagnostics/${{ matrix.node_id }}-main2.log"); then
             DONE_STEPS=$(( DONE_STEPS + 3 ))
           else
             for task in ${{ matrix.root_batch_2 }}; do
@@ -184,14 +233,14 @@ jobs:
                 mc_ver="${mod_name#*-}"
                 echo ">>> [COMPENSATE INDEP] Cleaning stale Loom cache for ${mod_name} (${mc_ver}) and rebuilding with ${MAX_RAM}MB RAM..."
                 rm -rf ~/.gradle/caches/fabric-loom/"${mc_ver}" "$target/.gradle" "$target/build" 2>/dev/null || true
-                if ! (cd "$target" && GRADLE_OPTS="-Xmx${MAX_RAM}m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:ActiveProcessorCount=${TOTAL_CORES} -Dorg.gradle.daemon=false" ./gradlew build --parallel --max-workers=${TOTAL_CORES} --stacktrace) > "build-diagnostics/${mod_name}.log" 2>&1; then
+                if ! (cd "$target" && GRADLE_OPTS="-Xmx${MAX_RAM}m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:ActiveProcessorCount=${TOTAL_CORES} -Dorg.gradle.daemon=false" ./gradlew build --console=plain --parallel --max-workers=${TOTAL_CORES} --stacktrace 2>&1 | tee "build-diagnostics/${mod_name}.log"); then
                   echo "$target" >> "build-diagnostics/failed_${{ matrix.node_id }}.txt"
                 else
                   echo ">>> [COMPENSATE SUCCESS] $target recovered and built!"
                 fi
               else
                 echo ">>> [COMPENSATE ROOT] Rebuilding $target with ${MAX_RAM}MB RAM..."
-                if ! gradle "$target" --parallel --max-workers=${TOTAL_CORES} --stacktrace >> "build-diagnostics/${{ matrix.node_id }}-compensate.log" 2>&1; then
+                if ! (gradle "$target" --console=plain --configure-on-demand --parallel --max-workers=${TOTAL_CORES} --stacktrace 2>&1 | tee -a "build-diagnostics/${{ matrix.node_id }}-compensate.log"); then
                   echo "$target" >> "build-diagnostics/failed_${{ matrix.node_id }}.txt"
                 else
                   echo ">>> [COMPENSATE SUCCESS] $target recovered and built!"
@@ -244,7 +293,7 @@ jobs:
   collect-and-verify:
     name: Collect, Audit and Package Artifacts
     runs-on: ubuntu-latest
-    needs: [build-elastic-cluster]
+    needs: [build-plugin, build-elastic-cluster]
     if: always()
 
     steps:
@@ -268,7 +317,7 @@ jobs:
           pattern: "done-*"
           merge-multiple: true
           path: Done/
-        continue-on-error: true
+          continue-on-error: true
 
       - name: Download All Diag Artifacts
         uses: actions/download-artifact@v4
@@ -317,6 +366,7 @@ jobs:
         if: steps.check_missing.outputs.needs_compensation == 'true'
         shell: bash
         run: |
+          set -o pipefail
           if [ -s build-diagnostics/global_compensate_queue.txt ]; then
             echo "========================================================"
             echo ">>> [GLOBAL SELF-HEALING COMPENSATION ENGINE ACTIVATED]"
@@ -333,7 +383,7 @@ jobs:
                 mc_ver="${mod_name#*-}"
                 echo ">>> [GLOBAL COMPENSATE INDEP] Cleaning Loom cache for ${mod_name} (${mc_ver}) & Building with 13,312MB RAM + 4 Threads..."
                 rm -rf ~/.gradle/caches/fabric-loom/"${mc_ver}" "$target/.gradle" "$target/build" 2>/dev/null || true
-                if (cd "$target" && GRADLE_OPTS="-Xmx13312m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=4 -Dorg.gradle.daemon=false" ./gradlew build --parallel --max-workers=4 --stacktrace) > "build-diagnostics/${mod_name}.log" 2>&1; then
+                if (cd "$target" && GRADLE_OPTS="-Xmx13312m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=4 -Dorg.gradle.daemon=false" ./gradlew build --console=plain --parallel --max-workers=4 --stacktrace 2>&1 | tee "build-diagnostics/${mod_name}.log"); then
                   echo ">>> [GLOBAL COMPENSATE SUCCESS] $target built!"
                   find "$target/build/libs" -type f -name "*.jar" ! -name "*-dev.jar" ! -name "*-shadow.jar" ! -name "*-sources.jar" | while read -r f; do
                     case "$target" in
@@ -350,7 +400,7 @@ jobs:
               else
                 echo ">>> [GLOBAL COMPENSATE ROOT] Building $target with 13,312MB RAM + 4 Threads..."
                 export GRADLE_OPTS="-Dorg.gradle.jvmargs=\"-Xmx13312m -XX:MaxMetaspaceSize=2048m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=4\" -Dorg.gradle.daemon=false"
-                if gradle "$target" --parallel --max-workers=4 --stacktrace >> "build-diagnostics/global-root-compensate.log" 2>&1; then
+                if (gradle "$target" --console=plain --configure-on-demand --parallel --max-workers=4 --stacktrace 2>&1 | tee -a "build-diagnostics/global-root-compensate.log"); then
                   echo ">>> [GLOBAL COMPENSATE SUCCESS] $target built!"
                   find . -type f -path '*/build/libs/*.jar' ! -name "*-dev.jar" ! -name "*-shadow.jar" ! -name "*-sources.jar" | while read -r f; do
                     case "$f" in

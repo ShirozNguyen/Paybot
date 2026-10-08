@@ -67,3 +67,4 @@ feature-matrix.csv
 SHA256SUMS
 *.token
 .git_token_tmp
+modrinth.json

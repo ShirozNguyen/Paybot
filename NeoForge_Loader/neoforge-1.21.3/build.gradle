@@ -30,6 +30,7 @@ version = rootProps.getProperty('mod_version')
 group = 'com.paybot'
 
 repositories {
+    maven { url = 'https://repo.faststats.dev/releases' }
     mavenCentral()
     maven { url = 'https://maven.architectury.dev/' }
     maven { url = 'https://maven.neoforged.net/releases/' }
@@ -103,4 +104,8 @@ remapJar {
 
 jar {
     archiveClassifier = "dev"
+
+    // FastStats Telemetry Subsystem
+    implementation 'dev.faststats.metrics:neoforge:0.30.2+mc1.20.6-1.21.8'
+    include 'dev.faststats.metrics:neoforge:0.30.2+mc1.20.6-1.21.8'
 }

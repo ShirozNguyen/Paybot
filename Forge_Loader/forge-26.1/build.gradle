@@ -42,6 +42,7 @@ version = rootProps.getProperty('mod_version')
 group = 'com.paybot'
 
 repositories {
+    maven { url = 'https://repo.faststats.dev/releases' }
     mavenCentral()
     maven { url = 'https://maven.minecraftforge.net/' }
     minecraft.mavenizer(it)
@@ -83,6 +84,9 @@ dependencies {
     shadowBundle 'com.google.zxing:core:3.5.3'
     shadowBundle 'com.google.zxing:javase:3.5.3'
     shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
+    // FastStats Telemetry Subsystem (Forge Custom Adapter)
+    shadowBundle 'dev.faststats.metrics:core:0.30.2'
+    shadowBundle 'dev.faststats.metrics:config:0.30.2'
 }
 
 processResources {

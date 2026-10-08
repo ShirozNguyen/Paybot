@@ -8,5 +8,6 @@ public class PayBotFabricInit implements ModInitializer {
     public void onInitialize() {
         FabricDependencyValidator.validate();
         PayBotMod.init();
+        com.paybot.telemetry.FabricFastStatsIntegration.initialize();
     }
 }

@@ -8,5 +8,6 @@ public class PayBotForgeInit {
     public PayBotForgeInit() {
         ForgeDependencyValidator.validate();
         PayBotMod.init();
+        com.paybot.telemetry.NeoForgeFastStatsIntegration.initialize();
     }
 }

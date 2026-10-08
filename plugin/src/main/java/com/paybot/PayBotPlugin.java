@@ -18,6 +18,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import com.paybot.utils.LegacyLibraryManager;
 import com.paybot.utils.SchedulerUtils;
 
 import java.io.File;
@@ -95,6 +96,11 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
     public void onEnable() {
         System.setProperty("java.awt.headless", "true");
         instance = this;
+
+        // ── Kiểm tra và nạp thư viện bắt buộc trên các server cũ không hỗ trợ libraries: ──
+        if (!LegacyLibraryManager.ensureLibrariesLoaded(this)) {
+            return;
+        }
 
         // ── v5.0.0 (fix Thứ 5): Kiểm tra enforce-secure-profile TRƯỚC MỌI THỨ ───
         // Chỉ LOG thông tin (không shutdown server nữa) — xem chi tiết lý do tại
@@ -280,6 +286,9 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
                 getLogger().warning("[PayBot]   • Trên 50.000 đơn lưu trữ trong CSDL: Nên đặt 'transfer-content.check-duplicate-orders: false' trong config.yml để tránh tốn tài nguyên truy vấn CSDL và tối ưu hiệu năng tối đa.");
             }
         }, 100L);
+
+        // v5.5.21 Part 143: Khởi tạo FastStats Telemetry Subsystem (Best Effort, Fail-Safe)
+        com.paybot.telemetry.BukkitFastStatsIntegration.initialize(this);
     }
 
     /**
@@ -597,6 +606,9 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        // v5.5.21 Part 143: Dừng FastStats Telemetry an toàn (huỷ tasks, flush submit nếu có)
+        com.paybot.telemetry.BukkitFastStatsIntegration.shutdown();
+
         // 1. Dừng HTTP server trước để không nhận thêm request mới (Mục 41, 66 Master Spec)
         if (pluginHttpServer != null) pluginHttpServer.stop();
 

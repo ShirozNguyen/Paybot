@@ -64,6 +64,10 @@ allprojects {
         maven { url = 'https://maven.minecraftforge.net/' }
         maven { url = 'https://maven.neoforged.net/releases/' }
         maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+        maven {
+            name = 'faststatsReleases'
+            url = 'https://repo.faststats.dev/releases'
+        }
     }
 
     java {

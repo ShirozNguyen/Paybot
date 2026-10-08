@@ -10,6 +10,18 @@ repositories {
     maven { url = 'https://repo.papermc.io/repository/maven-public/' }
     maven { url = 'https://oss.sonatype.org/content/groups/public/' }
     maven { url = 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
+    maven {
+        name = 'faststatsReleases'
+        url = 'https://repo.faststats.dev/releases'
+    }
+}
+
+configurations {
+    faststatsBundle {
+        canBeResolved = true
+        canBeConsumed = true
+    }
+    implementation.extendsFrom faststatsBundle
 }
 
 dependencies {
@@ -26,6 +38,11 @@ dependencies {
     compileOnly 'org.yaml:snakeyaml:2.3'
     compileOnly 'com.google.zxing:core:3.5.3'
     compileOnly 'com.google.zxing:javase:3.5.3'
+
+    // ── FastStats Telemetry Bundled Artifacts (Strategy A) ────────────────────
+    faststatsBundle 'dev.faststats.metrics:bukkit:0.30.2'
+    faststatsBundle 'dev.faststats.metrics:core:0.30.2'
+    faststatsBundle 'dev.faststats.metrics:config:0.30.2'
 }
 
 processResources {
@@ -43,4 +60,14 @@ tasks.withType(JavaCompile) {
 
 jar {
     archiveFileName = "PayBot-Plugin-${version}.jar"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.faststatsBundle.collect { it.isDirectory() ? it : zipTree(it) }
+    } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        exclude "META-INF/MANIFEST.MF"
+        exclude "module-info.class"
+    }
 }
