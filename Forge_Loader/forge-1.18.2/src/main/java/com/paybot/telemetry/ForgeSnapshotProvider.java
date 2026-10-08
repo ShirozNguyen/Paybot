@@ -43,7 +43,13 @@ public final class ForgeSnapshotProvider {
             }
         }
 
-        String modVersion = PayBotMod.MOD_VERSION;
+        String modVersion = "6.0.0";
+        try {
+            modVersion = net.minecraftforge.fml.ModList.get().getModContainerById("paybot")
+                    .map(m -> m.getModInfo().getVersion().toString())
+                    .orElse("6.0.0");
+        } catch (Throwable ignored) {
+        }
 
         return new FastStatsTelemetrySnapshot(
                 players,

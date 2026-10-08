@@ -603,8 +603,6 @@ public class PayBotMod implements ModInitializer {
         ServerPlayer player = server.getPlayerList().getPlayerByName(playerName);
         if (player != null) {
             // Online — dispatch ngay
-            int amtInt = 0;
-            try { amtInt = Integer.parseInt(rawAmount); } catch (NumberFormatException ignored) {}
             final int finalAmt = amtInt;
             final ServerPlayer fp = player;
             server.execute(() -> executeReward(fp, combinedCmd, rewardId, false, finalAmt));

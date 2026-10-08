@@ -65,9 +65,11 @@ public final class MilestoneConfig {
                 } catch (Exception ignored) {
                     this.resetInterval = 1;
                 }
-                this.broadcastOnReset = Boolean.parseBoolean(String.valueOf(resetMap.getOrDefault("broadcast-on-reset", "true")));
-                this.resetBroadcastMessage = String.valueOf(resetMap.getOrDefault("reset-broadcast-message",
-                        "§6§l[PAYBOT] §aMùa nạp mới đã bắt đầu! Mốc nạp server đã được làm mới!"));
+                Object bObj = resetMap.get("broadcast-on-reset");
+                this.broadcastOnReset = bObj == null || Boolean.parseBoolean(String.valueOf(bObj));
+                Object msgObj = resetMap.get("reset-broadcast-message");
+                this.resetBroadcastMessage = msgObj != null ? String.valueOf(msgObj) :
+                        "§6§l[PAYBOT] §aMùa nạp mới đã bắt đầu! Mốc nạp server đã được làm mới!";
             }
 
             Object singleObj = root.get("single-milestones");
