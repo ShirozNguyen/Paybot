@@ -1,9 +1,8 @@
-package com.paybot.telemetry;
+﻿package com.paybot.telemetry;
 
 import net.minecraft.server.MinecraftServer;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.FMLLoader;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -37,18 +36,39 @@ public final class NeoForgeSnapshotProvider {
         }
 
         String mcVersion = "unknown";
-        try {
-            mcVersion = FMLLoader.versionInfo().mcVersion();
-        } catch (Throwable ignored) {
+        if (server != null) {
+            try {
+                mcVersion = server.getServerVersion();
+            } catch (Throwable ignored) {
+            }
+        }
+        if ("unknown".equals(mcVersion)) {
+            try {
+                Class<?> fmlLoaderClass = Class.forName("net.neoforged.fml.loading.FMLLoader");
+                Object versionInfo = fmlLoaderClass.getMethod("versionInfo").invoke(null);
+                Object mcVer = versionInfo.getClass().getMethod("mcVersion").invoke(versionInfo);
+                if (mcVer != null) {
+                    mcVersion = mcVer.toString();
+                }
+            } catch (Throwable ignored) {
+            }
         }
 
-        String modVersion = "unknown";
+        String modVersion = "6.0.0";
         try {
-            ModList.get().getModContainerById("paybot").ifPresent(m -> {
-                // mod version
-            });
-            modVersion = FMLLoader.versionInfo().mcVersion(); // fallback safe
+            Class<?> modListClass = Class.forName("net.neoforged.fml.ModList");
+            Object modList = modListClass.getMethod("get").invoke(null);
+            Object optContainer = modListClass.getMethod("getModContainerById", String.class).invoke(modList, "paybot");
+            if (optContainer instanceof Optional<?> opt && opt.isPresent()) {
+                Object container = opt.get();
+                Object modInfo = container.getClass().getMethod("getModInfo").invoke(container);
+                Object versionObj = modInfo.getClass().getMethod("getVersion").invoke(modInfo);
+                if (versionObj != null) {
+                    modVersion = versionObj.toString();
+                }
+            }
         } catch (Throwable ignored) {
+            modVersion = "6.0.0";
         }
 
         return new FastStatsTelemetrySnapshot(

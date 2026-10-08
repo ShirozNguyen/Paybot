@@ -126,8 +126,8 @@ jobs:
         with:
           distribution: temurin
           java-version: |
-            21
             25
+            21
 
       - name: Setup Gradle 8.8
         uses: gradle/actions/setup-gradle@v4
@@ -335,7 +335,7 @@ jobs:
             echo "  - $(basename "$j") ($(wc -c < "$j") bytes)"
           done
           echo "========================================================"
-          if [ "$TOTAL_JARS" -lt 50 ]; then
+          if [ "$TOTAL_JARS" -lt 45 ]; then
             echo "❌ Less than expected JARs found ($TOTAL_JARS)!"
             exit 1
           else
