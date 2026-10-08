@@ -8,6 +8,8 @@ build/
 
 # Documentation / logs
 !README.md
+build-diagnostics/
+build-diagnostics-ci
 CHANGELOG.md
 LOG.md
 *.log

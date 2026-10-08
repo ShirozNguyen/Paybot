@@ -767,7 +767,10 @@ public class CommandRegistry {
                 send(ctx.getSource(), "§e[PayBot] §fĐang nạp lại và áp dụng (apply) cấu hình...");
                 try {
                     mod.getConfig().load();
-                    send(ctx.getSource(), "§a[PayBot] §f✓ Đã nạp lại và áp dụng §a(apply) §ftoàn bộ cấu hình mới từ config.yml thành công!");
+                    if (com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+                        com.paybot.milestone.ModMilestoneManager.getInstance().reload();
+                    }
+                    send(ctx.getSource(), "§a[PayBot] §f✓ Đã nạp lại và áp dụng §a(apply) §ftoàn bộ cấu hình mới từ config.yml & milestones.yml thành công!");
                 } catch (Exception e) {
                     send(ctx.getSource(), "§c[PayBot] §fLỗi khi reload: " + e.getMessage());
                 }

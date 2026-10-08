@@ -158,6 +158,10 @@ public class PayBotMod {
     public void onServerStart(net.minecraft.server.MinecraftServer srv) {
         this.server = srv;
         onServerStart();
+        try {
+            com.paybot.telemetry.ForgeFastStatsIntegration.onServerStarted(srv);
+        } catch (Throwable ignored) {
+        }
     }
 
     private void onServerStart() {
@@ -230,6 +234,11 @@ public class PayBotMod {
 
         startTasks();
 
+        com.paybot.milestone.ModMilestoneManager.initialize(dataDir.toFile());
+        if (com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+            com.paybot.milestone.ModMilestoneManager.getInstance().updateServer(server);
+        }
+
         LOGGER.info("[PayBot] ════════════════════════════════════════");
         LOGGER.info("[PayBot]   PayBot Forge v" + getModVersion() + " — Sẵn sàng!");
         LOGGER.info("[PayBot]   Loader: " + getLoaderVersion() + " | MC: " + getMcVersion() + " | Java: " + getJavaVersion());
@@ -256,6 +265,13 @@ public class PayBotMod {
 
     private void onServerStop() {
         LOGGER.info("[PayBot] Đang dừng…");
+        if (com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+            com.paybot.milestone.ModMilestoneManager.getInstance().shutdown();
+        }
+        try {
+            com.paybot.telemetry.ForgeFastStatsIntegration.onServerStopping();
+        } catch (Throwable ignored) {
+        }
         if (paymentRecoveryWorker != null) paymentRecoveryWorker.stop();
         if (scheduler        != null) scheduler.shutdownNow();
         if (pluginHttpServer != null) pluginHttpServer.stop();
@@ -338,6 +354,9 @@ public class PayBotMod {
                     LOGGER.info("[PayBot] 🔄 Config đã thay đổi — tự reload xong. "
                             + "(+" + added + " key mới, -" + removed + " key thừa) "
                             + "[PayBot v" + getModVersion() + "]");
+                    if (com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+                        com.paybot.milestone.ModMilestoneManager.getInstance().reload();
+                    }
                 }
             } catch (Exception e) {
                 LOGGER.debug("[PayBot] Config watcher lỗi: " + e.getMessage());
@@ -438,6 +457,10 @@ public class PayBotMod {
                     if (r.has("reward_amount"))
                         amt = (int) Double.parseDouble(r.get("reward_amount").getAsString());
                 } catch (Exception ignored) {}
+
+                if (amt > 0 && com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+                    com.paybot.milestone.ModMilestoneManager.getInstance().onPaymentApproved(playerName, amt);
+                }
 
                 ServerPlayer player = server.getPlayerList().getPlayerByName(playerName);
                 if (player != null) {
@@ -621,6 +644,11 @@ public class PayBotMod {
             modeCmds.addAll(rewardCmds);
         }
         String combinedCmd = String.join(";;", modeCmds);
+        int amtInt = 0;
+        try { amtInt = Integer.parseInt(rawAmount); } catch (NumberFormatException ignored) {}
+        if (amtInt > 0 && com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+            com.paybot.milestone.ModMilestoneManager.getInstance().onPaymentApproved(playerName, amtInt);
+        }
         ServerPlayer player = server.getPlayerList().getPlayerByName(playerName);
         if (player != null) {
             // Online — dispatch ngay
@@ -646,6 +674,9 @@ public class PayBotMod {
     // ─── Player join / quit ───────────────────────────────────────────────────
 
     private void onPlayerJoin(ServerPlayer player) {
+        if (com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+            com.paybot.milestone.ModMilestoneManager.getInstance().onPlayerJoin(player.getName().getString());
+        }
         // v5.0.2: cảnh báo enforce-secure-profile cho admin/OP khi join
         if (com.paybot.compat.PermissionHelper.hasPermissions(player, 2) || ownerSessionManager.isOwner(player)) {
             scheduler.schedule(() -> checkEnforceSecureProfileWarn(player), 3, TimeUnit.SECONDS);

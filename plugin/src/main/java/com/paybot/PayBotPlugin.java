@@ -289,6 +289,10 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
 
         // v5.5.21 Part 143: Khởi tạo FastStats Telemetry Subsystem (Best Effort, Fail-Safe)
         com.paybot.telemetry.BukkitFastStatsIntegration.initialize(this);
+
+        // v6.0.0 Part 144: Tích hợp hệ thống Mốc Nạp Milestones & Scheduled Reset (PayBot++)
+        com.paybot.milestone.MilestoneManager.initialize(this);
+        getServer().getPluginManager().registerEvents(new com.paybot.milestone.BukkitMilestoneListener(), this);
     }
 
     /**
@@ -442,6 +446,11 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
         // !isStandaloneMode() để không chạy nhầm cho server còn giữ guild-id cũ từ trước.
         if (!isStandaloneMode() && guildId != null && !guildId.isEmpty() && serverId != null && !serverId.isEmpty()) {
             com.paybot.utils.SchedulerUtils.runAsync(this, () -> botHttpClient.fetchAndApplyConfig());
+        }
+
+        // v6.0.0 Part 144: Reload cả file milestones.yml
+        if (com.paybot.milestone.MilestoneManager.getInstance() != null) {
+            com.paybot.milestone.MilestoneManager.getInstance().reload();
         }
     }
 
@@ -608,6 +617,11 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
     public void onDisable() {
         // v5.5.21 Part 143: Dừng FastStats Telemetry an toàn (huỷ tasks, flush submit nếu có)
         com.paybot.telemetry.BukkitFastStatsIntegration.shutdown();
+
+        // v6.0.0 Part 144: Dừng MilestoneManager an toàn
+        if (com.paybot.milestone.MilestoneManager.getInstance() != null) {
+            com.paybot.milestone.MilestoneManager.getInstance().shutdown();
+        }
 
         // 1. Dừng HTTP server trước để không nhận thêm request mới (Mục 41, 66 Master Spec)
         if (pluginHttpServer != null) pluginHttpServer.stop();

@@ -1,9 +1,7 @@
 package com.paybot.telemetry;
 
 import com.paybot.PayBotMod;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
+import net.minecraft.server.MinecraftServer;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -66,19 +64,6 @@ public final class ForgeFastStatsIntegration {
             );
             INSTANCE.set(integration);
 
-            // Đăng ký lifecycle hooks trên Forge Event Bus
-            MinecraftForge.EVENT_BUS.addListener((ServerStartedEvent event) -> {
-                try {
-                    snapshotProvider.updateServer(event.getServer());
-                    context.ready();
-                } catch (Throwable ignored) {
-                }
-            });
-
-            MinecraftForge.EVENT_BUS.addListener((ServerStoppingEvent event) -> {
-                shutdown();
-            });
-
             PayBotMod.LOGGER.info("[FastStats] Telemetry khoi tao thanh cong cho Forge.");
 
         } catch (Throwable t) {
@@ -89,6 +74,27 @@ public final class ForgeFastStatsIntegration {
             } catch (Throwable ignored) {
             }
         }
+    }
+
+    /**
+     * Hook được kích hoạt khi máy chủ Forge khởi động xong (SERVER_STARTED).
+     */
+    public static void onServerStarted(MinecraftServer server) {
+        ForgeFastStatsIntegration current = INSTANCE.get();
+        if (current != null && current.context != null && current.snapshotProvider != null) {
+            try {
+                current.snapshotProvider.updateServer(server);
+                current.context.ready();
+            } catch (Throwable ignored) {
+            }
+        }
+    }
+
+    /**
+     * Hook được kích hoạt khi máy chủ Forge đang dừng (SERVER_STOPPING).
+     */
+    public static void onServerStopping() {
+        shutdown();
     }
 
     /**

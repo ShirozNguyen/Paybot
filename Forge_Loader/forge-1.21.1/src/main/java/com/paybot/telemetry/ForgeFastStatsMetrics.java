@@ -1,6 +1,8 @@
 package com.paybot.telemetry;
 
 import com.google.gson.JsonObject;
+import dev.faststats.Metrics;
+import dev.faststats.SimpleContext;
 import dev.faststats.SimpleMetrics;
 
 /**
@@ -15,6 +17,20 @@ public final class ForgeFastStatsMetrics extends SimpleMetrics {
     public ForgeFastStatsMetrics(SimpleMetrics.Factory factory, ForgeSnapshotProvider snapshotProvider) {
         super(factory);
         this.snapshotProvider = snapshotProvider;
+    }
+
+    public static class Factory extends SimpleMetrics.Factory {
+        private final ForgeSnapshotProvider snapshotProvider;
+
+        public Factory(SimpleContext context, ForgeSnapshotProvider snapshotProvider) {
+            super(context);
+            this.snapshotProvider = snapshotProvider;
+        }
+
+        @Override
+        public Metrics create() {
+            return new ForgeFastStatsMetrics(this, snapshotProvider);
+        }
     }
 
     @Override

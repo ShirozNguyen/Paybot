@@ -1,6 +1,6 @@
 package com.paybot.telemetry;
 
-import dev.faststats.bukkit.BukkitMetrics;
+import dev.faststats.Metrics;
 import dev.faststats.data.Metric;
 
 /**
@@ -18,7 +18,7 @@ public final class BukkitFastStatsMetricsRegistry {
     /**
      * Đăng ký các metrics phần mềm an toàn vào Metrics Factory.
      */
-    public BukkitMetrics.Factory registerMetrics(BukkitMetrics.Factory factory) {
+    public Metrics.Factory registerMetrics(Metrics.Factory factory) {
         if (factory == null) {
             return null;
         }

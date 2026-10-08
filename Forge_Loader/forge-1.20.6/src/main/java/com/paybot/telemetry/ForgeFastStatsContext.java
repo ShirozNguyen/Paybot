@@ -74,7 +74,7 @@ public final class ForgeFastStatsContext extends SimpleContext {
 
     @Override
     protected boolean preSubmissionStart() {
-        return getConfig().preSubmissionStart(this);
+        return getConfig().enabled();
     }
 
     @Override
@@ -84,7 +84,7 @@ public final class ForgeFastStatsContext extends SimpleContext {
 
     @Override
     protected Metrics.Factory metricsFactory() {
-        return factory -> new ForgeFastStatsMetrics(factory, snapshotProvider);
+        return new ForgeFastStatsMetrics.Factory(this, snapshotProvider);
     }
 
     @Override

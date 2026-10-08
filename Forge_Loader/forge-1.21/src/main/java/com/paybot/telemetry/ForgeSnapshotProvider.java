@@ -1,8 +1,7 @@
 package com.paybot.telemetry;
 
+import com.paybot.PayBotMod;
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.FMLLoader;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -37,19 +36,14 @@ public final class ForgeSnapshotProvider {
         }
 
         String mcVersion = "unknown";
-        try {
-            mcVersion = FMLLoader.versionInfo().mcVersion();
-        } catch (Throwable ignored) {
+        if (server != null) {
+            try {
+                mcVersion = server.getServerVersion();
+            } catch (Throwable ignored) {
+            }
         }
 
-        String modVersion = "unknown";
-        try {
-            ModList.get().getModContainerById("paybot").ifPresent(m -> {
-                // mod version
-            });
-            modVersion = FMLLoader.versionInfo().mcVersion(); // fallback safe
-        } catch (Throwable ignored) {
-        }
+        String modVersion = PayBotMod.MOD_VERSION;
 
         return new FastStatsTelemetrySnapshot(
                 players,

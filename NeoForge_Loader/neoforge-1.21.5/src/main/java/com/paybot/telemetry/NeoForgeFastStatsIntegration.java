@@ -57,7 +57,7 @@ public final class NeoForgeFastStatsIntegration {
             NeoForgeFastStatsMetricsRegistry metricsRegistry = new NeoForgeFastStatsMetricsRegistry(snapshotProvider);
 
             NeoForgeContext context = new NeoForgeContext.Factory(PayBotMod.MOD_ID, token)
-                    .metrics(factory -> metricsRegistry.registerMetrics(Metrics.Factory.create()))
+                    .metrics(factory -> metricsRegistry.registerMetrics(factory).create())
                     .create();
 
             NeoForgeFastStatsIntegration integration = new NeoForgeFastStatsIntegration(

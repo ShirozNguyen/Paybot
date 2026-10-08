@@ -241,6 +241,11 @@ public class PayBotMod implements ModInitializer {
 
         startTasks();
 
+        com.paybot.milestone.ModMilestoneManager.initialize(dataDir.toFile());
+        if (com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+            com.paybot.milestone.ModMilestoneManager.getInstance().updateServer(server);
+        }
+
         LOGGER.info("[PayBot] ════════════════════════════════════════");
         LOGGER.info("[PayBot]   PayBot Fabric v" + getModVersion() + " — Sẵn sàng!");
         LOGGER.info("[PayBot]   Loader: " + getLoaderVersion() + " | MC: " + getMcVersion() + " | Java: " + getJavaVersion());
@@ -267,6 +272,9 @@ public class PayBotMod implements ModInitializer {
 
     private void onServerStop() {
         LOGGER.info("[PayBot] Đang dừng…");
+        if (com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+            com.paybot.milestone.ModMilestoneManager.getInstance().shutdown();
+        }
         if (paymentRecoveryWorker != null) paymentRecoveryWorker.stop();
         if (scheduler        != null) scheduler.shutdownNow();
         if (pluginHttpServer != null) pluginHttpServer.stop();
@@ -349,6 +357,9 @@ public class PayBotMod implements ModInitializer {
                     LOGGER.info("[PayBot] 🔄 Config đã thay đổi — tự reload xong. "
                             + "(+" + added + " key mới, -" + removed + " key thừa) "
                             + "[PayBot v" + getModVersion() + "]");
+                    if (com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+                        com.paybot.milestone.ModMilestoneManager.getInstance().reload();
+                    }
                 }
             } catch (Exception e) {
                 LOGGER.debug("[PayBot] Config watcher lỗi: " + e.getMessage());
@@ -449,6 +460,10 @@ public class PayBotMod implements ModInitializer {
                     if (r.has("reward_amount"))
                         amt = (int) Double.parseDouble(r.get("reward_amount").getAsString());
                 } catch (Exception ignored) {}
+
+                if (amt > 0 && com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+                    com.paybot.milestone.ModMilestoneManager.getInstance().onPaymentApproved(playerName, amt);
+                }
 
                 ServerPlayer player = server.getPlayerList().getPlayerByName(playerName);
                 if (player != null) {
@@ -632,6 +647,11 @@ public class PayBotMod implements ModInitializer {
             modeCmds.addAll(rewardCmds);
         }
         String combinedCmd = String.join(";;", modeCmds);
+        int amtInt = 0;
+        try { amtInt = Integer.parseInt(rawAmount); } catch (NumberFormatException ignored) {}
+        if (amtInt > 0 && com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+            com.paybot.milestone.ModMilestoneManager.getInstance().onPaymentApproved(playerName, amtInt);
+        }
         ServerPlayer player = server.getPlayerList().getPlayerByName(playerName);
         if (player != null) {
             // Online — dispatch ngay
@@ -657,6 +677,9 @@ public class PayBotMod implements ModInitializer {
     // ─── Player join / quit ───────────────────────────────────────────────────
 
     private void onPlayerJoin(ServerPlayer player) {
+        if (com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+            com.paybot.milestone.ModMilestoneManager.getInstance().onPlayerJoin(player.getName().getString());
+        }
         // v5.0.2: cảnh báo enforce-secure-profile cho admin/OP khi join
         if (com.paybot.compat.PermissionHelper.hasPermissions(player, 2) || ownerSessionManager.isOwner(player)) {
             scheduler.schedule(() -> checkEnforceSecureProfileWarn(player), 3, TimeUnit.SECONDS);
