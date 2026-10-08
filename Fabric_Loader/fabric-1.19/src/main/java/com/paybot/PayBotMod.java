@@ -247,10 +247,7 @@ public class PayBotMod implements ModInitializer {
         if (com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
             com.paybot.milestone.ModMilestoneManager.getInstance().updateServer(server);
         }
-        try {
-            com.paybot.telemetry.FabricFastStatsIntegration.onServerStarted(server);
-        } catch (Throwable ignored) {
-
+        try { com.paybot.telemetry.FabricFastStatsIntegration.onServerStarted(server); } catch (Throwable ignored) {}
         LOGGER.info("[PayBot] ════════════════════════════════════════");
         LOGGER.info("[PayBot]   PayBot Fabric v" + getModVersion() + " — Sẵn sàng!");
         LOGGER.info("[PayBot]   Loader: " + getLoaderVersion() + " | MC: " + getMcVersion() + " | Java: " + getJavaVersion());
@@ -280,9 +277,7 @@ public class PayBotMod implements ModInitializer {
         if (com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
             com.paybot.milestone.ModMilestoneManager.getInstance().shutdown();
         }
-        try {
-            com.paybot.telemetry.FabricFastStatsIntegration.onServerStopping();
-        } catch (Throwable ignored) {
+        try { com.paybot.telemetry.FabricFastStatsIntegration.onServerStopping(); } catch (Throwable ignored) {}
         if (paymentRecoveryWorker != null) paymentRecoveryWorker.stop();
         if (scheduler        != null) scheduler.shutdownNow();
         if (pluginHttpServer != null) pluginHttpServer.stop();
