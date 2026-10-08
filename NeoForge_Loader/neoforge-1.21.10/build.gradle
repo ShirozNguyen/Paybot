@@ -19,12 +19,9 @@ plugins {
 
 // PayBot v5.5.5 Part 66: module này giờ là project Gradle HOÀN TOÀN ĐỘC LẬP (xem
 // settings.gradle cùng thư mục) — KHÔNG còn nằm trong allprojects{} của root build.gradle
-// nữa, nên PHẢI tự khai lại version/group/repositories/toolchain/dependencies{minecraft
+// nữa, nên PHẢI tự khai lại version/group/repositories/toolchain/dependencies{minecraft}
 
-// FastStats Telemetry Subsystem (Core + Config Adapter)
-    shadowBundle 'dev.faststats.metrics:core:0.30.2'
-    shadowBundle 'dev.faststats.metrics:config:0.30.2'
-}
+
 // y hệt logic root (trước đây thừa hưởng tự động qua allprojects{}). Xem LOG.md Part 66.
 // [PayBot Version Sync - Part 129]
 // Đọc mod_version tập trung từ root gradle.properties duy nhất của toàn bộ project.
@@ -81,6 +78,10 @@ dependencies {
     shadowBundle 'com.google.zxing:core:3.5.3'
     shadowBundle 'com.google.zxing:javase:3.5.3'
     shadowBundle 'org.nanohttpd:nanohttpd:2.3.1'
+
+    // FastStats Telemetry Subsystem (Core + Config Adapter)
+    shadowBundle 'dev.faststats.metrics:core:0.30.2'
+    shadowBundle 'dev.faststats.metrics:config:0.30.2'
 }
 
 processResources {
@@ -109,5 +110,4 @@ remapJar {
 
 jar {
     archiveClassifier = "dev"
-
-    }
+}
