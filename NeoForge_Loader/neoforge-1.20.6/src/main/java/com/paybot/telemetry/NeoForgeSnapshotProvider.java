@@ -1,4 +1,4 @@
-﻿package com.paybot.telemetry;
+package com.paybot.telemetry;
 
 import net.minecraft.server.MinecraftServer;
 
