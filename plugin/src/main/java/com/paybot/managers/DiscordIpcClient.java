@@ -51,7 +51,7 @@ public class DiscordIpcClient {
             }
             final boolean result = online;
             if (callback != null) {
-                SchedulerUtils.run(plugin, () -> callback.accept(result));
+                SchedulerUtils.runSync(plugin, () -> callback.accept(result));
             }
         });
     }
