@@ -192,31 +192,12 @@ jobs:
             fi
           }
 
-          # Tối ưu hóa: Chạy song song theo chunk 2 module cùng lúc cho các module độc lập
-          CHUNK_SIZE=2
-          i=0
-          while [ $i -lt $TOTAL_MODS ]; do
-            pids=()
-            chunk_mods=()
-            for ((j=0; j<CHUNK_SIZE && i+j<TOTAL_MODS; j++)); do
-              m="${MOD_ARRAY[$((i+j))]}"
-              chunk_mods+=("$m")
-            done
-
-            echo "=== [PARALLEL CHUNK] Building concurrently: ${chunk_mods[*]} ==="
-            for m in "${chunk_mods[@]}"; do
-              mod_ram=5120
-              mod_threads=4
-              build_indep "$m" "$mod_ram" "$mod_threads" &
-              pids+=($!)
-            done
-
-            for pid in "${pids[@]}"; do
-              wait "$pid" || true
-            done
-
-            DONE_STEPS=$(( DONE_STEPS + ${#pids[@]} ))
-            i=$(( i + CHUNK_SIZE ))
+          # Biên dịch tuần tự từng module độc lập với cấp phát tài nguyên tối đa (tránh race condition trong cache Loom của Gradle)
+          for m in "${MOD_ARRAY[@]}"; do
+            mod_ram=8192
+            mod_threads=$TOTAL_CORES
+            build_indep "$m" "$mod_ram" "$mod_threads" || true
+            DONE_STEPS=$(( DONE_STEPS + 1 ))
           done
 
           # Phase 2: Dồn tài nguyên sang Main Batch 1 & Main Batch 2
