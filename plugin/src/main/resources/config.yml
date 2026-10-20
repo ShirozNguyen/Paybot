@@ -143,6 +143,19 @@ sepay:
   bank-name: ''
   account-name: ''
   configured: false
+  # Link đăng ký tài khoản SePay chính thức của tác giả (Nhận ưu đãi hoa hồng & tích hợp nhanh)
+  referral-url: 'https://my.sepay.vn/register?gcid=vrewlwez'
+
+# ── Bot Discord Nội Bộ (Local Companion Bot) ──────────────────────────────────
+# Tích hợp bot Discord nạp tiền và đồng bộ 2 chiều trực tiếp trên server.
+# Admin tự host bot bằng file run_bot.bat / main.py trong thư mục discord-bot/
+discord:
+  enabled: false
+  bot-token: ''
+  guild-id: ''
+  notify-channel-id: ''
+  ipc-port: 24733
+  sync-enabled: true
 
 # ── Card API (Legacy Config) ───────────────────────────────────────────────────
 card-api:

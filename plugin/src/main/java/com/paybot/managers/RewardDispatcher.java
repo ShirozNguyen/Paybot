@@ -281,6 +281,10 @@ public final class RewardDispatcher {
                 Bukkit.getPluginManager().callEvent(new com.paybot.events.PayBotTopupEvent(
                         target.getName(), parsedVnd, type != null ? type.toUpperCase() : "BANK", invoiceId
                 ));
+                // v7.0.0 (Part 161): Phat song IPC sang Bot Discord
+                try {
+                    plugin.getDiscordIpcClient().notifyPaymentAsync(target.getName(), type != null ? type.toUpperCase() : "BANK", (int) parsedVnd, invoiceId != null ? invoiceId : "");
+                } catch (Throwable ignored) {}
             } catch (NumberFormatException e) {
                 plugin.getLogger().warning("[PayBot] deliverPlayerEffectsSync: denomVnd='" + denomVnd
                         + "' không parse được — BỎ QUA ghi thống kê topup + PayBotTopupEvent cho "

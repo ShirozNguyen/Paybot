@@ -9,7 +9,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * SetupSePayGui — v7.0.0 (Part 160)
+ * SetupSePayGui — v7.0.0 (Part 161)
  * TUÂN THỦ RULE 17: Container Menu 54 ô Cấu hình Cổng Ngân Hàng SePay.
  */
 public class SetupSePayGui implements InventoryHolder {
@@ -61,6 +61,17 @@ public class SetupSePayGui implements InventoryHolder {
                 "§7Hiện tại: §a" + bank,
                 "",
                 "§e▶ [Click] để sửa Tên ngân hàng"));
+
+        // Slot 25: Đăng ký Đối Tác SePay (Nhận Ưu Đãi)
+        Material emerald = VanillaItemRegistry.resolveMaterial("EMERALD", "DIAMOND", "GOLD_INGOT");
+        inventory.setItem(25, VanillaItemRegistry.createItem(emerald, "§6§lChương Trình Đối Tác SePay",
+                "§7Đăng ký tài khoản SePay qua liên kết đối tác chính thức",
+                "§7của PayBot để nhận hỗ trợ ưu tiên & tích hợp nhanh.",
+                "",
+                "§a• Link: §ehttps://my.sepay.vn/register?gcid=vrewlwez",
+                "",
+                "§e▶ [Click] Gửi link đăng ký đối tác vào chat",
+                "§b▶ [Shift + Click] Nhận Bản Đồ Mã QR quét bằng điện thoại"));
 
         // Slot 29: Cú pháp mã nạp (Prefix)
         Material tag = VanillaItemRegistry.resolveMaterial("NAME_TAG", "BOOK", "PAPER");

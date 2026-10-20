@@ -33,7 +33,7 @@ public class SetupManager {
             "§7SePay là dịch vụ giúp tự động nhận diện khi có người chuyển khoản ngân hàng",
             "§7vào tài khoản của bạn — dùng để xác nhận đơn nạp bank tự động, không cần",
             "§7admin check tay từng giao dịch.",
-            "§7Nếu CHƯA có tài khoản SePay, đăng ký miễn phí tại: §bsepay.vn",
+            "§7Nếu CHƯA có tài khoản SePay, đăng ký miễn phí tại: §bhttps://my.sepay.vn/register?gcid=vrewlwez",
         },
         {
             "§6§l[Hướng dẫn 2/4] §eBước 1 — Liên kết tài khoản ngân hàng",
@@ -66,6 +66,7 @@ public class SetupManager {
         } else {
             s.step = Step.SEPAY_API_TOKEN;
             player.sendSystemMessage(Component.literal("§6[PayBot] §eDán §bAPI Token SePay §evào chat:"));
+            player.sendSystemMessage(Component.literal("§fChưa có tài khoản SePay? Tạo tài khoản §e§ntại đây§r: §bhttps://my.sepay.vn/register?gcid=vrewlwez"));
             player.sendSystemMessage(Component.literal("§7(cancel để huỷ)"));
         }
     }
@@ -145,6 +146,7 @@ public class SetupManager {
                 } else if (input.equalsIgnoreCase("skip")) {
                     s.step = Step.SEPAY_API_TOKEN;
                     player.sendSystemMessage(Component.literal("§6[PayBot] §eDán §bAPI Token SePay §evào chat:"));
+            player.sendSystemMessage(Component.literal("§fChưa có tài khoản SePay? Tạo tài khoản §e§ntại đây§r: §bhttps://my.sepay.vn/register?gcid=vrewlwez"));
                     player.sendSystemMessage(Component.literal("§7(cancel để huỷ)"));
                 } else {
                     player.sendSystemMessage(Component.literal("§c[PayBot] §fGõ §ayes §fhoặc §bskip §f(hoặc §ecancel §fđể huỷ):"));

@@ -4,7 +4,7 @@ import com.paybot.PayBotPlugin;
 import org.bukkit.entity.Player;
 
 /**
- * SetupGuiManager — v7.0.0 (Part 160)
+ * SetupGuiManager — v7.0.0 (Part 161)
  * TUÂN THỦ RULE 17: Quản lý điều phối phiên làm việc GUI Setup của Admin.
  */
 public class SetupGuiManager {
@@ -48,6 +48,9 @@ public class SetupGuiManager {
                 break;
             case SIMULATION_TEST:
                 new SetupSimulationTestGui(plugin).open(player);
+                break;
+            case DISCORD:
+                new SetupDiscordGui(plugin).open(player);
                 break;
             default:
                 new SetupMainHubGui(plugin).open(player);

@@ -11,13 +11,14 @@ import org.bukkit.inventory.InventoryHolder;
 import java.io.File;
 
 /**
- * SetupGuiListener — v7.0.0 (Part 160)
+ * SetupGuiListener — v7.0.0 (Part 161)
  * TUÂN THỦ RULE 17: Xử lý sự kiện click chuột trong các Container Menu Setup.
  * <p>
  * NGUYÊN TẮC:
  * 1. Chống lấy cắp item tuyệt đối (setCancelled = true).
  * 2. Mọi thông báo hướng dẫn CHỈ gửi riêng cho Admin (player.sendMessage).
  * 3. Tuyệt đối không broadcast toàn server, không spam ra console.
+ * 4. Tích hợp chuyển đổi trạng thái Bot Discord và liên kết đối tác SePay (Affiliate Funnel).
  */
 public class SetupGuiListener implements Listener {
 
@@ -48,6 +49,7 @@ public class SetupGuiListener implements Listener {
                 case 12: guiManager.openMenu(player, SetupMenuType.CARD_PROVIDER); break;
                 case 14: guiManager.openMenu(player, SetupMenuType.REWARD_COMMAND); break;
                 case 16: guiManager.openMenu(player, SetupMenuType.MILESTONE_LIST); break;
+                case 22: guiManager.openMenu(player, SetupMenuType.DISCORD); break;
                 case 28: guiManager.openMenu(player, SetupMenuType.DATABASE_SYSTEM); break;
                 case 30: guiManager.openMenu(player, SetupMenuType.PLAYER_GUI_CUSTOMIZER); break;
                 case 32: guiManager.openMenu(player, SetupMenuType.TRANSACTION_MANAGER); break;
@@ -72,6 +74,21 @@ public class SetupGuiListener implements Listener {
                 case 11: promptManager.startSession(player, "SEPAY_TOKEN", "API Token SePay", SetupMenuType.SEPAY); break;
                 case 13: promptManager.startSession(player, "SEPAY_STK", "Số tài khoản SePay", SetupMenuType.SEPAY); break;
                 case 15: promptManager.startSession(player, "SEPAY_BANK", "Tên ngân hàng SePay", SetupMenuType.SEPAY); break;
+                case 25:
+                    // Đăng ký Đối Tác SePay (Affiliate Funnel)
+                    String partnerUrl = "https://my.sepay.vn/register?gcid=vrewlwez";
+                    player.sendMessage("§6§l[PayBot] §e═══ CHƯƠNG TRÌNH ĐỐI TÁC SEPAY ═══");
+                    player.sendMessage("§fĐăng ký tài khoản SePay qua đường dẫn đối tác chính thức:");
+                    try {
+                        net.kyori.adventure.text.Component linkMsg = net.kyori.adventure.text.Component.text("§a▶ §e§n" + partnerUrl)
+                                .clickEvent(net.kyori.adventure.text.event.ClickEvent.openUrl(partnerUrl))
+                                .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(net.kyori.adventure.text.Component.text("§eBấm để mở trang đăng ký đối tác SePay")));
+                        player.sendMessage(linkMsg);
+                    } catch (Throwable t) {
+                        player.sendMessage("§a▶ §e" + partnerUrl);
+                    }
+                    player.sendMessage("§7(Nhận ưu đãi hoa hồng & hỗ trợ kỹ thuật trực tiếp từ tác giả PayBot).");
+                    break;
                 case 29: promptManager.startSession(player, "SEPAY_PREFIX", "Cú pháp mã nạp (Prefix)", SetupMenuType.SEPAY); break;
                 case 31:
                     // Đổi chu kỳ Poll (5s, 10s, 15s, 30s, 45s, 60s, 120s, 300s, 600s)
@@ -340,6 +357,52 @@ public class SetupGuiListener implements Listener {
                 player.sendMessage("§a[PayBot] §fLệnh thưởng đã được dispatch và pháo hoa đã bắn!");
             } else if (slot == 45) {
                 guiManager.openMenu(player, SetupMenuType.MAIN_HUB);
+            }
+            return;
+        }
+
+        // 11. SetupDiscordGui (Part 161)
+        if (holder instanceof SetupDiscordGui) {
+            event.setCancelled(true);
+            int slot = event.getRawSlot();
+            File cfg = new File(plugin.getDataFolder(), "config.yml");
+            switch (slot) {
+                case 11:
+                    // Toggle Bật/Tắt Bot Discord
+                    boolean curEnabled = plugin.getConfig().getBoolean("discord.enabled", false);
+                    boolean newEnabled = !curEnabled;
+                    CommentPreservingConfigWriter.updateKey(cfg, "discord.enabled", newEnabled);
+                    plugin.getConfig().set("discord.enabled", newEnabled);
+                    player.sendMessage("§a[PayBot Setup] §f✓ Đã " + (newEnabled ? "§aBẬT" : "§cTẮT") + " §ftích hợp Bot Discord nội bộ!");
+                    guiManager.openMenu(player, SetupMenuType.DISCORD);
+                    break;
+                case 13:
+                    promptManager.startSession(player, "DISCORD_TOKEN", "Bot Token Discord", SetupMenuType.DISCORD);
+                    break;
+                case 15:
+                    promptManager.startSession(player, "DISCORD_GUILD_ID", "Discord Guild ID", SetupMenuType.DISCORD);
+                    break;
+                case 29:
+                    promptManager.startSession(player, "DISCORD_CHANNEL_ID", "ID Kênh thông báo Discord", SetupMenuType.DISCORD);
+                    break;
+                case 31:
+                    promptManager.startSession(player, "DISCORD_IPC_PORT", "Port IPC Localhost", SetupMenuType.DISCORD);
+                    break;
+                case 33:
+                    // Test Ping Bot Discord
+                    player.sendMessage("§e[PayBot Setup] §fĐang kiểm tra kết nối IPC tới Bot Discord...");
+                    new com.paybot.managers.DiscordIpcClient(plugin).pingAsync(online -> {
+                        if (online) {
+                            player.sendMessage("§a[PayBot Setup] §f✓ KẾT NỐI THÀNH CÔNG! Bot Discord đang chạy trên localhost.");
+                        } else {
+                            player.sendMessage("§c[PayBot Setup] ✗ Không thể kết nối tới Bot Discord! Bạn hãy kiểm tra đã chạy run_bot.bat trong thư mục discord-bot chưa nha.");
+                        }
+                    });
+                    break;
+                case 45:
+                    guiManager.openMenu(player, SetupMenuType.MAIN_HUB);
+                    break;
+                default: break;
             }
             return;
         }

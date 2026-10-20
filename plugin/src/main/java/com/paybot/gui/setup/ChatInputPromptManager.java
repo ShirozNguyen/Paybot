@@ -9,7 +9,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * ChatInputPromptManager — v7.0.0 (Part 160)
+ * ChatInputPromptManager — v7.0.0 (Part 161)
  * TUÂN THỦ RULE 17: Quản lý phiên nhập liệu qua Chat cho Admin khi tùy chỉnh cài đặt qua GUI.
  * <p>
  * ĐẶC TẢ NGHIỆP VỤ:
@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * 2. Tin nhắn CHỈ gửi riêng tới Admin (player.sendMessage), không gửi toàn server, không gửi console.
  * 3. Hỗ trợ gõ 'huy' hoặc 'cancel' để hủy thao tác an toàn.
  * 4. Tự động mở lại đúng Container GUI tương ứng sau khi nhập xong hoặc khi hủy.
+ * 5. Tại bước nhập API Token SePay: Đính kèm clickable text "Chưa có tài khoản SePay? Tạo tài khoản tại đây"
+ *    với chữ "tại đây" màu vàng gạch chân, click chuột mở thẳng link đăng ký đối tác chính thức.
  */
 public class ChatInputPromptManager {
 
@@ -39,7 +41,40 @@ public class ChatInputPromptManager {
         player.closeInventory();
 
         player.sendMessage("§e[PayBot Setup] §fBạn ơi, hãy nhập §a" + fieldName + " §fvào chat nha!");
+        if ("SEPAY_TOKEN".equals(promptKey)) {
+            sendSepayPartnerLink(player);
+        }
         player.sendMessage("§7(Gõ §c'huy' §7hoặc §c'cancel' §7để quay lại menu cài đặt nè).");
+    }
+
+    private void sendSepayPartnerLink(Player player) {
+        String partnerUrl = "https://my.sepay.vn/register?gcid=vrewlwez";
+        try {
+            net.kyori.adventure.text.Component msg = net.kyori.adventure.text.Component.text("§fChưa có tài khoản SePay? Tạo tài khoản ")
+                    .append(net.kyori.adventure.text.Component.text("tại đây")
+                            .color(net.kyori.adventure.text.format.NamedTextColor.YELLOW)
+                            .decorate(net.kyori.adventure.text.format.TextDecoration.UNDERLINED)
+                            .clickEvent(net.kyori.adventure.text.event.ClickEvent.openUrl(partnerUrl))
+                            .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                                    net.kyori.adventure.text.Component.text("§eBấm để mở trang đăng ký SePay đối tác"))))
+                    .append(net.kyori.adventure.text.Component.text("§f."));
+            player.sendMessage(msg);
+        } catch (Throwable t) {
+            try {
+                net.md_5.bungee.api.chat.TextComponent base = new net.md_5.bungee.api.chat.TextComponent("§fChưa có tài khoản SePay? Tạo tài khoản ");
+                net.md_5.bungee.api.chat.TextComponent link = new net.md_5.bungee.api.chat.TextComponent("tại đây");
+                link.setColor(net.md_5.bungee.api.ChatColor.YELLOW);
+                link.setUnderlined(true);
+                link.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(net.md_5.bungee.api.chat.ClickEvent.Action.OPEN_URL, partnerUrl));
+                link.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT,
+                        new net.md_5.bungee.api.chat.ComponentBuilder("§eBấm để mở trang đăng ký SePay đối tác").create()));
+                base.addExtra(link);
+                base.addExtra(new net.md_5.bungee.api.chat.TextComponent("§f."));
+                player.spigot().sendMessage(base);
+            } catch (Throwable t2) {
+                player.sendMessage("§fChưa có tài khoản SePay? Tạo tài khoản §e§ntại đây§r: §b" + partnerUrl);
+            }
+        }
     }
 
     public void handleInput(Player player, String rawInput) {
@@ -66,6 +101,42 @@ public class ChatInputPromptManager {
                 CommentPreservingConfigWriter.updateKey(configFile, "sepay.api-token", input);
                 plugin.getConfig().set("sepay.api-token", input);
                 player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật API Token SePay thành công!");
+                break;
+
+            case "DISCORD_TOKEN":
+                CommentPreservingConfigWriter.updateKey(configFile, "discord.bot-token", input);
+                plugin.getConfig().set("discord.bot-token", input);
+                player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Bot Token Discord thành công!");
+                break;
+
+            case "DISCORD_GUILD_ID":
+                CommentPreservingConfigWriter.updateKey(configFile, "discord.guild-id", input);
+                plugin.getConfig().set("discord.guild-id", input);
+                player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Guild ID Discord: §e" + input);
+                break;
+
+            case "DISCORD_CHANNEL_ID":
+                CommentPreservingConfigWriter.updateKey(configFile, "discord.notify-channel-id", input);
+                plugin.getConfig().set("discord.notify-channel-id", input);
+                player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Kênh thông báo Discord: §e" + input);
+                break;
+
+            case "DISCORD_IPC_PORT":
+                try {
+                    int port = Integer.parseInt(input);
+                    if (port < 1024 || port > 65535) {
+                        player.sendMessage("§c[PayBot Setup] ✗ Port IPC phải nằm trong khoảng 1024 - 65535!");
+                        activeSessions.put(player.getUniqueId(), session);
+                        return;
+                    }
+                    CommentPreservingConfigWriter.updateKey(configFile, "discord.ipc-port", port);
+                    plugin.getConfig().set("discord.ipc-port", port);
+                    player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Port IPC: §e" + port);
+                } catch (NumberFormatException e) {
+                    player.sendMessage("§c[PayBot Setup] ✗ Bạn vui lòng chỉ nhập số nguyên cho Port nha!");
+                    activeSessions.put(player.getUniqueId(), session);
+                    return;
+                }
                 break;
 
             case "SEPAY_STK":

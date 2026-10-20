@@ -11,7 +11,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.Arrays;
 
 /**
- * SetupMainHubGui — v7.0.0 (Part 160)
+ * SetupMainHubGui — v7.0.0 (Part 161)
  * TUÂN THỦ RULE 17: Container Menu 54 ô Trung tâm Master Setup Hub của PayBot.
  */
 public class SetupMainHubGui implements InventoryHolder {
@@ -65,6 +65,21 @@ public class SetupMainHubGui implements InventoryHolder {
                 "§7Phân trang nhiều trang, sửa tiền mốc, lệnh mốc, xóa mốc.",
                 "",
                 "§e▶ [Click] để quản lý Mốc Nạp"));
+
+        // Slot 22: Bot Discord Nội Bộ (Local Companion Bot)
+        Material discordMat = VanillaItemRegistry.resolveMaterial("COMPASS", "REPEATER", "REDSTONE_TORCH");
+        boolean discordEnabled = plugin.getConfig().getBoolean("discord.enabled", false);
+        int ipcPort = plugin.getConfig().getInt("discord.ipc-port", 24733);
+        String channelId = plugin.getConfig().getString("discord.notify-channel-id", "");
+        inventory.setItem(22, VanillaItemRegistry.createItem(discordMat, "§9§lBot Discord Nội Bộ (Local Companion)",
+                "§7Tích hợp nạp tiền tự động & thông báo bill qua Discord.",
+                "§7Tự host trên server (0đ chi phí), đồng bộ 2 chiều thời gian thực.",
+                "",
+                "§f• Trạng thái: " + (discordEnabled ? "§a🟢 ĐANG BẬT" : "§c🔴 ĐANG TẮT"),
+                "§f• Cổng IPC: §e" + ipcPort + " §8(Localhost)",
+                "§f• Kênh thông báo: §b" + (channelId.isEmpty() ? "(Chưa đặt)" : channelId),
+                "",
+                "§e▶ [Click] để vào menu Cài đặt Bot Discord"));
 
         // Slot 28: CSDL SQLite / MySQL & Port HTTP
         Material redstone = VanillaItemRegistry.resolveMaterial("REDSTONE_BLOCK", "REDSTONE", "HOPPER");

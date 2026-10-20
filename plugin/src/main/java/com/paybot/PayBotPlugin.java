@@ -1138,6 +1138,13 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
     public OwnerSessionManager       getOwnerSessionManager()              { return ownerSessionManager; }
     public LogManager                getLogManager()                       { return logManager; }
     public UpdateCheckManager        getUpdateCheckManager()               { return updateCheckManager; }
+    private com.paybot.managers.DiscordIpcClient discordIpcClient;
+    public com.paybot.managers.DiscordIpcClient getDiscordIpcClient() {
+        if (discordIpcClient == null) {
+            discordIpcClient = new com.paybot.managers.DiscordIpcClient(this);
+        }
+        return discordIpcClient;
+    }
 
     /** v5.0.0 — true nếu server hiện tại đang bị owner chặn qua BanGuard (/disablepaybot). */
     public boolean isBannedByOwner() { return bannedByOwner; }
