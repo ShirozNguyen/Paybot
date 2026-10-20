@@ -745,9 +745,8 @@ public class CommandRegistry {
             .then(Commands.literal("setup")
                 .executes(ctx -> {
                     try {
-                        ServerPlayer p = ctx.getSource().getPlayer();
-                        if (p != null) {
-                            ChinhSuaGui.open(p);
+                        if (ctx.getSource().getEntity() instanceof ServerPlayer) {
+                            ChinhSuaGui.open((ServerPlayer) ctx.getSource().getEntity());
                         } else {
                             send(ctx.getSource(), "§c[PayBot] Chỉ người chơi mới có thể mở Setup GUI!");
                         }
