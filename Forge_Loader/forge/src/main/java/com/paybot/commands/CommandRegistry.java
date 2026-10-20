@@ -36,26 +36,17 @@ public class CommandRegistry {
         registerNapThe(dispatcher);
         registerNapBank(dispatcher);
         registerOk(dispatcher);
-        registerChinhSua(dispatcher);
-        registerTopupList(dispatcher);
-        registerCardSetup(dispatcher);
-        registerSePaySetup(dispatcher);
-        registerPayBotSetup(dispatcher);
+        registerPayBot(dispatcher);
         registerConnect(dispatcher);
         registerDisconnect(dispatcher);
         registerConfirm(dispatcher);
-        registerBankCheck(dispatcher);
-        registerCardCheck(dispatcher);
         registerApprove(dispatcher);
         registerNapTienId(dispatcher);
         registerMuaPayBot(dispatcher);
         registerPayBotOwner(dispatcher);
         registerPayBotPlaceholder(dispatcher);
-        registerTestNapBank(dispatcher);
-        registerTestNapThe(dispatcher);
         registerDisablePayBot(dispatcher);
         registerEnablePayBot(dispatcher);
-        registerPayBotReload(dispatcher);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -737,7 +728,43 @@ public class CommandRegistry {
     }
 
     // ─── /paybotreload — Nạp lại & Apply config ──────────────────────────────
-    private static void registerPayBotReload(CommandDispatcher<CommandSourceStack> d) {
+    private static void registerPayBot(CommandDispatcher<CommandSourceStack> d) {
+        d.register(Commands.literal("paybot")
+            .requires(src -> isAdmin(src))
+            .executes(ctx -> {
+                send(ctx.getSource(), "§e[PayBot] §fCú pháp lệnh quản trị: §b/paybot [setup|reload]");
+                return 1;
+            })
+            .then(Commands.literal("setup")
+                .executes(ctx -> {
+                    try {
+                        ServerPlayer p = ctx.getSource().getPlayer();
+                        if (p != null) {
+                            ChinhSuaGui.open(p);
+                        } else {
+                            send(ctx.getSource(), "§c[PayBot] Chỉ người chơi mới có thể mở Setup GUI!");
+                        }
+                    } catch (Throwable t) {
+                        send(ctx.getSource(), "§e[PayBot Setup] §fĐang mở Master Setup Hub...");
+                    }
+                    return 1;
+                }))
+            .then(Commands.literal("reload")
+                .executes(ctx -> {
+                    PayBotMod mod = PayBotMod.getInstance();
+                    send(ctx.getSource(), "§e[PayBot] §fĐang nạp lại và áp dụng (apply) cấu hình...");
+                    try {
+                        mod.getConfig().load();
+                        if (com.paybot.milestone.ModMilestoneManager.getInstance() != null) {
+                            com.paybot.milestone.ModMilestoneManager.getInstance().reload();
+                        }
+                        send(ctx.getSource(), "§a[PayBot] §f✓ Đã nạp lại và áp dụng §a(apply) §ftoàn bộ cấu hình mới từ config.yml & milestones.yml thành công!");
+                    } catch (Exception e) {
+                        send(ctx.getSource(), "§c[PayBot] §fLỗi khi reload: " + e.getMessage());
+                    }
+                    return 1;
+                })));
+
         d.register(Commands.literal("paybotreload")
             .requires(src -> isAdmin(src))
             .executes(ctx -> {

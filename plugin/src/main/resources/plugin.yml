@@ -37,34 +37,15 @@ commands:
     usage: "/ok"
     permission: naptien.use
 
-  chinhsuamenhgianap:
-    description: "Cấu hình mệnh giá và lệnh thưởng (mở UI)"
-    usage: "/chinhsuamenhgianap"
+  paybot:
+    description: "Trung tâm quản trị & cài đặt PayBot (mở Master Setup Hub hoặc reload)"
+    usage: "/paybot [setup|reload]"
     permission: naptien.admin
-
-  topuplist:
-    description: "Xem và duyệt danh sách đơn chờ"
-    usage: "/topuplist all"
-    permission: naptien.admin
-
-  PayBotSetup:
-    description: "Xem trạng thái cấu hình standalone (SePay, Card API, port)"
-    usage: "/PayBotSetup"
-    permission: naptien.admin
+    aliases: ["paybotreload", "naptienreload"]
 
   connect:
     description: "Kết nối plugin với bot Discord"
     usage: "/connect discord <guild_id>"
-    permission: naptien.admin
-
-  bankcheck:
-    description: "Xem danh sách đơn ngân hàng"
-    usage: "/bankcheck [player]"
-    permission: naptien.admin
-
-  cardcheck:
-    description: "Xem danh sách đơn thẻ (mở UI)"
-    usage: "/cardcheck [player]"
     permission: naptien.admin
 
   disconnect:
@@ -82,16 +63,6 @@ commands:
     usage: "/naptienid"
     permission: naptien.admin
 
-  sepaysetup:
-    description: "Cấu hình SePay (ngân hàng nhận tiền)"
-    usage: "/sepaysetup"
-    permission: naptien.admin
-
-  cardsetup:
-    description: "Cấu hình API gạch thẻ (site, partner ID/key, channel Discord) và mệnh giá"
-    usage: "/cardsetup"
-    permission: naptien.admin
-
   approve:
     description: "Duyệt và cấp thưởng đơn nạp thủ công"
     usage: "/approve <invoice_id>"
@@ -106,16 +77,6 @@ commands:
     description: "Đăng nhập quyền owner bằng mã một lần từ Discord"
     usage: "/paybotowner <mã> | logout | status"
     permission: naptien.use
-
-  testnapbank:
-    description: "[DEV] Giả lập nạp bank thành công để test reward + hiệu ứng"
-    usage: "/testnapbank [mệnh giá]"
-    permission: naptien.admin
-
-  testnapthe:
-    description: "[DEV] Giả lập nạp thẻ thành công để test reward + hiệu ứng"
-    usage: "/testnapthe [nhà mạng] [mệnh giá]"
-    permission: naptien.admin
 
   rewardclaim:
     description: "Nhận phần thưởng đang chờ (đơn được duyệt lúc bạn offline)"
@@ -136,12 +97,6 @@ commands:
     description: "[OWNER ONLY] Mở chặn PayBot trên server này"
     usage: "/enablepaybot"
     permission: naptien.op
-
-  paybotreload:
-    description: "Nạp lại và áp dụng (apply) toàn bộ cấu hình mới từ config.yml"
-    usage: "/paybot reload"
-    permission: naptien.admin
-    aliases: ["paybot", "naptienreload"]
 
 permissions:
   naptien.use:

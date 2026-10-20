@@ -252,11 +252,7 @@ public class DatabaseManager {
             plugin.getLogger().info("[PayBot] Chế độ database: MySQL. Đang kết nối...");
             boolean mysqlSuccess = tryConnectMySQL();
             if (!mysqlSuccess) {
-                plugin.getLogger().severe("[PayBot] ═══════════════════════════════════════════════");
-                plugin.getLogger().severe("[PayBot] LỖI NGHIÊM TRỌNG: Không thể kết nối MySQL!");
-                plugin.getLogger().severe("[PayBot] Kiểm tra lại mục mysql trong file config.yml và thông tin kết nối.");
-                plugin.getLogger().severe("[PayBot] Plugin sẽ TỰ TẮT ngay bây giờ.");
-                plugin.getLogger().severe("[PayBot] ═══════════════════════════════════════════════");
+                EmergencyShutdownHandler.shutdownServer(plugin, "Không thể kết nối MySQL theo cấu hình config.yml / mysql.yml!", null);
                 throw new RuntimeException("[PayBot] Không thể kết nối MySQL theo cấu hình database-type: mysql");
             }
             try {
@@ -264,8 +260,8 @@ public class DatabaseManager {
                 plugin.getLogger().info("[PayBot] Kết nối MySQL thành công! Plugin hoạt động ở chế độ MySQL.");
                 runMigrations();
             } catch (Exception e) {
-                plugin.getLogger().log(Level.SEVERE, "[PayBot] Lỗi khởi tạo bảng MySQL!", e);
-                throw new RuntimeException("[PayBot] Lỗi khởi tạo bảng MySQL: " + e.getMessage());
+                EmergencyShutdownHandler.shutdownServer(plugin, "Lỗi khởi tạo bảng MySQL!", e);
+                throw new RuntimeException("[PayBot] Lỗi khởi tạo bảng MySQL: " + e.getMessage(), e);
             }
         } else {
             // ── Chế độ SQLite ──────────────────────────────────────────────
@@ -293,8 +289,8 @@ public class DatabaseManager {
                 plugin.getLogger().info("[PayBot] Kết nối SQLite thành công!");
                 runMigrations();
             } catch (Exception e) {
-                plugin.getLogger().log(Level.SEVERE,
-                        "[PayBot] Lỗi nghiêm trọng khi khởi tạo SQLite! Dữ liệu sẽ không được lưu.", e);
+                EmergencyShutdownHandler.shutdownServer(plugin, "Lỗi nghiêm trọng khi khởi tạo SQLite! Dữ liệu sẽ không được lưu.", e);
+                throw new RuntimeException("[PayBot] Lỗi khởi tạo SQLite: " + e.getMessage(), e);
             }
         }
 

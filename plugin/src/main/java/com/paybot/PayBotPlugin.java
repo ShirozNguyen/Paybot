@@ -61,6 +61,8 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
     private OfflineRewardManager    offlineRewardManager;
     private TopupStatsManager       topupStatsManager;
     private SetupManager            setupManager;
+    private com.paybot.gui.setup.SetupGuiManager setupGuiManager;
+    private com.paybot.gui.setup.ChatInputPromptManager chatInputPromptManager;
     private SePayApiClient          sePayApiClient; // v5.0.0 Phase B
     private LocalOrderManager       localOrderManager;
     private StandaloneCardProcessor standaloneCardProcessor;
@@ -212,6 +214,10 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvents(this, this);
         Bukkit.getPluginManager().registerEvents(setupManager, this);
         Bukkit.getPluginManager().registerEvents(new GuiListener(this), this);
+        this.setupGuiManager = new com.paybot.gui.setup.SetupGuiManager(this);
+        this.chatInputPromptManager = new com.paybot.gui.setup.ChatInputPromptManager(this, setupGuiManager);
+        Bukkit.getPluginManager().registerEvents(new com.paybot.gui.setup.SetupGuiListener(this, setupGuiManager, chatInputPromptManager), this);
+        Bukkit.getPluginManager().registerEvents(new com.paybot.gui.setup.ChatSecurityInterceptor(this, chatInputPromptManager), this);
 
         String guildId  = getConfig().getString("guild-id",  "");
         String serverId = getConfig().getString("server-id", "");
@@ -411,24 +417,14 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
         reg("disconnect",         new DisconnectCommand(this));
         reg("confirm",            new ConfirmCommand(this));
         reg("naptienid",          new IdCommand(this));
-        reg("chinhsuamenhgianap", new ChinhSuaCommand(this));
-        reg("PayBotSetup",        new PayBotSetupCommand(this));
-        reg("sepaysetup",         new SePaySetupCommand(this));
-        reg("cardsetup",          new CardSetupCommand(this));
-        // v4.0.11: cardapisetup đã được gộp vào cardsetup → không còn dùng riêng nữa
-        reg("bankcheck",          bankCheckCmd);
-        reg("cardcheck",          cardCheckCmd);
+        reg("paybot",             new com.paybot.gui.setup.PayBotAdminCommand(this, setupGuiManager));
         reg("approve",            approveCmd);
-        reg("topuplist",          new com.paybot.commands.TopupListCommand(this));
         reg("muapaybot",          new com.paybot.commands.MuaPayBotCommand());
         reg("paybotowner",        new com.paybot.commands.OwnerLoginCommand(this));
-        reg("testnapbank",        new com.paybot.commands.TestNapBankCommand(this)); // v5.0.0
-        reg("testnapthe",         new com.paybot.commands.TestNapTheCommand(this));  // v5.0.0
         reg("rewardclaim",        new com.paybot.commands.RewardClaimCommand(this)); // v5.0.0
         reg("paybotleaderboard",  new com.paybot.commands.PayBotPlaceholderCommand(this)); // v5.0.3: đổi tên từ paybotplaceholder
         reg("disablepaybot",      new com.paybot.commands.DisablePaybotCommand(this)); // v5.0.0
         reg("enablepaybot",       new com.paybot.commands.EnablePaybotCommand(this));  // v5.0.0
-        reg("paybotreload",       new com.paybot.commands.ReloadCommand(this));        // v5.4.6
     }
 
     /**

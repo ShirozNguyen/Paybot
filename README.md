@@ -1,9 +1,11 @@
 # 💎 PayBot - Hệ Thống Nạp Tiền Dành Cho Server 💎
+## ⚠️ Lưu ý: Paybot đang ở Alpha, vui lòng cân nhắc trước khi sử dụng! ⚠️
 
 <!-- ===== BUILD WITH ===== -->
 [![Java 21](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/built-with/java21_46h.png)](https://www.oracle.com/java/)
 [![Gradle](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/built-with/gradle_46h.png)](https://gradle.org)
 [![Maven](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/compact/built-with/maven_46h.png)](https://maven.apache.org)
+[![FastStats](https://img.shields.io/badge/FastStats-Telemetry-brightgreen?logo=chart-line)](https://faststats.dev/project/paybot)
 
 <!-- ===== SUPPORTED PLATFORMS ===== -->
 [![Paper](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/paper_vector.svg)](https://modrinth.com/plugin/paybot)
@@ -21,6 +23,8 @@
 • **[☕ SpigotMC](https://www.spigotmc.org/resources/paybot.134369)**
 
 • **[🌐 Hangar](https://hangar.papermc.io/TheRealShiroz/PayBot)** 
+
+• **[📊 FastStats Analytics](https://faststats.dev/project/paybot)** 
 
 
 ---
@@ -148,14 +152,23 @@ Dự án được xây dựng với kiến trúc **100% Server-Side Multi-Loader
 
 ---
 
-## 📡 Công Khai Dữ Liệu Chia Sẻ (Data Disclosure)
+## 📡 Công Khai Dữ Liệu Chia Sẻ & Quyền Riêng Tư (Data Disclosure & Privacy)
 
+### 1. Dịch Vụ Thanh Toán Bên Thứ Ba
 PayBot chỉ truyền dữ liệu tới các cổng thanh toán bên thứ ba khi admin server đã chủ động cấu hình:
 * **[SePay](https://sepay.vn/)**: Nhận thông tin đối soát giao dịch ngân hàng / ví điện tử (qua API Token hoặc Webhook).
 * **[TheSieuRe](https://thesieure.com/) / [GachThePro](https://gachthepro.com)**: Nhận thông tin thẻ cào (nhà mạng, mã thẻ, số serial, mệnh giá) để xử lý đổi thẻ.
 * **Discord Bot (Tùy chọn)**: Nhận thông báo giao dịch để đồng bộ đơn hàng khi sử dụng tính năng liên kết Discord.
 
 *Không có bất kỳ dữ liệu nhạy cảm nào bị chia sẻ ra ngoài khi chưa cấu hình.*
+
+### 2. Thống Kê Ẩn Danh FastStats (FastStats Telemetry)
+PayBot tích hợp giải pháp đo lường hiệu năng FastStats nhằm thu thập số liệu vận hành kỹ thuật ẩn danh phục vụ tối ưu hiệu năng:
+* **Dữ liệu thu thập**: Thông tin môi trường máy chủ cơ bản (phiên bản Minecraft, loại server/loader, phiên bản Java, hệ điều hành).
+* **Cam kết bảo mật**: Tuyệt đối **không thu thập** địa chỉ IP, tên tài khoản, lịch sử giao dịch hay bất kỳ thông tin cá nhân nào của người chơi và quản trị viên.
+* **Cách tắt (Opt-out)**:
+  - **Paper / Folia / Purpur**: Đặt `telemetry.enabled: false` trong `plugins/PayBot/config.yml` hoặc `plugins/faststats/config.properties`.
+  - **Fabric / Forge / NeoForge**: Đặt `enabled=false` trong `config/faststats/config.properties`.
 
 ---
 
@@ -224,6 +237,23 @@ PayBot chỉ truyền dữ liệu tới các cổng thanh toán bên thứ ba kh
 The companion Discord Bot serves as an optional middleware layer between Minecraft and payment providers:
 * Automatically forwards payment alerts and transaction receipts to dedicated Discord channels.
 * Queues offline rewards if the server is temporarily offline and delivers them safely when reconnected.
+
+---
+
+### 📡 Data Disclosure & FastStats Telemetry
+
+PayBot only transmits data to third-party services when explicitly configured by the server administrator:
+* **[SePay](https://sepay.vn/)**: Banking / e-wallet transaction reconciliation (via API Token or Webhook).
+* **[TheSieuRe](https://thesieure.com/) / [GachThePro](https://gachthepro.com)**: Scratch card processing.
+* **Discord Bot (Optional)**: Transaction notifications and offline delivery synchronization.
+
+#### 📊 FastStats Anonymous Telemetry
+PayBot includes FastStats to collect non-identifiable technical performance metrics:
+* **Collected Data**: Basic runtime environment metrics (Minecraft version, server software, Java runtime, OS).
+* **Privacy Assurance**: **No personal data, IP addresses, payment records, or player identities** are ever tracked or stored.
+* **How to Opt-Out**:
+  - **Paper / Folia / Purpur**: Set `telemetry.enabled: false` in `plugins/PayBot/config.yml` or `plugins/faststats/config.properties`.
+  - **Fabric / Forge / NeoForge**: Set `enabled=false` in `config/faststats/config.properties`.
 
 ---
 
