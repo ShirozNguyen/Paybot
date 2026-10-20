@@ -152,6 +152,9 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
         // lại sau nếu có cơ chế khác minh bạch hơn (vd license-key/server-id công khai).
         bannedByOwner = false;
 
+        if (this.setupGuiManager == null) {
+            this.setupGuiManager = new com.paybot.gui.setup.SetupGuiManager(this);
+        }
         registerCommands(); // tự guard toàn bộ lệnh (trừ paybotowner/enablepaybot/disablepaybot) nếu bị chặn
 
         if (bannedByOwner) {
@@ -1385,5 +1388,12 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
         } catch (Exception ignored) {
             // Không dò được IP (mất mạng, cả 3 provider đều lỗi) → bỏ qua, admin tự set thủ công
         }
+    }
+
+    public com.paybot.gui.setup.SetupGuiManager getSetupGuiManager() {
+        if (setupGuiManager == null) {
+            setupGuiManager = new com.paybot.gui.setup.SetupGuiManager(this);
+        }
+        return setupGuiManager;
     }
 }

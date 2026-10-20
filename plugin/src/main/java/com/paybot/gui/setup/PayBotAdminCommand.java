@@ -23,6 +23,10 @@ public class PayBotAdminCommand implements CommandExecutor, TabCompleter {
     private final PayBotPlugin plugin;
     private final SetupGuiManager guiManager;
 
+    public PayBotAdminCommand(PayBotPlugin plugin) {
+        this(plugin, null);
+    }
+
     public PayBotAdminCommand(PayBotPlugin plugin, SetupGuiManager guiManager) {
         this.plugin = plugin;
         this.guiManager = guiManager;
@@ -41,7 +45,12 @@ public class PayBotAdminCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
             Player player = (Player) sender;
-            guiManager.openMenu(player, SetupMenuType.MAIN_HUB);
+            SetupGuiManager mgr = this.guiManager != null ? this.guiManager : plugin.getSetupGuiManager();
+            if (mgr != null) {
+                mgr.openMenu(player, SetupMenuType.MAIN_HUB);
+            } else {
+                sender.sendMessage("§c[PayBot] Hệ thống GUI Setup chưa sẵn sàng. Vui lòng thử lại sau giây lát.");
+            }
             return true;
         }
 
