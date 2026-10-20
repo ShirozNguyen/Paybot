@@ -39,6 +39,7 @@ jobs:
           set -o pipefail
           mkdir -p build-diagnostics Done/Plugins
           echo "=== Building PayBot Plugin (Paper / Purpur / Folia) ==="
+          export PAYBOT_ACTIVE_PROJECTS="plugin"
           gradle :plugin:build --console=plain --build-cache --stacktrace 2>&1 | tee "build-diagnostics/plugin.log"
           find plugin/build/libs -type f -name "*.jar" ! -name "*-dev.jar" ! -name "*-shadow.jar" ! -name "*-sources.jar" | while read -r f; do
             cp "$f" Done/Plugins/ 2>/dev/null || true
@@ -201,6 +202,10 @@ jobs:
           done
 
           # Phase 2: Dồn tài nguyên sang Main Batch 1 & Main Batch 2
+          # v6.0.1 Part 159: Selective Subproject Inclusion - Cô lập cấu hình, ngăn Gradle root tải/remap subprojects chéo
+          export PAYBOT_ACTIVE_PROJECTS="${{ matrix.root_batch_1 }} ${{ matrix.root_batch_2 }}"
+          echo ">>> [SELECTIVE INCLUSION] Active root projects for this Node: $PAYBOT_ACTIVE_PROJECTS"
+
           HEAP_MAIN_1=$(( BASE_RAM + DONE_STEPS * STEP_RAM ))
           if [ "$HEAP_MAIN_1" -lt 9216 ]; then HEAP_MAIN_1=9216; fi
           if [ "$HEAP_MAIN_1" -gt "$MAX_RAM" ]; then HEAP_MAIN_1=$MAX_RAM; fi

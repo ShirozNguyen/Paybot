@@ -1,4 +1,4 @@
-pluginManagement {
+﻿pluginManagement {
     repositories {
         maven { url = 'https://maven.architectury.dev/' }
         maven { url = 'https://maven.fabricmc.net/' }
@@ -55,25 +55,51 @@ rootProject.name = 'PayBot'
 // include('Fabric_Loader:fabric-1.16.2')
 // include('Fabric_Loader:fabric-1.16.3')
 // include('Fabric_Loader:fabric-1.16.4')
-include('Fabric_Loader:fabric-1.16.5')
-include('Fabric_Loader:fabric-1.17.1')
-include('Fabric_Loader:fabric-1.18')
-include('Fabric_Loader:fabric-1.18.1')
-include('Fabric_Loader:fabric-1.18.2')
-include('Fabric_Loader:fabric-1.19')
-include('Fabric_Loader:fabric-1.19.1')
-include('Fabric_Loader:fabric-1.19.2')
-include('Fabric_Loader:fabric-1.19.3')
-include('Fabric_Loader:fabric-1.19.4')
-include('Fabric_Loader:fabric-1.20')
-include('Fabric_Loader:fabric-1.20.1')
-include('Fabric_Loader:fabric-1.20.2')
-include('Fabric_Loader:fabric-1.20.3')
-include('Fabric_Loader:fabric-1.20.4')
-include('Fabric_Loader:fabric-1.20.5')
-include('Fabric_Loader:fabric-1.20.6')
-include('Fabric_Loader:fabric-1.21')
-include('Fabric_Loader:fabric-1.21.1')
+// =========================================================================================
+// [PayBot Selective Subproject Inclusion Engine - v6.0.1 Part 159]
+// Khac phuc triet de loi 'Mot so node bi bat build all module / cau hinh cheo mat 30-45 phut' tren CI.
+// Khi CI chay mot batch cu the (vi du Node 4: :Fabric_Loader:fabric-1.20.5:build), CI truyen bien moi truong
+// PAYBOT_ACTIVE_PROJECTS. settings.gradle CHI include dung cac subproject ma Node do thuc su can!
+// Neu chay local (khong truyen bien), mac dinh include toan bo 39 subprojects nhu cu (100% backward compatible).
+// =========================================================================================
+def activeProjectsRaw = System.getenv('PAYBOT_ACTIVE_PROJECTS') ?: System.getProperty('paybot.active.projects')
+def activeProjectsList = activeProjectsRaw ? activeProjectsRaw.split('[,\\s]+').collect { it.trim().replaceAll('^:', '') }.findAll { !it.isEmpty() } : null
+
+def includeTarget = { String path ->
+    if (activeProjectsList == null) {
+        include(path)
+        return
+    }
+    def cleanPath = path.replaceAll('^:', '')
+    def projName = cleanPath.contains(':') ? cleanPath.substring(cleanPath.lastIndexOf(':') + 1) : cleanPath
+    def isMatched = activeProjectsList.any { active ->
+        def cleanActive = active.replaceAll('^:', '').replaceAll(':build$', '')
+        def activeName = cleanActive.contains(':') ? cleanActive.substring(cleanActive.lastIndexOf(':') + 1) : cleanActive
+        return cleanActive == cleanPath || activeName == projName || cleanPath.endsWith(cleanActive)
+    }
+    if (isMatched) {
+        include(path)
+    }
+}
+includeTarget('Fabric_Loader:fabric-1.16.5')
+includeTarget('Fabric_Loader:fabric-1.17.1')
+includeTarget('Fabric_Loader:fabric-1.18')
+includeTarget('Fabric_Loader:fabric-1.18.1')
+includeTarget('Fabric_Loader:fabric-1.18.2')
+includeTarget('Fabric_Loader:fabric-1.19')
+includeTarget('Fabric_Loader:fabric-1.19.1')
+includeTarget('Fabric_Loader:fabric-1.19.2')
+includeTarget('Fabric_Loader:fabric-1.19.3')
+includeTarget('Fabric_Loader:fabric-1.19.4')
+includeTarget('Fabric_Loader:fabric-1.20')
+includeTarget('Fabric_Loader:fabric-1.20.1')
+includeTarget('Fabric_Loader:fabric-1.20.2')
+includeTarget('Fabric_Loader:fabric-1.20.3')
+includeTarget('Fabric_Loader:fabric-1.20.4')
+includeTarget('Fabric_Loader:fabric-1.20.5')
+includeTarget('Fabric_Loader:fabric-1.20.6')
+includeTarget('Fabric_Loader:fabric-1.21')
+includeTarget('Fabric_Loader:fabric-1.21.1')
 // v5.5.5 Part 64: fabric-1.21.2 đến fabric-1.21.9 KHÔNG được include() ở đây nữa. Đã audit toàn
 // bộ dải 1.21.x và xác nhận qua fabricmc.net blog chính thức: dev.architectury.loom 1.7.435 dùng
 // chung ở root CHỈ đủ chuẩn cho MC 1.21/1.21.1 (cần Loom ≥1.6) — từ 1.21.2 trở đi cần Loom cao
@@ -117,22 +143,22 @@ include('Fabric_Loader:fabric-1.21.1')
 // qua Mojang Official Mappings 1.16.1. Đây là giới hạn kỹ thuật từ Architectury Loom đối với Forge
 // 1.16.1 (Forge chỉ ổn định từ 1.16.2 trở đi với Loom 1.7.435). Comment lại vĩnh viễn.
 // include('Forge_Loader:forge-1.16.1')
-include('Forge_Loader:forge-1.16.2')
-include('Forge_Loader:forge-1.16.3')
-include('Forge_Loader:forge-1.16.4')
-include('Forge_Loader:forge-1.16.5')
-include('Forge_Loader:forge-1.17.1')
-include('Forge_Loader:forge-1.18')
-include('Forge_Loader:forge-1.18.1')
-include('Forge_Loader:forge-1.18.2')
-include('Forge_Loader:forge-1.19')
-include('Forge_Loader:forge-1.19.1')
-include('Forge_Loader:forge-1.19.2')
-include('Forge_Loader:forge-1.19.3')
-include('Forge_Loader:forge-1.19.4')
-include('Forge_Loader:forge-1.20')
-include('Forge_Loader:forge-1.20.1')
-include('Forge_Loader:forge-1.20.2')
+includeTarget('Forge_Loader:forge-1.16.2')
+includeTarget('Forge_Loader:forge-1.16.3')
+includeTarget('Forge_Loader:forge-1.16.4')
+includeTarget('Forge_Loader:forge-1.16.5')
+includeTarget('Forge_Loader:forge-1.17.1')
+includeTarget('Forge_Loader:forge-1.18')
+includeTarget('Forge_Loader:forge-1.18.1')
+includeTarget('Forge_Loader:forge-1.18.2')
+includeTarget('Forge_Loader:forge-1.19')
+includeTarget('Forge_Loader:forge-1.19.1')
+includeTarget('Forge_Loader:forge-1.19.2')
+includeTarget('Forge_Loader:forge-1.19.3')
+includeTarget('Forge_Loader:forge-1.19.4')
+includeTarget('Forge_Loader:forge-1.20')
+includeTarget('Forge_Loader:forge-1.20.1')
+includeTarget('Forge_Loader:forge-1.20.2')
 // v5.5.5 Part 71 [REVERT forge-1.20.3..1.21.11 — BẰNG CHỨNG LOG GitHub Actions Run #35191819378]:
 // Forge 1.20.3+ bị crash "ModuleVersionNotFoundException: Could not find net.minecraftforge:bootstrap-dev:2.0.0"
 // do Architectury Loom 1.7.435 không thể resolve bootstrap-dev:2.0.0 từ bất kỳ Maven server nào.
@@ -154,13 +180,13 @@ include('Forge_Loader:forge-1.20.2')
 // include('Forge_Loader:forge-1.21.11')
 // v5.5.5 Part 44e: neoforge-modern TÁCH thành 17 module riêng, mỗi module = ĐÚNG 1 bản MC.
 // NeoForge CÓ hỗ trợ 1.20.5 và 1.21.2 (khác Forge — không bỏ qua như bên Forge).
-include('NeoForge_Loader:neoforge-1.20.2')
-include('NeoForge_Loader:neoforge-1.20.3')
-include('NeoForge_Loader:neoforge-1.20.4')
-include('NeoForge_Loader:neoforge-1.20.5')
-include('NeoForge_Loader:neoforge-1.20.6')
-include('NeoForge_Loader:neoforge-1.21')
-include('NeoForge_Loader:neoforge-1.21.1')
+includeTarget('NeoForge_Loader:neoforge-1.20.2')
+includeTarget('NeoForge_Loader:neoforge-1.20.3')
+includeTarget('NeoForge_Loader:neoforge-1.20.4')
+includeTarget('NeoForge_Loader:neoforge-1.20.5')
+includeTarget('NeoForge_Loader:neoforge-1.20.6')
+includeTarget('NeoForge_Loader:neoforge-1.21')
+includeTarget('NeoForge_Loader:neoforge-1.21.1')
 // v5.5.5 Part 64: neoforge-1.21.2 đến neoforge-1.21.9 KHÔNG được include() ở đây nữa — cùng lý
 // do với fabric-1.21.2-1.21.9 (xem comment phía trên): dùng chung dev.architectury.loom 1.7.435
 // ở root (áp qua cùng điều kiện trong build.gradle cho cả Fabric lẫn NeoForge), CHỈ đủ chuẩn cho
@@ -168,7 +194,7 @@ include('NeoForge_Loader:neoforge-1.21.1')
 // v5.5.5 Part 66: neoforge-1.21.10, neoforge-1.21.11 KHÔNG được include() ở đây nữa — lỗi build
 // thật xác nhận "Unfixable conflicts" khi remap qua dev.architectury.loom 1.7.435 (quá cũ cho
 // NeoForge ở MC 1.21.10+). 2 module này giờ là project Gradle HOÀN TOÀN ĐỘC LẬP. Xem LOG.md Part 66.
-include('plugin')
+includeTarget('plugin')
 
 // v5.5.5 Part 48: bắt đầu dải 26.x (xem LOG.md Part 44 cho bối cảnh gốc + Part 48 cho research
 // đầy đủ). Toolchain hoàn toàn khác các module 1.x ở trên — Java 25, không remap, mỗi module 26.x
