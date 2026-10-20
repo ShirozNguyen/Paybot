@@ -1,7 +1,7 @@
 package com.paybot.gui.setup;
 
 /**
- * SetupMenuType — v6.1.0 (Part 160)
+ * SetupMenuType — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Enum định danh các loại menu trong hệ thống Master Setup Hub.
  */
 public enum SetupMenuType {

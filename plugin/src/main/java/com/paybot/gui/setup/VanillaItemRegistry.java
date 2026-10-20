@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * VanillaItemRegistry — v6.1.0 (Part 160)
+ * VanillaItemRegistry — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Quản lý danh mục Item Vanilla an toàn và cơ chế Fallback
  * đa phiên bản Minecraft (1.16 đến 1.21.x).
  * <p>

@@ -6,7 +6,7 @@ import org.bukkit.Bukkit;
 import java.util.logging.Level;
 
 /**
- * EmergencyShutdownHandler — v6.1.0 (Part 160)
+ * EmergencyShutdownHandler — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Chức năng xử lý khẩn cấp khi Cơ sở dữ liệu (MySQL / SQLite)
  * không thể kết nối hoặc gặp sự cố nghiêm trọng.
  * <p>

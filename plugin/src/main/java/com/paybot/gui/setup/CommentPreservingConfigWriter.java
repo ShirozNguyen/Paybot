@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * CommentPreservingConfigWriter — v6.1.0 (Part 160)
+ * CommentPreservingConfigWriter — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Chức năng cập nhật giá trị trong file cấu hình YAML
  * mà BẢO TOÀN 100% CẤU TRÚC, THỤT LỀ VÀ TOÀN BỘ CÁC DÒNG COMMENT (# ...).
  * <p>

@@ -13,7 +13,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * PayBotAdminCommand — v6.1.0 (Part 160)
+ * PayBotAdminCommand — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Command Executor duy nhất cho lệnh /paybot (setup & reload).
  * <p>
  * THAY THẾ TOÀN BỘ 9 LỆNH PHÂN MẢNH CŨ.

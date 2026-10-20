@@ -11,12 +11,12 @@ import org.bukkit.inventory.ItemStack;
 import java.util.Arrays;
 
 /**
- * SetupMainHubGui — v6.1.0 (Part 160)
+ * SetupMainHubGui — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Container Menu 54 ô Trung tâm Master Setup Hub của PayBot.
  */
 public class SetupMainHubGui implements InventoryHolder {
 
-    public static final String TITLE = "§b§lPayBot Setup Hub §8(v6.1.0)";
+    public static final String TITLE = "§b§lPayBot Setup Hub §8(v7.0.0)";
 
     private final PayBotPlugin plugin;
     private final Inventory inventory;

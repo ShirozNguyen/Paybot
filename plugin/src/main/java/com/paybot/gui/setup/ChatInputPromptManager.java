@@ -9,7 +9,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * ChatInputPromptManager — v6.1.0 (Part 160)
+ * ChatInputPromptManager — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Quản lý phiên nhập liệu qua Chat cho Admin khi tùy chỉnh cài đặt qua GUI.
  * <p>
  * ĐẶC TẢ NGHIỆP VỤ:

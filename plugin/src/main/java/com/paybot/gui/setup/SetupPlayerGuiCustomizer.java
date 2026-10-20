@@ -9,7 +9,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * SetupPlayerGuiCustomizer — v6.1.0 (Part 160)
+ * SetupPlayerGuiCustomizer — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Container Menu 54 ô Tùy biến Giao diện Player GUI (/napbank & /napthe).
  * <p>
  * ĐẶC TẢ:
@@ -19,7 +19,7 @@ import org.bukkit.inventory.ItemStack;
  */
 public class SetupPlayerGuiCustomizer implements InventoryHolder {
 
-    public static final String TITLE = "§a§lTùy Biến Player GUI §8(v6.1.0)";
+    public static final String TITLE = "§a§lTùy Biến Player GUI §8(v7.0.0)";
 
     private final PayBotPlugin plugin;
     private final Inventory inventory;

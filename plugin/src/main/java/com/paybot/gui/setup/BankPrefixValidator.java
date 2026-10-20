@@ -3,7 +3,7 @@ package com.paybot.gui.setup;
 import java.util.regex.Pattern;
 
 /**
- * BankPrefixValidator — v6.1.0 (Part 160)
+ * BankPrefixValidator — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Chức năng kiểm tra tính hợp lệ của Cú pháp mã nạp (Transfer Prefix).
  * <p>
  * QUY TẮC NGÂN HÀNG & SEPAY:

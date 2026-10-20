@@ -11,7 +11,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.List;
 
 /**
- * SetupMilestoneListGui — v6.1.0 (Part 160)
+ * SetupMilestoneListGui — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Container Menu 54 ô Quản lý Mốc Nạp 100% Custom Phân Trang.
  * <p>
  * ĐẶC TẢ:
@@ -21,7 +21,7 @@ import java.util.List;
  */
 public class SetupMilestoneListGui implements InventoryHolder {
 
-    public static final String TITLE = "§d§lQuản Lý Mốc Nạp §8(v6.1.0)";
+    public static final String TITLE = "§d§lQuản Lý Mốc Nạp §8(v7.0.0)";
 
     private final PayBotPlugin plugin;
     private final Inventory inventory;

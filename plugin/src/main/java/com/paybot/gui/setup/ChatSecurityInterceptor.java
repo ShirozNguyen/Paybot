@@ -8,7 +8,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 
 /**
- * ChatSecurityInterceptor — v6.1.0 (Part 160)
+ * ChatSecurityInterceptor — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Bắt chặn sự kiện Chat để bảo mật thông tin cài đặt (Token, Password, STK).
  * <p>
  * NGUYÊN TẮC BẢO MẬT:

@@ -9,12 +9,12 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * SetupCardProviderGui — v6.1.0 (Part 160)
+ * SetupCardProviderGui — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Container Menu 54 ô Cấu hình Cổng Gạch Thẻ Cào.
  */
 public class SetupCardProviderGui implements InventoryHolder {
 
-    public static final String TITLE = "§e§lCấu Hình Thẻ Cào §8(v6.1.0)";
+    public static final String TITLE = "§e§lCấu Hình Thẻ Cào §8(v7.0.0)";
 
     private final PayBotPlugin plugin;
     private final Inventory inventory;

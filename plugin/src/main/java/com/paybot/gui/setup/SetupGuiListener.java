@@ -11,7 +11,7 @@ import org.bukkit.inventory.InventoryHolder;
 import java.io.File;
 
 /**
- * SetupGuiListener — v6.1.0 (Part 160)
+ * SetupGuiListener — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Xử lý sự kiện click chuột trong các Container Menu Setup.
  * <p>
  * NGUYÊN TẮC:

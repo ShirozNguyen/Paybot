@@ -9,7 +9,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * SetupMilestoneResetGui — v6.1.0 (Part 160)
+ * SetupMilestoneResetGui — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Container Menu 54 ô Cấu hình Chu Kỳ Reset Mốc Nạp Độc Lập.
  * <p>
  * ĐẶC TẢ:
@@ -20,7 +20,7 @@ import org.bukkit.inventory.ItemStack;
  */
 public class SetupMilestoneResetGui implements InventoryHolder {
 
-    public static final String TITLE = "§3§lChu Kỳ Reset Mốc Nạp §8(v6.1.0)";
+    public static final String TITLE = "§3§lChu Kỳ Reset Mốc Nạp §8(v7.0.0)";
 
     private final PayBotPlugin plugin;
     private final Inventory inventory;

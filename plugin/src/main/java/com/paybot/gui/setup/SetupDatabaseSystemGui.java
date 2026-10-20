@@ -9,7 +9,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * SetupDatabaseSystemGui — v6.1.0 (Part 160)
+ * SetupDatabaseSystemGui — v7.0.0 (Part 160)
  * TUÂN THỦ RULE 17: Container Menu 54 ô Cấu hình CSDL SQLite / MySQL & Port HTTP.
  * <p>
  * NGUYÊN TẮC AN TOÀN:
@@ -19,7 +19,7 @@ import org.bukkit.inventory.ItemStack;
  */
 public class SetupDatabaseSystemGui implements InventoryHolder {
 
-    public static final String TITLE = "§b§lCơ Sở Dữ Liệu & Hệ Thống §8(v6.1.0)";
+    public static final String TITLE = "§b§lCơ Sở Dữ Liệu & Hệ Thống §8(v7.0.0)";
 
     private final PayBotPlugin plugin;
     private final Inventory inventory;
