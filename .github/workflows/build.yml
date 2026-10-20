@@ -176,29 +176,47 @@ jobs:
             local mod_name=$(basename "$mod")
             local mc_ver="${mod_name#*-}"
             find ~/.gradle/caches/fabric-loom/"${mc_ver}" -name "*at-patched.jar" -delete 2>/dev/null || true
-            echo "=== [ADDITIVE CASCADE] Building $mod (Allocated: ${heap_mb}MB RAM, ${threads} Threads | Completed steps: ${DONE_STEPS}) ==="
+            echo "=== [ADDITIVE CASCADE] Building $mod (Allocated: ${heap_mb}MB RAM, ${threads} Threads) ==="
             mkdir -p "$ROOT_DIR/build-diagnostics"
-            if (cd "$mod" && GRADLE_OPTS="-Xmx${heap_mb}m -XX:MaxMetaspaceSize=1536m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=${threads} -Dorg.gradle.daemon=false" ./gradlew build --console=plain --parallel --max-workers=${threads} --build-cache --stacktrace 2>&1 | tee "$ROOT_DIR/build-diagnostics/${mod_name}.log"); then
+            local log_file="$ROOT_DIR/build-diagnostics/${mod_name}.log"
+            if (cd "$mod" && GRADLE_OPTS="-Xmx${heap_mb}m -XX:MaxMetaspaceSize=1536m -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:ActiveProcessorCount=${threads} -Dorg.gradle.daemon=false" ./gradlew build --console=plain --parallel --max-workers=${threads} --build-cache --stacktrace > "$log_file" 2>&1); then
               echo ">>> [SUCCESS] $mod built successfully"
               return 0
             elif find "$mod/build/libs" -type f -name "*.jar" ! -name "*-dev.jar" ! -name "*-shadow.jar" ! -name "*-sources.jar" 2>/dev/null | grep -q .; then
               echo ">>> [SUCCESS - JAR GENERATED] $mod produced valid JAR"
               return 0
             else
-              echo ">>> [FAILED] $mod failed to build on single pass"
+              echo ">>> [FAILED] $mod failed to build. Tail of $log_file:"
+              tail -n 30 "$log_file" 2>/dev/null || true
               return 1
             fi
           }
 
-          for m in "${MOD_ARRAY[@]}"; do
-            add_ram=$(( BASE_RAM + DONE_STEPS * STEP_RAM ))
-            if [ "$add_ram" -lt 6144 ]; then add_ram=6144; fi
-            if [ "$add_ram" -gt "$MAX_RAM" ]; then add_ram=$MAX_RAM; fi
-            t_alloc=$(( BASE_THREADS + DONE_STEPS ))
-            if [ "$t_alloc" -gt "$TOTAL_CORES" ]; then t_alloc=$TOTAL_CORES; fi
+          # Tối ưu hóa: Chạy song song theo chunk 2 module cùng lúc cho các module độc lập
+          CHUNK_SIZE=2
+          i=0
+          while [ $i -lt $TOTAL_MODS ]; do
+            pids=()
+            chunk_mods=()
+            for ((j=0; j<CHUNK_SIZE && i+j<TOTAL_MODS; j++)); do
+              m="${MOD_ARRAY[$((i+j))]}"
+              chunk_mods+=("$m")
+            done
 
-            build_indep "$m" "$add_ram" "$t_alloc" || true
-            DONE_STEPS=$(( DONE_STEPS + 1 ))
+            echo "=== [PARALLEL CHUNK] Building concurrently: ${chunk_mods[*]} ==="
+            for m in "${chunk_mods[@]}"; do
+              mod_ram=5120
+              mod_threads=4
+              build_indep "$m" "$mod_ram" "$mod_threads" &
+              pids+=($!)
+            done
+
+            for pid in "${pids[@]}"; do
+              wait "$pid" || true
+            done
+
+            DONE_STEPS=$(( DONE_STEPS + ${#pids[@]} ))
+            i=$(( i + CHUNK_SIZE ))
           done
 
           # Phase 2: Dồn tài nguyên sang Main Batch 1 & Main Batch 2
