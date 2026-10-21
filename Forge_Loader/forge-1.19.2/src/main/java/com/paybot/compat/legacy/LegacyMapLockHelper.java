@@ -58,16 +58,18 @@ public final class LegacyMapLockHelper {
             Object flInstance = flClass.getMethod("getInstance").invoke(null);
             Object resolver = flClass.getMethod("getMappingResolver").invoke(flInstance);
             Method mapFieldMethod = resolver.getClass().getMethod("mapFieldName", String.class, String.class, String.class, String.class);
-            String mapped = (String) mapFieldMethod.invoke(resolver, "intermediary", "net.minecraft.class_22", "field_1838", "Z");
+            String mapped = (String) mapFieldMethod.invoke(resolver, "intermediary", "net.minecraft.class_22", "field_17403", "Z");
             if (mapped != null && !mapped.isEmpty() && !candidates.contains(mapped)) {
                 candidates.add(mapped);
             }
         } catch (Throwable ignored) {}
 
+        candidates.add("field_17403");
+        candidates.add("f_77906_");
+        candidates.add("field_215162_i");
         candidates.add("field_1838");
         candidates.add("f_77914_");
         candidates.add("f_77910_");
-        candidates.add("f_77906_");
 
         for (String name : candidates) {
             try {

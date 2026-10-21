@@ -299,6 +299,39 @@ public class StandaloneCardProcessor {
         return null;
     }
 
+    // ─── Callback IPN Handler (Kênh 1) ──────────────────────────────────────
+
+    /**
+     * Xử lý kết quả Callback IPN nhận từ Webhook /api/card-ipn (Kênh 1).
+     * @param requestId Mã đơn hàng
+     * @param status Trạng thái thẻ (1: thành công, 2: sai mệnh giá, 3: thẻ lỗi, 4: bảo trì, 99: chờ)
+     * @param message Phản hồi từ đối tác
+     * @param realAmount Mệnh giá thực nhận (nếu có)
+     */
+    public void processCallbackResult(String requestId, String status, String message, int realAmount) {
+        if (requestId == null || requestId.isEmpty()) return;
+        LocalOrderManager.CardOrder order = plugin.getLocalOrderManager().getCardOrder(requestId);
+        if (order == null) {
+            plugin.getLogger().warning("[Card IPN] Không tìm thấy đơn hàng cho requestId=" + requestId);
+            return;
+        }
+
+        // Idempotency: Nếu đơn đã được duyệt hoặc hoàn thành thì bỏ qua
+        if (LocalOrderManager.CARD_APPROVED.equals(order.status)
+                || LocalOrderManager.CARD_CONFIRMED.equals(order.status)
+                || LocalOrderManager.CARD_REWARD_DONE.equals(order.status)) {
+            plugin.getLogger().info("[Card IPN] Đơn " + requestId + " đã ở trạng thái hoàn thành (" + order.status + "), bỏ qua.");
+            return;
+        }
+
+        int effectiveDenom = realAmount > 0 ? realAmount : order.denom;
+        plugin.getLocalOrderManager().updateCardStatus(requestId, status, message);
+
+        if (!LocalOrderManager.CARD_PROCESSING.equals(status)) {
+            notifyCardResult(requestId, order.playerName, effectiveDenom, status, message);
+        }
+    }
+
     // ─── Notify helpers ───────────────────────────────────────────────────────
 
     /**

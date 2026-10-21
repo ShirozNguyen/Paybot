@@ -24,6 +24,11 @@ public final class NapTheCommand implements CommandExecutor {
             return true;
         }
         // No args → open GUI directly (GUI itself shows config prompt if needed)
+        if (!DynamicPaymentCommandRegistry.getInstance().isCardEnabled() && !player.hasPermission("paybot.admin")) {
+            player.sendMessage("§c[PayBot] Lệnh này đã bị admin vô hiệu hoá!");
+            return true;
+        }
+
         if (args.length == 0) {
             NapTheGui.openTelcoGui(player);
             return true;

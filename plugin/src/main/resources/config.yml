@@ -11,6 +11,16 @@
 # Đổi runtime không cần restart: dùng lệnh /paybot reload sau khi sửa giá trị này.
 debug-mode: false
 
+# ── Bật/Tắt Tính Năng Thanh Toán (Dynamic Features) ───────────────────────────
+features:
+  sepay-enabled: true
+  card-enabled: true
+
+# ── Cooldown Chống Spam Per-Player (Tính bằng Giây) ───────────────────────────
+cooldown:
+  qr: 10
+  card: 30
+
 # ── Loại Database ─────────────────────────────────────────────────────────────
 # Chọn loại database: "SQLite" hoặc "MySQL" (hoa thường đều được).
 # Mặc định: SQLite (chỉ dùng file local, không kết nối mạng).

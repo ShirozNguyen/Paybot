@@ -1,25 +1,29 @@
 package com.paybot.gui.setup;
 
 import com.paybot.PayBotPlugin;
+import com.paybot.compat.SafeItemFallbackResolver;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
- * SetupPlayerGuiCustomizer — v7.0.0 (Part 160)
- * TUÂN THỦ RULE 17: Container Menu 54 ô Tùy biến Giao diện Player GUI (/napbank & /napthe).
- * <p>
- * ĐẶC TẢ:
- * 1. Khôi phục 2 slot tùy chỉnh riêng Tiêu đề Container /napbank và /napthe.
- * 2. Tùy biến Display Name & Lore 9 cục len nhà mạng (Viettel, Vina, Mobi, Zing...).
- * 3. Hỗ trợ mã màu Hex, Gradient, Color Codes vanilla.
+ * SetupPlayerGuiCustomizer — v7.0.0 Part 172
+ * Tùy biến Player GUI, khớp chuẩn 100% bản mô phỏng paybot_setup_gui.html.
+ * - Hàng 2 (Slots 9-17): 9 Cục len nhà mạng dàn đều trọn vẹn trên 1 hàng duy nhất!
+ * - Hàng 4 (Slots 27-35): 9 Mệnh giá nạp ngân hàng VietQR dàn đều trọn vẹn trên 1 hàng duy nhất!
+ * - Hàng 5 (Slots 38, 42): Tiêu đề Container /napbank và /napthe.
+ * - Hàng 6 (Slot 49): Quay lại Menu chính.
+ * Tuân thủ Quy tắc 17: Tách biệt hoàn toàn thành 1 class đơn nhiệm độc lập.
  */
 public class SetupPlayerGuiCustomizer implements InventoryHolder {
 
-    public static final String TITLE = "§a§lTùy Biến Player GUI §8(v7.0.0)";
+    public static final String TITLE = "§a§lTùy Biến Giao Diện Player GUI";
 
     private final PayBotPlugin plugin;
     private final Inventory inventory;
@@ -31,7 +35,7 @@ public class SetupPlayerGuiCustomizer implements InventoryHolder {
     }
 
     private void buildLayout() {
-        ItemStack border = VanillaItemRegistry.createBorderPane();
+        ItemStack border = createBorder();
         for (int i = 0; i < 54; i++) {
             inventory.setItem(i, border);
         }
@@ -39,42 +43,82 @@ public class SetupPlayerGuiCustomizer implements InventoryHolder {
         String titleBank = plugin.getConfig().getString("gui.title-bank", "§b§lChọn Mệnh Giá Nạp Bank");
         String titleCard = plugin.getConfig().getString("gui.title-card", "§e§lChọn Nhà Mạng Nạp Thẻ");
 
-        // Slot 11: Tiêu đề Container Nạp Bank
-        Material chest = VanillaItemRegistry.resolveMaterial("CHEST", "ENDER_CHEST");
-        inventory.setItem(11, VanillaItemRegistry.createItem(chest, "§6§lTiêu Đề Container /napbank",
-                "§7Tiêu đề hiển thị trên thanh Container khi người chơi mở /napbank.",
-                "§7Hiện tại: " + titleBank,
-                "",
-                "§e▶ [Click] để sửa Tiêu đề Container Nạp Bank"));
-
-        // Slot 15: Tiêu đề Container Nạp Thẻ
-        Material book = VanillaItemRegistry.resolveMaterial("BOOK", "PAPER");
-        inventory.setItem(15, VanillaItemRegistry.createItem(book, "§e§lTiêu Đề Container /napthe",
-                "§7Tiêu đề hiển thị trên thanh Container khi người chơi mở /napthe.",
-                "§7Hiện tại: " + titleCard,
-                "",
-                "§e▶ [Click] để sửa Tiêu đề Container Nạp Thẻ"));
-
-        // 9 Cục len nhà mạng (Slots 28 đến 36)
+        // ── HÀNG 2 (SLOTS 9 ĐẾN 17): 9 CỤC LEN NHÀ MẠNG THẺ CÀO (/napthe) ─────────
         String[] telcos = {"VIETTEL", "VINAPHONE", "MOBIFONE", "VIETNAMOBILE", "ZING", "GATE", "GARENA", "VCOIN", "APPOTA"};
-        String[] colors = {"RED_WOOL", "BLUE_WOOL", "YELLOW_WOOL", "ORANGE_WOOL", "GREEN_WOOL", "PURPLE_WOOL", "LIME_WOOL", "CYAN_WOOL", "PINK_WOOL"};
-        String[] fbColors = {"WOOL", "STAINED_CLAY", "CONCRETE"};
+        String[] woolColors = {"red_wool", "blue_wool", "yellow_wool", "orange_wool", "green_wool", "purple_wool", "lime_wool", "cyan_wool", "pink_wool"};
 
-        for (int i = 0; i < telcos.length && i < 9; i++) {
+        for (int i = 0; i < 9; i++) {
             String telco = telcos[i];
-            Material wool = VanillaItemRegistry.resolveMaterial(colors[i], fbColors);
-            inventory.setItem(28 + i, VanillaItemRegistry.createItem(wool, "§f§lNhà Mạng: §e" + telco,
-                    "§7Tùy biến Tên hiển thị và Lore của cục len " + telco + ".",
-                    "§7Hỗ trợ mã màu Hex, Gradient (#RRGGBB, &a, &e...).",
-                    "",
-                    "§e▶ [Click Trái] để sửa Tên hiển thị",
-                    "§e▶ [Shift + Click] để sửa Dòng Lore"));
+            inventory.setItem(9 + i, createGuiItem(woolColors[i], "wool", "wool",
+                    "§f§lNhà Mạng: §e" + telco,
+                    Arrays.asList(
+                            "§7Tùy biến Tên hiển thị và Lore của len " + telco + ".",
+                            "§7Hỗ trợ mã màu Hex, Gradient (#RRGGBB, &a, &e...).",
+                            "",
+                            "§e▶ [Click Trái] để sửa Tên hiển thị",
+                            "§e▶ [Shift + Click] để sửa Dòng Lore"
+                    )));
         }
 
-        // Slot 45: Quay lại Hub chính
-        Material door = VanillaItemRegistry.resolveMaterial("OAK_DOOR", "WOODEN_DOOR", "ARROW");
-        inventory.setItem(45, VanillaItemRegistry.createItem(door, "§c§l◀ Quay Lại Menu Chính",
-                "§7Trở về Master Setup Hub."));
+        // ── HÀNG 4 (SLOTS 27 ĐẾN 35): 9 MỆNH GIÁ BANK VIETQR (/napbank) ───────────
+        int[] bankDenoms = {10000, 20000, 30000, 50000, 100000, 200000, 300000, 500000, 1000000};
+        String[] bankItems = {"coal", "iron_ingot", "gold_ingot", "redstone", "lapis_lazuli", "diamond", "emerald", "netherite_ingot", "nether_star"};
+
+        for (int i = 0; i < 9; i++) {
+            int val = bankDenoms[i];
+            inventory.setItem(27 + i, createGuiItem(bankItems[i], "paper", "paper",
+                    "§a§lMệnh Giá Bank: §e" + String.format("%,d", val) + " VNĐ",
+                    Arrays.asList(
+                            "§7Tùy biến hiển thị ô mệnh giá " + String.format("%,d", val) + " VNĐ trong /napbank.",
+                            "",
+                            "§e▶ [Click Trái] để sửa Tên hiển thị",
+                            "§e▶ [Shift + Click] để sửa Dòng Lore"
+                    )));
+        }
+
+        // ── HÀNG 5 (SLOTS 38, 42): TIÊU ĐỀ CONTAINER ──────────────────────────────
+        // Slot 38: Tiêu đề Container Nạp Bank
+        inventory.setItem(38, createGuiItem("chest", "chest", "ender_chest",
+                "§6§lTiêu Đề Container /napbank",
+                Arrays.asList(
+                        "§7Tiêu đề hiển thị trên thanh Container khi mở /napbank.",
+                        "§7Hiện tại: " + titleBank,
+                        "",
+                        "§e▶ [Click] để sửa Tiêu đề Container Nạp Bank"
+                )));
+
+        // Slot 42: Tiêu đề Container Nạp Thẻ
+        inventory.setItem(42, createGuiItem("book", "book", "paper",
+                "§e§lTiêu Đề Container /napthe",
+                Arrays.asList(
+                        "§7Tiêu đề hiển thị trên thanh Container khi mở /napthe.",
+                        "§7Hiện tại: " + titleCard,
+                        "",
+                        "§e▶ [Click] để sửa Tiêu đề Container Nạp Thẻ"
+                )));
+
+        // ── HÀNG 6: QUAY LẠI (Slot 49) ───────────────────────────────────────────
+        inventory.setItem(49, createGuiItem("arrow", "arrow", "bedrock",
+                "§c§l◀ Quay Lại Menu Chính",
+                Arrays.asList("§7Trở về Master Setup Hub.")
+        ));
+    }
+
+    private ItemStack createBorder() {
+        return createGuiItem("gray_stained_glass_pane", "stained_glass_pane", "glass", "§8", null);
+    }
+
+    private ItemStack createGuiItem(String p, String s, String u, String name, List<String> lore) {
+        ItemStack item = SafeItemFallbackResolver.resolveItemStack(p, s, u, 1);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(name);
+            if (lore != null) {
+                meta.setLore(lore);
+            }
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     public void open(Player player) {

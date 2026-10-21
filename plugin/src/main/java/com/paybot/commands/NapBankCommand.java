@@ -30,6 +30,11 @@ public final class NapBankCommand implements CommandExecutor {
             sender.sendMessage(PayBotPlugin.f("§c[PayBot] §fLệnh này chỉ dành cho player!"));
             return true;
         }
+        if (!DynamicPaymentCommandRegistry.getInstance().isBankEnabled() && !player.hasPermission("paybot.admin")) {
+            player.sendMessage("§c[PayBot] Lệnh này đã bị admin vô hiệu hoá!");
+            return true;
+        }
+
         if (args.length == 0) {
             NapBankGui.open(player, plugin);
             return true;

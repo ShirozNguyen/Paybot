@@ -1,25 +1,26 @@
 package com.paybot.gui.setup;
 
 import com.paybot.PayBotPlugin;
+import com.paybot.compat.SafeItemFallbackResolver;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
- * SetupDatabaseSystemGui — v7.0.0 (Part 160)
- * TUÂN THỦ RULE 17: Container Menu 54 ô Cấu hình CSDL SQLite / MySQL & Port HTTP.
- * <p>
- * NGUYÊN TẮC AN TOÀN:
- * 1. Nếu CSDL không kết nối được hoặc hỏng data: Tự tắt plugin & tắt Server ngay để bảo vệ dữ liệu.
- * 2. TUYỆT ĐỐI KHÔNG FALLBACK tự ý.
- * 3. Kết quả test CSDL CHỈ gửi riêng tới Admin trong chat.
+ * SetupDatabaseSystemGui — v7.0.0 Part 172
+ * Cấu hình CSDL SQLite / MySQL & Port HTTP, khớp chuẩn 100% bản mô phỏng paybot_setup_gui.html.
+ * Chế độ Staging Buffer: Nút Xác Nhận (Slot 47) & Nút Undo (Slot 51).
+ * Tuân thủ Quy tắc 17: Tách biệt hoàn toàn thành 1 class đơn nhiệm độc lập.
  */
 public class SetupDatabaseSystemGui implements InventoryHolder {
 
-    public static final String TITLE = "§b§lCơ Sở Dữ Liệu & Hệ Thống §8(v7.0.0)";
+    public static final String TITLE = "§b§lCơ Sở Dữ Liệu & Hệ Thống";
 
     private final PayBotPlugin plugin;
     private final Inventory inventory;
@@ -31,7 +32,7 @@ public class SetupDatabaseSystemGui implements InventoryHolder {
     }
 
     private void buildLayout() {
-        ItemStack border = VanillaItemRegistry.createBorderPane();
+        ItemStack border = createBorder();
         for (int i = 0; i < 54; i++) {
             inventory.setItem(i, border);
         }
@@ -41,79 +42,122 @@ public class SetupDatabaseSystemGui implements InventoryHolder {
         int port = plugin.getConfig().getInt("mysql.port", 3306);
         String db = plugin.getConfig().getString("mysql.database", "paybot");
         String user = plugin.getConfig().getString("mysql.user", "root");
-        int httpPort = plugin.getConfig().getInt("http-server.port", 8080);
 
-        // Slot 11: Loại CSDL (SQLite / MySQL)
-        Material dbMat = VanillaItemRegistry.resolveMaterial("REDSTONE_BLOCK", "EMERALD_BLOCK", "IRON_BLOCK");
-        inventory.setItem(11, VanillaItemRegistry.createItem(dbMat, "§6§lCơ Sở Dữ Liệu: §e" + dbType,
-                "§7Chuyển đổi giữa SQLite (Local File) và MySQL (Remote Server).",
-                "§c⚠ NẾU LỖI CSDL: Tự tắt Mod/Plugin & tắt Server an toàn.",
-                "§c⚠ TUYỆT ĐỐI KHÔNG FALLBACK tự ý.",
-                "§7Hiện tại: §a" + dbType,
-                "",
-                "§e▶ [Click] để chuyển đổi giữa SQLite / MySQL"));
+        // Slot 11: Loại CSDL
+        inventory.setItem(11, createGuiItem("redstone_block", "emerald_block", "iron_block",
+                "§6§lCơ Sở Dữ Liệu: §e" + dbType,
+                Arrays.asList(
+                        "§7Chuyển đổi giữa SQLite (Local File) và MySQL (Remote Server).",
+                        "§c⚠ NẾU LỖI CSDL: Tự tắt Mod/Plugin & tắt Server an toàn.",
+                        "§c⚠ TUYỆT ĐỐI KHÔNG FALLBACK tự ý.",
+                        "§7Hiện tại: §a" + dbType,
+                        "",
+                        "§e▶ [Click] để chuyển đổi giữa SQLite / MySQL"
+                )));
 
         // Slot 13: Host MySQL
-        Material paper = VanillaItemRegistry.resolveMaterial("PAPER", "MAP");
-        inventory.setItem(13, VanillaItemRegistry.createItem(paper, "§b§lMySQL Host / Địa Chỉ IP",
-                "§7Địa chỉ máy chủ cơ sở dữ liệu MySQL.",
-                "§7Hiện tại: §f" + host,
-                "",
-                "§e▶ [Click] để sửa MySQL Host"));
+        inventory.setItem(13, createGuiItem("paper", "paper", "book",
+                "§b§lMySQL Host / Địa Chỉ IP",
+                Arrays.asList(
+                        "§7Địa chỉ máy chủ cơ sở dữ liệu MySQL.",
+                        "§7Hiện tại: §f" + host,
+                        "",
+                        "§e▶ [Click] để sửa MySQL Host"
+                )));
 
         // Slot 15: Port MySQL
-        Material iron = VanillaItemRegistry.resolveMaterial("IRON_INGOT", "GOLD_INGOT");
-        inventory.setItem(15, VanillaItemRegistry.createItem(iron, "§e§lMySQL Port",
-                "§7Cổng kết nối MySQL (Mặc định: 3306).",
-                "§7Hiện tại: §f" + port,
-                "",
-                "§e▶ [Click] để sửa MySQL Port"));
+        inventory.setItem(15, createGuiItem("iron_ingot", "gold_ingot", "iron_ingot",
+                "§e§lMySQL Port",
+                Arrays.asList(
+                        "§7Cổng kết nối MySQL (Mặc định: 3306).",
+                        "§7Hiện tại: §f" + port,
+                        "",
+                        "§e▶ [Click] để sửa MySQL Port"
+                )));
 
         // Slot 29: Database Name
-        Material chest = VanillaItemRegistry.resolveMaterial("CHEST", "HOPPER");
-        inventory.setItem(29, VanillaItemRegistry.createItem(chest, "§a§lMySQL Database Name",
-                "§7Tên cơ sở dữ liệu (schema) trong MySQL.",
-                "§7Hiện tại: §f" + db,
-                "",
-                "§e▶ [Click] để sửa Tên Database"));
+        inventory.setItem(29, createGuiItem("chest", "chest", "hopper",
+                "§a§lMySQL Database Name",
+                Arrays.asList(
+                        "§7Tên cơ sở dữ liệu (schema) trong MySQL.",
+                        "§7Hiện tại: §f" + db,
+                        "",
+                        "§e▶ [Click] để sửa Tên Database"
+                )));
 
         // Slot 31: Username
-        Material skull = VanillaItemRegistry.resolveMaterial("PLAYER_HEAD", "SKULL_ITEM", "BOOK");
-        inventory.setItem(31, VanillaItemRegistry.createItem(skull, "§d§lMySQL Username",
-                "§7Tài khoản đăng nhập MySQL.",
-                "§7Hiện tại: §f" + user,
-                "",
-                "§e▶ [Click] để sửa Username"));
+        inventory.setItem(31, createGuiItem("player_head", "skull_item", "book",
+                "§d§lMySQL Username",
+                Arrays.asList(
+                        "§7Tài khoản đăng nhập MySQL.",
+                        "§7Hiện tại: §f" + user,
+                        "",
+                        "§e▶ [Click] để sửa Username"
+                )));
 
         // Slot 33: Password
-        Material trip = VanillaItemRegistry.resolveMaterial("TRIPWIRE_HOOK", "LEVER");
-        inventory.setItem(33, VanillaItemRegistry.createItem(trip, "§c§lMySQL Password",
-                "§7Mật khẩu đăng nhập MySQL.",
-                "§7Hiện tại: §f••••••••",
-                "",
-                "§e▶ [Click] để nhập Password mới"));
+        inventory.setItem(33, createGuiItem("tripwire_hook", "lever", "iron_ingot",
+                "§c§lMySQL Password",
+                Arrays.asList(
+                        "§7Mật khẩu đăng nhập MySQL.",
+                        "§7Hiện tại: §f••••••••",
+                        "",
+                        "§e▶ [Click] để nhập Password mới"
+                )));
 
         // Slot 35: Test Kết Nối CSDL
-        Material star = VanillaItemRegistry.resolveMaterial("NETHER_STAR", "DIAMOND");
-        inventory.setItem(35, VanillaItemRegistry.createItem(star, "§a§lKiểm Tra Kết Nối CSDL",
-                "§7Thử kết nối tới MySQL / SQLite ngay lập tức.",
-                "§7Kết quả test CHỈ gửi riêng tới bạn trong chat.",
-                "§c⚠ Cảnh báo: CSDL lỗi sẽ làm tắt Server để bảo vệ an toàn nạp tiền.",
-                "",
-                "§e▶ [Click] để kiểm tra kết nối ngay"));
+        inventory.setItem(35, createGuiItem("nether_star", "diamond", "gold_ingot",
+                "§a§lKiểm Tra Kết Nối CSDL",
+                Arrays.asList(
+                        "§7Thử kết nối tới MySQL / SQLite ngay lập tức.",
+                        "§7Kết quả test CHỈ gửi riêng tới bạn trong chat.",
+                        "",
+                        "§e▶ [Click] để gửi request kiểm tra ngay"
+                )));
 
-        // Slot 40: Port HTTP Server
-        Material comp = VanillaItemRegistry.resolveMaterial("COMPARATOR", "REPEATER");
-        inventory.setItem(40, VanillaItemRegistry.createItem(comp, "§3§lPort Plugin HTTP Server",
-                "§7Cổng mở trên máy chủ để nhận Webhook / Discord Bot.",
-                "§7Hiện tại: §e" + httpPort,
-                "",
-                "§e▶ [Click] để sửa Port HTTP Server"));
+        // ── HÀNG 6: STAGING BUFFER XÁC NHẬN, QUAY LẠI, UNDO (Slots 47, 49, 51) ───────
+        // Slot 47: Xác Nhận Cấu Hình CSDL
+        inventory.setItem(47, createGuiItem("emerald_block", "emerald", "gold_block",
+                "§a§l[Xác Nhận Lưu & Áp Dụng CSDL]",
+                Arrays.asList(
+                        "§7Bấm để lưu toàn bộ thông số CSDL đang nhập vào hệ thống.",
+                        "§e• Bắt buộc bấm xác nhận mới có hiệu lực!",
+                        "",
+                        "§e▶ [Click] để Lưu & Áp Dụng"
+                )));
 
-        // Slot 45: Quay lại Hub chính
-        Material door = VanillaItemRegistry.resolveMaterial("OAK_DOOR", "WOODEN_DOOR", "ARROW");
-        inventory.setItem(45, VanillaItemRegistry.createItem(door, "§c§l◀ Quay Lại Menu Chính",
-                "§7Trở về Master Setup Hub."));
+        // Slot 49: Quay Lại (Không Lưu)
+        inventory.setItem(49, createGuiItem("arrow", "arrow", "bedrock",
+                "§c§l◀ Quay Lại (Hủy Bỏ)",
+                Arrays.asList("§7Trở về Master Setup Hub mà không lưu các thay đổi CSDL.")
+        ));
+
+        // Slot 51: Hoàn Tác (Undo CSDL)
+        inventory.setItem(51, createGuiItem("barrier", "redstone_block", "bedrock",
+                "§e§l[Hoàn Tác CSDL Về Ban Đầu]",
+                Arrays.asList(
+                        "§7Hủy toàn bộ thông số đang sửa dở trong buffer,",
+                        "§7khôi phục lại cấu hình đang lưu ban đầu trên đĩa.",
+                        "",
+                        "§e▶ [Click] để Hoàn Tác"
+                )));
+    }
+
+    private ItemStack createBorder() {
+        return createGuiItem("gray_stained_glass_pane", "stained_glass_pane", "glass", "§8", null);
+    }
+
+    private ItemStack createGuiItem(String p, String s, String u, String name, List<String> lore) {
+        ItemStack item = SafeItemFallbackResolver.resolveItemStack(p, s, u, 1);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(name);
+            if (lore != null) {
+                meta.setLore(lore);
+            }
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     public void open(Player player) {

@@ -66,6 +66,7 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
     private SePayApiClient          sePayApiClient; // v5.0.0 Phase B
     private LocalOrderManager       localOrderManager;
     private StandaloneCardProcessor standaloneCardProcessor;
+    private StandaloneCardPoller    standaloneCardPoller;
     private StandaloneBankPoller    standaloneBankPoller;
     private OwnerSessionManager     ownerSessionManager;
     // v4.1.0 — thêm mới
@@ -98,6 +99,8 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
     public void onEnable() {
         System.setProperty("java.awt.headless", "true");
         instance = this;
+        com.paybot.security.PayBotSensitiveLogFilter.register(getLogger());
+        com.paybot.commands.DynamicPaymentCommandRegistry.getInstance().init(this);
 
         // ── Kiểm tra và nạp thư viện bắt buộc trên các server cũ không hỗ trợ libraries: ──
         if (!LegacyLibraryManager.ensureLibrariesLoaded(this)) {
@@ -183,6 +186,7 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
         sePayApiClient          = new SePayApiClient(this); // v5.0.0 Phase B
         localOrderManager       = new LocalOrderManager(this);
         standaloneCardProcessor = new StandaloneCardProcessor(this);
+        standaloneCardPoller    = new StandaloneCardPoller(this);
         standaloneBankPoller    = new StandaloneBankPoller(this);
         pluginHttpServer        = new PluginHttpServer(this);
 
@@ -220,6 +224,7 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
         this.setupGuiManager = new com.paybot.gui.setup.SetupGuiManager(this);
         this.chatInputPromptManager = new com.paybot.gui.setup.ChatInputPromptManager(this, setupGuiManager);
         Bukkit.getPluginManager().registerEvents(new com.paybot.gui.setup.SetupGuiListener(this, setupGuiManager, chatInputPromptManager), this);
+        Bukkit.getPluginManager().registerEvents(new com.paybot.gui.security.GuiItemTheftProtectionListener(), this);
         Bukkit.getPluginManager().registerEvents(new com.paybot.gui.setup.ChatSecurityInterceptor(this, chatInputPromptManager), this);
 
         String guildId  = getConfig().getString("guild-id",  "");
@@ -575,11 +580,10 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
             }
         }, 72000L, 72000L);
 
-        standaloneCardPollTask = SchedulerUtils.runAsyncTimer(this, () -> {
-            if (isStandaloneMode() && setupManager.isCardApiConfigured()) {
-                standaloneCardProcessor.pollPendingCards();
-            }
-        }, 200L, 200L);
+        // Kênh 2 Tra cứu thẻ cào chủ động: khởi chạy StandaloneCardPoller (15s/lần)
+        if (standaloneCardPoller != null) {
+            standaloneCardPoller.start();
+        }
 
         standaloneBankExpireTask = SchedulerUtils.runAsyncTimer(this, () -> {
             if (!isStandaloneMode()) return;
@@ -621,6 +625,9 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
         if (com.paybot.milestone.MilestoneManager.getInstance() != null) {
             com.paybot.milestone.MilestoneManager.getInstance().shutdown();
         }
+
+        // 0. Dừng StandaloneCardPoller (Kênh 2 tra cứu thẻ chủ động)
+        if (standaloneCardPoller != null) standaloneCardPoller.stop();
 
         // 1. Dừng HTTP server trước để không nhận thêm request mới (Mục 41, 66 Master Spec)
         if (pluginHttpServer != null) pluginHttpServer.stop();
@@ -1137,6 +1144,7 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
     public SePayApiClient            getSePayApiClient()                   { return sePayApiClient; }
     public LocalOrderManager         getLocalOrderManager()                { return localOrderManager; }
     public StandaloneCardProcessor   getStandaloneCardProcessor()          { return standaloneCardProcessor; }
+    public StandaloneCardPoller      getStandaloneCardPoller()             { return standaloneCardPoller; }
     public StandaloneBankPoller      getStandaloneBankPoller()             { return standaloneBankPoller; }
     public OwnerSessionManager       getOwnerSessionManager()              { return ownerSessionManager; }
     public LogManager                getLogManager()                       { return logManager; }

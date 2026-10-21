@@ -114,6 +114,15 @@ public class QRMapManager implements Listener {
      */
     public void giveQRMap(Player player, String imageUrl, String fallbackUrl, String invoiceId,
                            String bankName, String bankAccount, String accountName, int amount) {
+        if (player != null) {
+            PlayerCooldownManager.CooldownCheckResult cd = PlayerCooldownManager.getInstance().checkQrMapCooldown(player.getUniqueId());
+            if (!cd.isAllowed()) {
+                player.sendMessage("§c[PayBot] Vui lòng chờ " + cd.getRemainingSeconds() + " giây nữa để tạo mã QR mới!");
+                return;
+            }
+            PlayerCooldownManager.getInstance().recordQrMapCreation(player.getUniqueId());
+        }
+
         SchedulerUtils.runAsync(plugin, () -> {
             BufferedImage rawImage = null;
             String usedUrl = imageUrl;

@@ -243,6 +243,44 @@ public class ChatInputPromptManager {
                 }
                 break;
 
+            case "COOLDOWN_QR_CUSTOM":
+                try {
+                    int sec = Integer.parseInt(input);
+                    if (sec <= 0) {
+                        player.sendMessage("§c[PayBot Setup] ✗ Số giây Cooldown phải là số nguyên dương > 0!");
+                        activeSessions.put(player.getUniqueId(), session);
+                        return;
+                    }
+                    com.paybot.managers.PlayerCooldownManager.getInstance().setQrMapSeconds(sec);
+                    CommentPreservingConfigWriter.updateKey(configFile, "cooldown.qr-map-seconds", sec);
+                    plugin.getConfig().set("cooldown.qr-map-seconds", sec);
+                    player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Cooldown tạo QR Map: §e" + sec + " giây");
+                } catch (NumberFormatException e) {
+                    player.sendMessage("§c[PayBot Setup] ✗ Bạn vui lòng chỉ nhập số nguyên dương nha!");
+                    activeSessions.put(player.getUniqueId(), session);
+                    return;
+                }
+                break;
+
+            case "COOLDOWN_CARD_CUSTOM":
+                try {
+                    int sec = Integer.parseInt(input);
+                    if (sec <= 0) {
+                        player.sendMessage("§c[PayBot Setup] ✗ Số giây Cooldown phải là số nguyên dương > 0!");
+                        activeSessions.put(player.getUniqueId(), session);
+                        return;
+                    }
+                    com.paybot.managers.PlayerCooldownManager.getInstance().setCardSubmitSeconds(sec);
+                    CommentPreservingConfigWriter.updateKey(configFile, "cooldown.card-submit-seconds", sec);
+                    plugin.getConfig().set("cooldown.card-submit-seconds", sec);
+                    player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Cooldown gửi thẻ cào: §e" + sec + " giây");
+                } catch (NumberFormatException e) {
+                    player.sendMessage("§c[PayBot Setup] ✗ Bạn vui lòng chỉ nhập số nguyên dương nha!");
+                    activeSessions.put(player.getUniqueId(), session);
+                    return;
+                }
+                break;
+
             default:
                 player.sendMessage("§e[PayBot Setup] §fĐã ghi nhận giá trị: §a" + input);
                 break;

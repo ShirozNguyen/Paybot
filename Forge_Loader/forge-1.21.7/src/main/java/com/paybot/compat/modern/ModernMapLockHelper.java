@@ -26,7 +26,7 @@ public class ModernMapLockHelper {
         if (searched) return cachedLockedField;
         searched = true;
 
-        String[] candidates = {"locked", "field_1838", "f_77914_", "f_77910_", "f_77906_"};
+        String[] candidates = {"field_17403", "locked", "f_77906_", "field_215162_i", "field_1838", "f_77914_", "f_77910_"};
         for (String name : candidates) {
             try {
                 Field f = MapItemSavedData.class.getDeclaredField(name);
@@ -44,7 +44,7 @@ public class ModernMapLockHelper {
             Object resolver = flClass.getMethod("getMappingResolver").invoke(flInstance);
             if (resolver != null) {
                 Method mapFieldName = resolver.getClass().getMethod("mapFieldName", String.class, String.class, String.class, String.class);
-                String runtimeName = (String) mapFieldName.invoke(resolver, "intermediary", "net.minecraft.class_22", "field_1838", "Z");
+                String runtimeName = (String) mapFieldName.invoke(resolver, "intermediary", "net.minecraft.class_22", "field_17403", "Z");
                 if (runtimeName != null) {
                     Field f = MapItemSavedData.class.getDeclaredField(runtimeName);
                     if (f.getType() == boolean.class) {

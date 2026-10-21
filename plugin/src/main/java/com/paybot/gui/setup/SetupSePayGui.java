@@ -1,20 +1,27 @@
 package com.paybot.gui.setup;
 
 import com.paybot.PayBotPlugin;
+import com.paybot.commands.DynamicPaymentCommandRegistry;
+import com.paybot.compat.SafeItemFallbackResolver;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
- * SetupSePayGui — v7.0.0 (Part 161)
- * TUÂN THỦ RULE 17: Container Menu 54 ô Cấu hình Cổng Ngân Hàng SePay.
+ * SetupSePayGui — v7.0.0 Part 172
+ * Cấu hình Cổng Ngân Hàng SePay, khớp chuẩn 100% bản mô phỏng paybot_setup_gui.html.
+ * Bố cục 4-4 đối xứng chuẩn mực.
+ * Tuân thủ Quy tắc 17: Tách biệt hoàn toàn thành 1 class đơn nhiệm độc lập.
  */
 public class SetupSePayGui implements InventoryHolder {
 
-    public static final String TITLE = "§6§lCấu Hình SePay §8(v7.0.0)";
+    public static final String TITLE = "§6§lCài Đặt SePay & Ngân Hàng";
 
     private final PayBotPlugin plugin;
     private final Inventory inventory;
@@ -26,84 +33,134 @@ public class SetupSePayGui implements InventoryHolder {
     }
 
     private void buildLayout() {
-        ItemStack border = VanillaItemRegistry.createBorderPane();
+        ItemStack border = createBorder();
         for (int i = 0; i < 54; i++) {
             inventory.setItem(i, border);
         }
 
+        boolean bankOn = DynamicPaymentCommandRegistry.getInstance().isBankEnabled();
         String token = plugin.getConfig().getString("sepay.api-token", "");
         String displayToken = token.length() > 8 ? token.substring(0, 4) + "••••••••" + token.substring(token.length() - 4) : "(Chưa đặt)";
         String stk = plugin.getConfig().getString("sepay.account-number", "(Chưa đặt)");
         String bank = plugin.getConfig().getString("sepay.bank-name", "MBBank");
         String prefix = plugin.getConfig().getString("sepay.prefix", "NAP");
         int poll = plugin.getConfig().getInt("sepay.poll-interval-seconds", 10);
-
-        // Slot 11: API Token
-        Material paper = VanillaItemRegistry.resolveMaterial("PAPER", "BOOK");
-        inventory.setItem(11, VanillaItemRegistry.createItem(paper, "§e§lAPI Token SePay",
-                "§7Token xác thực từ https://my.sepay.vn",
-                "§7Hiện tại: §f" + displayToken,
-                "",
-                "§e▶ [Click] để nhập Token mới qua chat"));
-
-        // Slot 13: Số tài khoản
-        Material gold = VanillaItemRegistry.resolveMaterial("GOLD_INGOT", "IRON_INGOT");
-        inventory.setItem(13, VanillaItemRegistry.createItem(gold, "§6§lSố Tài Khoản Nhận Tiền",
-                "§7STK ngân hàng đã kết nối với SePay.",
-                "§7Hiện tại: §e" + stk,
-                "",
-                "§e▶ [Click] để sửa Số tài khoản"));
-
-        // Slot 15: Ngân hàng
-        Material chest = VanillaItemRegistry.resolveMaterial("CHEST", "ENDER_CHEST");
-        inventory.setItem(15, VanillaItemRegistry.createItem(chest, "§b§lTên Ngân Hàng",
-                "§7Mã ngân hàng (MBBank, Vietcombank, ACB...).",
-                "§7Hiện tại: §a" + bank,
-                "",
-                "§e▶ [Click] để sửa Tên ngân hàng"));
-
-        // Slot 25: Đăng ký Đối Tác SePay (Nhận Ưu Đãi)
-        Material emerald = VanillaItemRegistry.resolveMaterial("EMERALD", "DIAMOND", "GOLD_INGOT");
-        inventory.setItem(25, VanillaItemRegistry.createItem(emerald, "§6§lChương Trình Đối Tác SePay",
-                "§7Đăng ký tài khoản SePay qua liên kết đối tác chính thức",
-                "§7của PayBot để nhận hỗ trợ ưu tiên & tích hợp nhanh.",
-                "",
-                "§a• Link: §ehttps://my.sepay.vn/register?gcid=vrewlwez",
-                "",
-                "§e▶ [Click] Gửi link đăng ký đối tác vào chat",
-                "§b▶ [Shift + Click] Nhận Bản Đồ Mã QR quét bằng điện thoại"));
-
-        // Slot 29: Cú pháp mã nạp (Prefix)
-        Material tag = VanillaItemRegistry.resolveMaterial("NAME_TAG", "BOOK", "PAPER");
-        inventory.setItem(29, VanillaItemRegistry.createItem(tag, "§d§lCú Pháp Mã Nạp (Prefix)",
-                "§7Chuỗi ký tự nhận diện đơn chuyển khoản.",
-                "§7Quy tắc: Giữ nguyên hoa/thường, chỉ A-Z, a-z, 0-9 và '_'.",
-                "§7Hiện tại: §e" + prefix,
-                "",
-                "§e▶ [Click] để đổi Cú pháp mã nạp"));
-
-        // Slot 31: Chu kỳ Poll SePay
-        Material clock = VanillaItemRegistry.resolveMaterial("CLOCK", "COMPASS");
         String pollStr = poll >= 60 ? (poll / 60) + " phút" : poll + " giây";
-        inventory.setItem(31, VanillaItemRegistry.createItem(clock, "§3§lThời Gian Poll Đơn SePay",
-                "§7Khoảng thời gian kiểm tra giao dịch mới từ SePay.",
-                "§7Các mốc hỗ trợ: 5s, 10s, 15s, 30s, 45s, 1p, 2p, 5p, 10p.",
-                "§7Hiện tại: §a" + pollStr,
-                "",
-                "§e▶ [Click Trái] để chuyển sang mốc tiếp theo"));
+        String template = plugin.getConfig().getString("sepay.qr-template", "qr_only");
 
-        // Slot 33: Test Kết Nối SePay
-        Material star = VanillaItemRegistry.resolveMaterial("NETHER_STAR", "EMERALD");
-        inventory.setItem(33, VanillaItemRegistry.createItem(star, "§a§lKiểm Tra Kết Nối SePay",
-                "§7Gửi request kiểm tra Token và trạng thái tài khoản SePay.",
-                "§7Kết quả test CHỈ gửi riêng cho bạn trong chat.",
-                "",
-                "§e▶ [Click] để kiểm tra ngay"));
+        // ── HÀNG 2: 4 Ô CẤU HÌNH TRÊN (Slots 10, 12, 14, 16) ──────────────────────
+        // Slot 10: Trạng thái SePay API
+        String dyeItem = bankOn ? "lime_dye" : "gray_dye";
+        inventory.setItem(10, createGuiItem(dyeItem, "ink_sack", "wool",
+                "§e§lTrạng Thái SePay API: " + (bankOn ? "§aĐang BẬT" : "§cĐang TẮT"),
+                Arrays.asList(
+                        "§7Bật hoặc tắt hệ thống nạp ngân hàng tự động.",
+                        "",
+                        "§f• Trạng thái: " + (bankOn ? "§aBẬT (/napbank MỞ)" : "§cTẮT (/napbank ĐÓNG)"),
+                        "§c• Khi tắt: Lệnh /napbank sẽ bị vô hiệu hóa hoàn toàn!",
+                        "",
+                        "§e▶ [Click] để Bật/Tắt cổng SePay"
+                )));
 
-        // Slot 45: Quay lại Hub chính
-        Material door = VanillaItemRegistry.resolveMaterial("OAK_DOOR", "WOODEN_DOOR", "ARROW");
-        inventory.setItem(45, VanillaItemRegistry.createItem(door, "§c§l◀ Quay Lại Menu Chính",
-                "§7Trở về Master Setup Hub."));
+        // Slot 12: API Token SePay
+        inventory.setItem(12, createGuiItem("tripwire_hook", "lever", "iron_ingot",
+                "§b§lAPI Token SePay",
+                Arrays.asList(
+                        "§7Mã token API từ my.sepay.vn.",
+                        "",
+                        "§7Token: §f" + displayToken,
+                        "",
+                        "§e▶ [Click] để nhập Token mới qua chat"
+                )));
+
+        // Slot 14: Số Tài Khoản (STK)
+        inventory.setItem(14, createGuiItem("paper", "paper", "book",
+                "§a§lSố Tài Khoản (STK)",
+                Arrays.asList(
+                        "§7STK nhận tiền chuyển khoản.",
+                        "",
+                        "§7STK: §f" + stk,
+                        "",
+                        "§e▶ [Click] để sửa Số tài khoản"
+                )));
+
+        // Slot 16: Tên Ngân Hàng Nhận
+        inventory.setItem(16, createGuiItem("gold_ingot", "iron_ingot", "iron_ingot",
+                "§e§lTên Ngân Hàng Nhận",
+                Arrays.asList(
+                        "§7Tên ngân hàng (MBBank, VCB, Techcombank...).",
+                        "",
+                        "§7Ngân hàng: §f" + bank,
+                        "",
+                        "§e▶ [Click] để sửa Tên ngân hàng"
+                )));
+
+        // ── HÀNG 4: 4 Ô CẤU HÌNH DƯỚI (Slots 28, 30, 32, 34) ──────────────────────
+        // Slot 28: Tần Suất Quét SePay
+        inventory.setItem(28, createGuiItem("clock", "compass", "watch",
+                "§d§lTần Suất Quét Giao Dịch: §b" + pollStr,
+                Arrays.asList(
+                        "§7Thời gian giãn cách giữa các lần quét API SePay.",
+                        "§7(Xoay vòng: 5s -> 10s -> 15s -> 30s -> 45s -> 1p -> 2p -> 5p -> 10p)",
+                        "",
+                        "§e▶ [Click Trái] để chuyển sang mốc tiếp theo",
+                        "§b▶ [Shift + Click] để nhập số giây tùy ý qua Chat"
+                )));
+
+        // Slot 30: Mẫu Ảnh VietQR Template
+        inventory.setItem(30, createGuiItem("filled_map", "map", "paper",
+                "§e§lMẫu Ảnh VietQR: §b" + template,
+                Arrays.asList(
+                        "§7Giao diện ảnh VietQR từ my.sepay.vn.",
+                        "§7(Xoay vòng: qr_only -> compact -> compact2 -> print)",
+                        "",
+                        "§e▶ [Click] để đổi template VietQR"
+                )));
+
+        // Slot 32: Tiền Tố Chuyển Khoản (Prefix)
+        inventory.setItem(32, createGuiItem("name_tag", "paper", "sign",
+                "§b§lTiền Tố Chuyển Khoản (Prefix)",
+                Arrays.asList(
+                        "§7Tiền tố trong nội dung CK (vd: naptien_, NT...).",
+                        "",
+                        "§7Prefix hiện tại: §e" + prefix,
+                        "§c• Bắt buộc: Giữ nguyên chữ hoa/thường, không dấu.",
+                        "",
+                        "§e▶ [Click] để đổi Cú pháp mã nạp"
+                )));
+
+        // Slot 34: Kiểm Tra Kết Nối SePay API
+        inventory.setItem(34, createGuiItem("emerald", "diamond", "gold_ingot",
+                "§a§lKiểm Tra Kết Nối SePay",
+                Arrays.asList(
+                        "§7Gửi request test token đến API my.sepay.vn.",
+                        "§7Kết quả test CHỈ gửi riêng cho bạn trong chat.",
+                        "",
+                        "§e▶ [Click] để gửi request kiểm tra ngay"
+                )));
+
+        // ── HÀNG 6: QUAY LẠI (Slot 49) ───────────────────────────────────────────
+        inventory.setItem(49, createGuiItem("arrow", "arrow", "bedrock",
+                "§c§l◀ Quay Lại Menu Chính",
+                Arrays.asList("§7Trở về Master Setup Hub.")
+        ));
+    }
+
+    private ItemStack createBorder() {
+        return createGuiItem("gray_stained_glass_pane", "stained_glass_pane", "glass", "§8", null);
+    }
+
+    private ItemStack createGuiItem(String p, String s, String u, String name, List<String> lore) {
+        ItemStack item = SafeItemFallbackResolver.resolveItemStack(p, s, u, 1);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(name);
+            if (lore != null) {
+                meta.setLore(lore);
+            }
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     public void open(Player player) {

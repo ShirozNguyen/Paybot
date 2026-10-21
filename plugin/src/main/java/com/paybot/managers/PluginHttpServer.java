@@ -6,6 +6,7 @@ import com.paybot.PayBotPlugin;
 import com.paybot.managers.RewardDispatcher;
 import com.paybot.utils.SchedulerUtils;
 import com.paybot.utils.PayBotDebug;
+import com.paybot.utils.Md5Signer;
 import fi.iki.elonen.NanoHTTPD;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -55,10 +56,10 @@ public class PluginHttpServer extends NanoHTTPD {
             // Toàn bộ code xử lý của 4 endpoint này (handleExecuteReward/handleBotDisconnect/
             // handleReceiveConfig/handleCheckOnline) được GIỮ NGUYÊN bên dưới, chỉ không còn
             // route nào gọi tới — để khôi phục dễ dàng sau này nếu cần dùng lại.
-            if (!uri.equals("/api/sepay-ipn") && plugin.isStandaloneMode()) {
+            if (!uri.equals("/api/sepay-ipn") && !uri.equals("/api/card-ipn") && plugin.isStandaloneMode()) {
                 return jsonResponse(Response.Status.NOT_FOUND, "{\"ok\":false,\"msg\":\"disabled\"}");
             }
-            if (!uri.equals("/api/sepay-ipn")) {
+            if (!uri.equals("/api/sepay-ipn") && !uri.equals("/api/card-ipn")) {
                 String expected = plugin.getConfig().getString("bot-api-key", BotHttpClient.DEFAULT_API_KEY).trim();
                 String received = session.getHeaders().getOrDefault("x-api-key", "").trim();
                 if (received.isEmpty() || !received.equals(expected)) {
@@ -72,6 +73,7 @@ public class PluginHttpServer extends NanoHTTPD {
                 case "/receive-config":  return handleReceiveConfig(session, method);
                 case "/check-online":    return handleCheckOnline(session, method); // v5.0.0
                 case "/api/sepay-ipn":   return handleSepayIpn(session, method);
+                case "/api/card-ipn":    return handleCardIpn(session, method);
                 default:                 return jsonResponse(Response.Status.NOT_FOUND, "{\"ok\":false}");
             }
         } catch (Exception e) {
@@ -520,6 +522,91 @@ public class PluginHttpServer extends NanoHTTPD {
 
     private Response jsonResponse(Response.Status status, String body) {
         return newFixedLengthResponse(status, "application/json", body);
+    }
+
+    // ─── /api/card-ipn (Kênh 1 Webhook Callback) ──────────────────────────────
+    private Response handleCardIpn(IHTTPSession session, Method method) {
+        try {
+            java.util.Map<String, String> parms = session.getParms();
+            JsonObject jsonBody = null;
+            if (method == Method.POST) {
+                try {
+                    jsonBody = readBody(session);
+                } catch (Exception ignored) {}
+            }
+
+            String status = getParam(jsonBody, parms, "status");
+            String message = getParam(jsonBody, parms, "message");
+            String requestId = getParam(jsonBody, parms, "request_id");
+            if (requestId.isEmpty()) requestId = getParam(jsonBody, parms, "requestId");
+
+            String realValStr = getParam(jsonBody, parms, "value");
+            if (realValStr.isEmpty()) realValStr = getParam(jsonBody, parms, "real_amount");
+            if (realValStr.isEmpty()) realValStr = getParam(jsonBody, parms, "amount");
+
+            String code = getParam(jsonBody, parms, "code");
+            if (code.isEmpty()) code = getParam(jsonBody, parms, "pin");
+
+            String serial = getParam(jsonBody, parms, "serial");
+            String callbackSign = getParam(jsonBody, parms, "callback_sign");
+            if (callbackSign.isEmpty()) callbackSign = getParam(jsonBody, parms, "sign");
+
+            if (requestId.isEmpty()) {
+                NotificationManager.warn(plugin, "card-ipn", "[PayBot] Card IPN thiếu request_id, từ chối.");
+                return jsonResponse(Response.Status.BAD_REQUEST, "{\"status\":0,\"message\":\"missing request_id\"}");
+            }
+
+            String partnerKey = plugin.getConfig().getString("card-api.partner-key", "").trim();
+            if (partnerKey.isEmpty()) {
+                String site = plugin.getConfig().getString("card-api.site", "").trim();
+                String[] creds = DirectCardSubmitHandler.resolveCredentials(plugin, site);
+                if (creds != null && creds.length > 1) {
+                    partnerKey = creds[1];
+                }
+            }
+
+            if (!callbackSign.isEmpty() && !partnerKey.isEmpty()) {
+                LocalOrderManager.CardOrder order = plugin.getLocalOrderManager().getCardOrder(requestId);
+                String verifyCode = !code.isEmpty() ? code : (order != null ? order.cardCode : "");
+                String verifySerial = !serial.isEmpty() ? serial : (order != null ? order.cardSerial : "");
+
+                String signRaw = partnerKey + verifyCode + verifySerial;
+                if (!Md5Signer.verify(callbackSign, signRaw)) {
+                    NotificationManager.warn(plugin, "card-ipn", "[PayBot] Card IPN sai chữ ký callback_sign cho đơn #" + requestId);
+                    return jsonResponse(Response.Status.BAD_REQUEST, "{\"status\":0,\"message\":\"invalid callback signature\"}");
+                }
+            }
+
+            int realAmount = 0;
+            if (!realValStr.isEmpty()) {
+                try {
+                    realAmount = Integer.parseInt(realValStr);
+                } catch (Exception ignored) {}
+            }
+
+            final String fReqId = requestId;
+            final String fStatus = status;
+            final String fMsg = message;
+            final int fRealAmt = realAmount;
+
+            plugin.getStandaloneCardProcessor().processCallbackResult(fReqId, fStatus, fMsg, fRealAmt);
+
+            return jsonResponse(Response.Status.OK, "{\"status\":1,\"message\":\"OK\"}");
+        } catch (Exception e) {
+            NotificationManager.warn(plugin, "card-ipn", "[PayBot] Lỗi xử lý Card IPN: " + e.getMessage(), e);
+            return jsonResponse(Response.Status.INTERNAL_ERROR, "{\"status\":0,\"message\":\"internal error\"}");
+        }
+    }
+
+    private String getParam(JsonObject json, java.util.Map<String, String> parms, String key) {
+        if (json != null && json.has(key) && !json.get(key).isJsonNull()) {
+            return json.get(key).getAsString().trim();
+        }
+        if (parms != null && parms.containsKey(key)) {
+            String v = parms.get(key);
+            return v != null ? v.trim() : "";
+        }
+        return "";
     }
 
     private String formatVnd(int amount) {

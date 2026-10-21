@@ -2,19 +2,29 @@ package com.paybot.commands;
 
 import com.paybot.PayBotPlugin;
 import com.paybot.managers.CardManager;
-import org.bukkit.command.*;
+import com.paybot.managers.PlayerCooldownManager;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+/**
+ * /ok — Xác nhận gửi thẻ sau khi đã kiểm tra lại thông tin.
+ * (v5.1.0: Thêm kiểm tra isCardApiConfigured() trước khi gửi).
+ * (v7.0.0 Part 172: Thêm rate-limit Cooldown per-player chống spam).
+ */
 public class OkCommand implements CommandExecutor {
 
     private final PayBotPlugin plugin;
 
-    public OkCommand(PayBotPlugin plugin) { this.plugin = plugin; }
+    public OkCommand(PayBotPlugin plugin) {
+        this.plugin = plugin;
+    }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Lệnh này chỉ có player mới được sử dụng!");
+            sender.sendMessage("[PayBot] Chỉ người chơi mới dùng được lệnh này.");
             return true;
         }
 
@@ -29,16 +39,20 @@ public class OkCommand implements CommandExecutor {
             return true;
         }
 
+        PlayerCooldownManager.CooldownCheckResult cd =
+                PlayerCooldownManager.getInstance().checkCardSubmitCooldown(player.getUniqueId());
+        if (!cd.isAllowed()) {
+            player.sendMessage("§c[PayBot] Vui lòng chờ " + cd.getRemainingSeconds() + " giây nữa để gửi thẻ cào tiếp theo!");
+            return true;
+        }
+        PlayerCooldownManager.getInstance().recordCardSubmit(player.getUniqueId());
+
         plugin.getCardManager().clearPending(player.getName());
         player.sendMessage(PayBotPlugin.f("§e[PayBot] §fĐang gửi thẻ lên hệ thống..."));
         com.paybot.managers.NotificationManager.log(plugin, "card-submitted",
                 "[PayBot] " + player.getName() + " gửi thẻ: " + pending.telco + " "
                         + pending.denom + " VND (standalone=" + plugin.isStandaloneMode() + ")");
 
-        // v5.1.0: Luôn xử lý thẻ trực tiếp qua Card API (không phụ thuộc bot).
-        // Nếu Card API chưa cấu hình → báo lỗi dù có hay không có kết nối bot.
-        // Khi kết nối bot, bot.py sẽ nhận thông báo kết quả qua StandaloneCardProcessor
-        // (sau khi card API trả kết quả, submitCard() tự gọi notifyBotCardResult nếu connected).
         if (!plugin.getSetupManager().isCardApiConfigured()) {
             player.sendMessage(PayBotPlugin.f("§c[PayBot] §fServer chưa cấu hình Card API. Admin dùng §e/cardsetup §ftrước!"));
             return true;

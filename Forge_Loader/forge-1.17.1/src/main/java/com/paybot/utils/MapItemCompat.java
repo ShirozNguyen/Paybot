@@ -54,7 +54,7 @@ public class MapItemCompat {
         reflectionInit = true;
 
         // Tìm colors field (byte[] 16384) — Mojang: "colors" | SRG: "f_77905_" | Intermediary: "field_1837"
-        String[] colorsCandidates = {"colors", "f_77905_", "field_1837"};
+        String[] colorsCandidates = {"field_122", "colors", "f_77905_", "field_76198_e", "field_1837"};
         for (String name : colorsCandidates) {
             try {
                 Field f = MapItemSavedData.class.getDeclaredField(name);
@@ -79,7 +79,7 @@ public class MapItemCompat {
         }
 
         // Tìm locked field (boolean) — Mojang: "locked" | SRG: "f_77906_" | Intermediary: "field_1838"
-        String[] lockedCandidates = {"locked", "f_77906_", "field_1838"};
+        String[] lockedCandidates = {"field_17403", "locked", "f_77906_", "field_215162_i", "field_1838"};
         for (String name : lockedCandidates) {
             try {
                 Field f = MapItemSavedData.class.getDeclaredField(name);
