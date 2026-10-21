@@ -3,7 +3,12 @@ package com.paybot.managers;
 
 import com.paybot.PayBotPlugin;
 import com.paybot.utils.SchedulerUtils;
+import com.paybot.utils.BankBinResolver;
+import com.paybot.utils.QRImageEngine;
+import com.paybot.utils.SePayQrUrlBuilder;
 import com.paybot.utils.VersionCompat;
+import com.paybot.utils.VietQREMVCoGenerator;
+import com.paybot.utils.VietQrApiClient;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -125,39 +130,92 @@ public class QRMapManager implements Listener {
 
         SchedulerUtils.runAsync(plugin, () -> {
             BufferedImage rawImage = null;
-            String usedUrl = imageUrl;
+            String usedSource = "LOCAL_VIETQR_NAPAS";
 
-            try {
-                rawImage = downloadImage(imageUrl);
-            } catch (Exception e) {
-                NotificationManager.warn(plugin, "qr-create-fail",
-                        "[PayBot] QR primary URL thất bại (" + imageUrl + "): "
-                        + e.getMessage() + (fallbackUrl != null ? " — thử fallback..." : ""));
+            String bName = (bankName != null && !bankName.isEmpty()) ? bankName :
+                    plugin.getConfig().getString("sepay-api.bank-short-name",
+                    plugin.getConfig().getString("sepay.bank-name", "")).trim();
+            String bAcct = (bankAccount != null && !bankAccount.isEmpty()) ? bankAccount :
+                    plugin.getConfig().getString("sepay-api.bank-account-number",
+                    plugin.getConfig().getString("sepay.bank-account", "")).trim();
+            String aName = (accountName != null && !accountName.isEmpty()) ? accountName :
+                    plugin.getConfig().getString("sepay-api.account-holder-name",
+                    plugin.getConfig().getString("sepay.account-name", "")).trim();
+
+            // ── LỚP 1: LOCAL VIETQR EMVCO ENGINE (0ms - Siêu nét, 100% App Ngân Hàng Quét Được) ──
+            if (!bName.isEmpty() && !bAcct.isEmpty()) {
+                try {
+                    String emvco = VietQREMVCoGenerator.generate(bName, bAcct, amount, invoiceId);
+                    if (emvco != null && !emvco.isEmpty()) {
+                        rawImage = QRImageEngine.renderQR(emvco);
+                        if (rawImage != null) {
+                            usedSource = "LOCAL_VIETQR_EMVCO";
+                        }
+                    }
+                } catch (Throwable t) {
+                    NotificationManager.warn(plugin, "qr-create-fail",
+                            "[PayBot] Lớp 1 (Local VietQR EMVCo) gặp lỗi: " + t.getMessage() + " — kích hoạt Lớp 2...");
+                }
             }
 
+            // ── LỚP 2: SEPAY DIRECT PNG API (Fallback 1) ──
+            if (rawImage == null && !bName.isEmpty() && !bAcct.isEmpty()) {
+                try {
+                    String sepayUrl = SePayQrUrlBuilder.buildUrl(bName, bAcct, amount, invoiceId);
+                    rawImage = downloadImage(sepayUrl);
+                    if (rawImage != null) {
+                        usedSource = sepayUrl;
+                        NotificationManager.log(plugin, "qr-created", "[PayBot] Lớp 2 (SePay Direct PNG) thành công: " + sepayUrl);
+                    }
+                } catch (Throwable t) {
+                    NotificationManager.warn(plugin, "qr-create-fail",
+                            "[PayBot] Lớp 2 (SePay Direct PNG) gặp lỗi: " + t.getMessage() + " — kích hoạt Lớp 3...");
+                }
+            }
+
+            // ── LỚP 3: VIETQR OFFICIAL API V2 (Fallback 2) ──
+            if (rawImage == null && !bName.isEmpty() && !bAcct.isEmpty()) {
+                try {
+                    String bin = BankBinResolver.resolveBin(bName);
+                    String emvcoApi = VietQrApiClient.fetchEmvcoString(bin, bAcct, aName, amount, invoiceId);
+                    if (emvcoApi != null && !emvcoApi.isEmpty()) {
+                        rawImage = QRImageEngine.renderQR(emvcoApi);
+                        if (rawImage != null) {
+                            usedSource = "VIETQR_API_V2";
+                            NotificationManager.log(plugin, "qr-created", "[PayBot] Lớp 3 (VietQR Official API v2) thành công.");
+                        }
+                    }
+                } catch (Throwable t) {
+                    NotificationManager.warn(plugin, "qr-create-fail",
+                            "[PayBot] Lớp 3 (VietQR Official API v2) gặp lỗi: " + t.getMessage());
+                }
+            }
+
+            // Fallback cuối cùng: tải URL từ tham số nếu các lớp trên chưa có ảnh
+            if (rawImage == null && imageUrl != null && !imageUrl.isEmpty()) {
+                try {
+                    rawImage = downloadImage(imageUrl);
+                    if (rawImage != null) usedSource = imageUrl;
+                } catch (Exception ignored) {}
+            }
             if (rawImage == null && fallbackUrl != null && !fallbackUrl.isEmpty()) {
                 try {
                     rawImage = downloadImage(fallbackUrl);
-                    usedUrl  = fallbackUrl;
-                    if (rawImage != null)
-                        NotificationManager.log(plugin, "qr-created", "[PayBot] QR fallback thành công: " + fallbackUrl);
-                } catch (Exception e2) {
-                    NotificationManager.warn(plugin, "qr-create-fail",
-                            "[PayBot] QR fallback cũng thất bại (" + fallbackUrl + "): " + e2.getMessage());
-                }
+                    if (rawImage != null) usedSource = fallbackUrl;
+                } catch (Exception ignored) {}
             }
 
             if (rawImage == null) {
                 SchedulerUtils.runForPlayer(plugin, player, () ->
-                    player.sendMessage(PayBotPlugin.f("§c[PayBot] §fKhông tải được QR! Vui lòng thử lại sau.")));
+                    player.sendMessage(PayBotPlugin.f("§c[PayBot] §fKhông tạo được mã QR! Vui lòng liên hệ Admin.")));
                 return;
             }
 
             final BufferedImage finalImage = rawImage;
-            final String        finalUrl   = usedUrl;
+            final String        finalSource = usedSource;
             SchedulerUtils.runForPlayer(plugin, player, () ->
-                deliverQRImage(player, finalImage, invoiceId, finalUrl,
-                        bankName, bankAccount, accountName, amount));
+                deliverQRImage(player, finalImage, invoiceId, finalSource,
+                        bName, bAcct, aName, amount));
         });
     }
 

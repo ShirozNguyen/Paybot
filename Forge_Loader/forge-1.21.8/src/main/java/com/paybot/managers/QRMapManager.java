@@ -4,6 +4,11 @@ import com.paybot.PayBotMod;
 import com.paybot.utils.ItemStackHelper;
 import com.paybot.utils.ItemTagCompat;
 import com.paybot.utils.MapItemCompat;
+import com.paybot.utils.BankBinResolver;
+import com.paybot.utils.QRImageEngine;
+import com.paybot.utils.SePayQrUrlBuilder;
+import com.paybot.utils.VietQREMVCoGenerator;
+import com.paybot.utils.VietQrApiClient;
 import com.paybot.utils.PayBotDebug;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -60,21 +65,41 @@ public class QRMapManager {
             if (acctName.isEmpty()) acctName = mod.getConfig().getString("acct-name", "").trim();
             if (acctName.isEmpty()) acctName = mod.getConfig().getString("account-name", "").trim();
 
-            String qrUrl = "https://img.vietqr.io/image/" + bankCode + "-" + bankAcct
-                    + "-compact2.png?amount=" + amount
-                    + "&addInfo=" + invoiceId
-                    + "&accountName=" + java.net.URLEncoder.encode(acctName, java.nio.charset.StandardCharsets.UTF_8);
-
             BufferedImage qrImg = null;
-            try {
-                qrImg = downloadImage(qrUrl);
-            } catch (Throwable t) {
-                PayBotDebug.logSwallowed("QRMapManager: downloadImage thất bại, chuyển sang local QR", t);
+
+            // ── LỚP 1: LOCAL VIETQR EMVCO ENGINE (0ms - Chuẩn VietQR + NAPAS 247) ──
+            if (!bankCode.isEmpty() && !bankAcct.isEmpty()) {
+                try {
+                    String emvco = VietQREMVCoGenerator.generate(bankCode, bankAcct, amount, invoiceId);
+                    if (emvco != null && !emvco.isEmpty()) {
+                        qrImg = QRImageEngine.renderQR(emvco);
+                    }
+                } catch (Throwable t) {
+                    PayBotMod.LOGGER.warn("[QRMap] Lớp 1 (Local EMVCo) thất bại, chuyển Lớp 2: " + t.getMessage());
+                }
             }
-            if (qrImg == null) {
-                String sePayContent = mod.getConfig().getString("sepay-content-pattern", "{ORDER_ID}").replace("{ORDER_ID}", invoiceId);
-                String qrContent = "STK:" + bankAcct + "|NH:" + bankCode + "|ND:" + sePayContent + "|ST:" + amount;
-                qrImg = generateLocalQR(qrContent);
+
+            // ── LỚP 2: SEPAY DIRECT PNG API (Fallback 1) ──
+            if (qrImg == null && !bankCode.isEmpty() && !bankAcct.isEmpty()) {
+                try {
+                    String sepayUrl = SePayQrUrlBuilder.buildUrl(bankCode, bankAcct, amount, invoiceId);
+                    qrImg = downloadImage(sepayUrl);
+                } catch (Throwable t) {
+                    PayBotMod.LOGGER.warn("[QRMap] Lớp 2 (SePay PNG) thất bại, chuyển Lớp 3: " + t.getMessage());
+                }
+            }
+
+            // ── LỚP 3: VIETQR OFFICIAL API V2 (Fallback 2) ──
+            if (qrImg == null && !bankCode.isEmpty() && !bankAcct.isEmpty()) {
+                try {
+                    String bin = BankBinResolver.resolveBin(bankCode);
+                    String emvcoApi = VietQrApiClient.fetchEmvcoString(bin, bankAcct, acctName, amount, invoiceId);
+                    if (emvcoApi != null && !emvcoApi.isEmpty()) {
+                        qrImg = QRImageEngine.renderQR(emvcoApi);
+                    }
+                } catch (Throwable t) {
+                    PayBotMod.LOGGER.warn("[QRMap] Lớp 3 (VietQR API v2) thất bại: " + t.getMessage());
+                }
             }
 
             final String finalBankCode = bankCode;

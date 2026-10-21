@@ -190,16 +190,10 @@ public final class NapBankCommand implements CommandExecutor {
         }
     }
 
-    /** Chuẩn hoá tên ngân hàng admin nhập (bỏ khoảng trắng/dấu câu, in hoa) → tra BIN. */
+    /** Chuẩn hoá tên ngân hàng admin nhập (bỏ khoảng trắng/dấu câu, in hoa) → tra BIN qua BankBinResolver. */
     private static String resolveBankBin(String bankName) {
-        if (bankName == null) return null;
-        String norm = bankName.toUpperCase().replaceAll("[^A-Z0-9]", "");
-        String bin = BANK_BIN_MAP.get(norm);
-        if (bin != null) return bin;
-        for (java.util.Map.Entry<String, String> e : BANK_BIN_MAP.entrySet()) {
-            if (norm.contains(e.getKey())) return e.getValue();
-        }
-        return null;
+        String bin = com.paybot.utils.BankBinResolver.resolveBin(bankName);
+        return (bin != null && !bin.isEmpty()) ? bin : null;
     }
 
     /**
