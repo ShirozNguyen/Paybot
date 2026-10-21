@@ -154,7 +154,7 @@ public class DirectCardSubmitHandler {
                     + "&telco=" + URLEncoder.encode(telco.toUpperCase(), StandardCharsets.UTF_8)
                     + "&amount=" + amount
                     + "&sign=" + URLEncoder.encode(sign, StandardCharsets.UTF_8)
-                    + "&command=submit";
+                    + "&command=charging";
 
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             conn.setRequestProperty("User-Agent", userAgent);
@@ -192,7 +192,7 @@ public class DirectCardSubmitHandler {
                     + "&telco=" + URLEncoder.encode(telco.toUpperCase(), StandardCharsets.UTF_8)
                     + "&amount=" + amount
                     + "&sign=" + URLEncoder.encode(sign, StandardCharsets.UTF_8)
-                    + "&command=submit";
+                    + "&command=charging";
 
             URL url = URI.create(queryUrl).toURL();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
