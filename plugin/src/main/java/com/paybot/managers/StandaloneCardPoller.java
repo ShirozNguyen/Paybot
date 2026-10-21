@@ -12,6 +12,7 @@ public final class StandaloneCardPoller {
 
     private final PayBotPlugin plugin;
     private volatile boolean running = false;
+    private SchedulerUtils.WrappedTask pollTask = null;
 
     public StandaloneCardPoller(PayBotPlugin plugin) {
         this.plugin = plugin;
@@ -22,7 +23,7 @@ public final class StandaloneCardPoller {
         running = true;
 
         // Chạy định kỳ mỗi 15 giây một lần trong luồng bất đồng bộ (20 ticks * 15 = 300 ticks)
-        SchedulerUtils.runRepeatingAsync(plugin, () -> {
+        pollTask = SchedulerUtils.runAsyncTimer(plugin, () -> {
             if (!running) return;
             try {
                 if (plugin.getStandaloneCardProcessor() != null) {
@@ -38,5 +39,9 @@ public final class StandaloneCardPoller {
 
     public synchronized void stop() {
         running = false;
+        if (pollTask != null) {
+            pollTask.cancel();
+            pollTask = null;
+        }
     }
 }
