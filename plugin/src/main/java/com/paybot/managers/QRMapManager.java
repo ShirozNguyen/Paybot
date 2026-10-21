@@ -220,15 +220,13 @@ public class QRMapManager implements Listener {
     }
 
     /**
-     * Scale ảnh QR + (tuỳ chọn) vẽ overlay 6 dòng text → tạo MapView → give
-     * ItemStack → set timer 30 phút. [Part 45] Gọi qua SchedulerUtils.runForPlayer —
+     * Scale ảnh QR full 128x128 canvas, đồng bộ 100% với Fabric/Forge/NeoForge (Lore giữ toàn bộ thông tin CK)
+     * → tạo MapView → give ItemStack → set timer 30 phút. [Part 45] Gọi qua SchedulerUtils.runForPlayer —
      * chạy trên entity-scheduler của player (Folia) hoặc main thread (Bukkit/Paper thường).
      */
     private void deliverQRImage(Player player, BufferedImage rawImage, String invoiceId, String sourceUrl,
                                  String bankName, String bankAccount, String accountName, int amount) {
         try {
-            boolean hasOverlay = (bankName != null && !bankName.isEmpty());
-
             BufferedImage canvas = new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
             Graphics2D g2d = canvas.createGraphics();
             g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
@@ -241,39 +239,19 @@ public class QRMapManager implements Listener {
             // Sử dụng trực tiếp rawImage để hiển thị màu sắc logo nguyên bản
             BufferedImage qrImage = rawImage;
 
-            if (hasOverlay) {
-                // v5.0.0: 72x72 — QR nhỏ + đơn giản hơn, có áp dụng Aspect Ratio chống méo ảnh
-                int qrSize = 72;
-                int qrX = (128 - qrSize) / 2;
-                
-                double ratio = (double) qrImage.getWidth() / qrImage.getHeight();
-                int drawW = qrSize;
-                int drawH = qrSize;
-                if (ratio > 1.0) {
-                    drawH = (int) (qrSize / ratio);
-                } else {
-                    drawW = (int) (qrSize * ratio);
-                }
-                int xOffset = (qrSize - drawW) / 2;
-                int yOffset = (qrSize - drawH) / 2;
-                
-                g2d.drawImage(qrImage, qrX + xOffset, yOffset, drawW, drawH, null);
-                drawInfoLines(g2d, qrSize + 2, bankName, bankAccount, accountName, amount, invoiceId);
+            // Đồng bộ 100% với Fabric/Forge/NeoForge: Luôn vẽ full 128x128 căn giữa, không vẽ text overlay lên canvas
+            double ratio = (double) qrImage.getWidth() / qrImage.getHeight();
+            int drawW = 128;
+            int drawH = 128;
+            if (ratio > 1.0) {
+                drawH = (int) (128 / ratio);
             } else {
-                // Không có thông tin overlay → vẽ full 128x128 giữ nguyên tỷ lệ
-                double ratio = (double) qrImage.getWidth() / qrImage.getHeight();
-                int drawW = 128;
-                int drawH = 128;
-                if (ratio > 1.0) {
-                    drawH = (int) (128 / ratio);
-                } else {
-                    drawW = (int) (128 * ratio);
-                }
-                int xOffset = (128 - drawW) / 2;
-                int yOffset = (128 - drawH) / 2;
-                
-                g2d.drawImage(qrImage, xOffset, yOffset, drawW, drawH, null);
+                drawW = (int) (128 * ratio);
             }
+            int xOffset = (128 - drawW) / 2;
+            int yOffset = (128 - drawH) / 2;
+
+            g2d.drawImage(qrImage, xOffset, yOffset, drawW, drawH, null);
             g2d.dispose();
             final BufferedImage finalImage = canvas;
 
@@ -297,13 +275,27 @@ public class QRMapManager implements Listener {
                     MapMeta   meta    = (MapMeta) mapItem.getItemMeta();
                     if (meta == null) throw new Exception("MapMeta là null");
 
-                    meta.setDisplayName("§aQR Chuyển Khoản");
-                    meta.setLore(Arrays.asList(
-                        "§7Mã đơn: §f" + invoiceId,
-                        "§7Quét bằng app ngân hàng để thanh toán",
-                        "§eCầm map để xem QR",
-                        "§eHết hạn sau 30 phút, vui lòng giữ yên trong balo, sẽ tự động được xoá"
-                    ));
+                    if (amount > 0) {
+                        meta.setDisplayName("§6✦ §aQR Nạp §e" + formatVnd(amount) + " VND §6✦");
+                    } else {
+                        meta.setDisplayName("§aQR Chuyển Khoản");
+                    }
+
+                    java.util.List<String> lore = new java.util.ArrayList<>();
+                    if (bankName != null && !bankName.isEmpty()) {
+                        lore.add("§7Ngân hàng  : §f" + bankName);
+                        lore.add("§7Số TK      : §e" + (bankAccount != null && !bankAccount.isEmpty() ? bankAccount : "?"));
+                        lore.add("§7Tên TK     : §f" + (accountName != null && !accountName.isEmpty() ? accountName : "?"));
+                        lore.add("§7Số tiền    : §a" + formatVnd(amount) + " VND");
+                        lore.add("§7Nội dung CK: §e§l" + invoiceId);
+                        lore.add("§c§oQR tự xóa sau 30 phút.");
+                    } else {
+                        lore.add("§7Mã đơn: §f" + invoiceId);
+                        lore.add("§7Quét bằng app ngân hàng để thanh toán");
+                        lore.add("§eCầm map để xem QR");
+                        lore.add("§c§oQR tự xóa sau 30 phút.");
+                    }
+                    meta.setLore(lore);
 
                     VersionCompat.storeInvoiceId(meta, mapView, invoiceId, invoiceKey);
                     mapItem = VersionCompat.applyMapToItem(mapItem, meta, mapView);
@@ -342,48 +334,6 @@ public class QRMapManager implements Listener {
             if (player.isOnline())
                 player.sendMessage(PayBotPlugin.f("§c[PayBot] §fLỗi tạo QR map! Vui lòng thử lại."));
         }
-    }
-
-    /** Vẽ 6 dòng thông tin dưới QR: ngân hàng, STK, tên TK, số tiền, nội dung CK, note hết hạn. */
-    private static void drawInfoLines(Graphics2D g2d, int yStart, String bankName, String bankAccount,
-                                       String accountName, int amount, String invoiceId) {
-        String[] lines = {
-            "NH: " + safe(bankName),
-            "STK: " + safe(bankAccount),
-            safe(accountName),
-            formatVnd(amount) + " VND",
-            "ND: " + safe(invoiceId),
-            "Tu xoa sau 30 phut, giu yen trong balo"
-        };
-        int available = 128 - yStart - 2;
-        int rowH = Math.max(5, available / lines.length);
-        g2d.setColor(Color.BLACK);
-        for (int i = 0; i < lines.length; i++) {
-            drawFitted(g2d, lines[i], 124, yStart + (i + 1) * rowH - 1);
-        }
-    }
-
-    /** Vẽ 1 dòng, tự giảm font size để fit width, truncate "..." nếu vẫn không đủ. */
-    private static void drawFitted(Graphics2D g2d, String text, int maxWidth, int baselineY) {
-        if (text == null || text.isEmpty()) return;
-        int size = 7;
-        Font font = new Font(Font.SANS_SERIF, Font.PLAIN, size);
-        FontMetrics fm = g2d.getFontMetrics(font);
-        while (fm.stringWidth(text) > maxWidth && size > 4) {
-            size--;
-            font = new Font(Font.SANS_SERIF, Font.PLAIN, size);
-            fm = g2d.getFontMetrics(font);
-        }
-        String draw = text;
-        if (fm.stringWidth(draw) > maxWidth) {
-            while (draw.length() > 3 && fm.stringWidth(draw + "..") > maxWidth) {
-                draw = draw.substring(0, draw.length() - 1);
-            }
-            draw = draw + "..";
-        }
-        g2d.setFont(font);
-        int x = Math.max(2, (128 - fm.stringWidth(draw)) / 2);
-        g2d.drawString(draw, x, baselineY);
     }
 
     /** Xoá QR map khỏi inventory. Phải gọi trên main thread. */

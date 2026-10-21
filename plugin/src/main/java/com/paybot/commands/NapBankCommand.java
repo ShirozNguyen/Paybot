@@ -119,12 +119,8 @@ public final class NapBankCommand implements CommandExecutor {
 
             SchedulerUtils.runForPlayer(plugin, player, () -> {
                 player.sendMessage(PayBotPlugin.f("§e[PayBot] §fĐang tạo QR chuyển khoản..."));
-                if (showOverlay) {
-                    plugin.getQRMapManager().giveQRMap(player, qrPrimary, qrFallback, invoiceId,
-                            finalBankName, finalBankAccount, finalAccountName, amount);
-                } else {
-                    plugin.getQRMapManager().giveQRMap(player, qrPrimary, qrFallback, invoiceId);
-                }
+                plugin.getQRMapManager().giveQRMap(player, qrPrimary, qrFallback, invoiceId,
+                        finalBankName, finalBankAccount, finalAccountName, amount);
                 player.sendMessage("§7Số tiền: §f" + formatVnd(amount) + " VND");
                 player.sendMessage("§7Nội dung CK: §e" + invoiceId);
                 player.sendMessage("§7QR hết hạn sau §e30 phút§7.");
