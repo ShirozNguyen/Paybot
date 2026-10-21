@@ -57,7 +57,7 @@ public class NapTheGui {
             gui.setSlot(slot, new ItemStack(GuiUtil.getTelcoWool(telco)), "§6§l" + telco, lore, () -> {
                 GuiSession.get(player.getUUID()).telco = telco;
                 GuiSession.get(player.getUUID()).stage = GuiSession.Stage.CARD_DENOM;
-                openDenomGui(player, telco);
+                mod.runOnMainThread(() -> openDenomGui(player, telco));
             });
         }
         
@@ -107,24 +107,29 @@ public class NapTheGui {
                     return;
                 }
                 GuiSession s = GuiSession.get(player.getUUID());
-                gui.close();
+                s.denom = finalDenom;
+                s.stage = GuiSession.Stage.CARD_WAIT_CODE;
 
                 // v5.0.5 [Part 19]: test mode — giả lập thành công NGAY, bỏ qua hẳn
                 // bước nhập mã thẻ/serial thật. Dùng 1 lần rồi tự tắt cờ.
                 if (s.testMode) {
                     s.testMode = false;
-                    mod.runOnMainThread(() -> TestPaymentGui.fakeApproveCard(player, telco, finalDenom));
+                    mod.runOnMainThread(() -> {
+                        gui.close();
+                        TestPaymentGui.fakeApproveCard(player, telco, finalDenom);
+                    });
                     return;
                 }
 
-                s.denom = finalDenom;
-                s.stage = GuiSession.Stage.CARD_WAIT_CODE;
-                player.sendMessage(new TextComponent("§6[PayBot] §fNhập §bmã thẻ §fvào chat:"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
-                player.sendMessage(new TextComponent("§7(Tin nhắn chỉ bạn mới thấy — gõ §ccancel §7để huỷ)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                mod.runOnMainThread(() -> {
+                    gui.close();
+                    player.sendMessage(new TextComponent("§6[PayBot] §fNhập §bmã thẻ §fvào chat:"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                    player.sendMessage(new TextComponent("§7(Tin nhắn chỉ bạn mới thấy — gõ §ccancel §7để huỷ)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+                });
             });
         }
 
-        gui.setSlot(18, new ItemStack(Items.ARROW), "§7◄ Quay lại", List.of("§7Nhấn để quay lại"), () -> openTelcoGui(player));
+        gui.setSlot(18, new ItemStack(Items.ARROW), "§7◄ Quay lại", List.of("§7Nhấn để quay lại"), () -> mod.runOnMainThread(() -> openTelcoGui(player)));
         gui.setSlot(26, GuiUtil.getCloseItem(), "§c§lĐóng", List.of("§7Nhấn để đóng"), () -> {
             GuiSession.clear(player.getUUID());
             gui.close();
