@@ -174,13 +174,22 @@ public class SePayApiClient {
                 return result;
             }
             consecutiveAuthFailures = 0; // Reset khi thành công
-            result.body = JsonParser.parseString(body).getAsJsonObject();
+            result.body = parseJsonSafe(body).getAsJsonObject();
         } catch (Exception e) {
             NotificationManager.warn(plugin, "sepay-error", "[PayBot] SePay API lỗi (" + path + "): " + e.getMessage());
             result.error = "Lỗi mạng: " + e.getMessage();
         }
         return result;
     }
+    @SuppressWarnings("deprecation")
+    private static JsonElement parseJsonSafe(String json) {
+        try {
+            return JsonParser.parseString(json);
+        } catch (NoSuchMethodError e) {
+            return new JsonParser().parse(json);
+        }
+    }
+
 
     private static String str(JsonObject o, String key) {
         return (o.has(key) && !o.get(key).isJsonNull()) ? o.get(key).getAsString() : "";

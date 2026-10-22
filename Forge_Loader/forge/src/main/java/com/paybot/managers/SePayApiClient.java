@@ -171,13 +171,22 @@ public class SePayApiClient {
             consecutiveAuthFailures = 0; // Reset khi thành công (200 OK)
             InputStream is = (code >= 200 && code < 300) ? con.getInputStream() : con.getErrorStream();
             String body = is != null ? new String(is.readAllBytes(), StandardCharsets.UTF_8) : "{}";
-            result.body = JsonParser.parseString(body).getAsJsonObject();
+            result.body = parseJsonSafe(body).getAsJsonObject();
         } catch (Exception e) {
             PayBotMod.LOGGER.warn("[PayBot] SePay API lỗi (" + path + "): " + e.getMessage());
             result.error = "Lỗi mạng: " + e.getMessage();
         }
         return result;
     }
+    @SuppressWarnings("deprecation")
+    private static JsonElement parseJsonSafe(String json) {
+        try {
+            return JsonParser.parseString(json);
+        } catch (NoSuchMethodError e) {
+            return new JsonParser().parse(json);
+        }
+    }
+
 
     private static String str(JsonObject o, String key) {
         return (o.has(key) && !o.get(key).isJsonNull()) ? o.get(key).getAsString() : "";

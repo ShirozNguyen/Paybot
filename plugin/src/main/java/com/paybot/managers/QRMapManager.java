@@ -2,9 +2,10 @@
 package com.paybot.managers;
 
 import com.paybot.PayBotPlugin;
-import com.paybot.utils.SchedulerUtils;
 import com.paybot.utils.BankBinResolver;
+import com.paybot.utils.QRCanvasRenderer;
 import com.paybot.utils.QRImageEngine;
+import com.paybot.utils.SchedulerUtils;
 import com.paybot.utils.SePayQrUrlBuilder;
 import com.paybot.utils.VersionCompat;
 import com.paybot.utils.VietQREMVCoGenerator;
@@ -21,7 +22,7 @@ import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import javax.imageio.ImageIO;
-import java.awt.*;
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -36,12 +37,8 @@ import java.util.Map;
  *  - Bot có task riêng check_expired_bank_orders làm backup (atomic, không double-process)
  *
  * Changelog:
- *   v5.0.0 — Vẽ trực tiếp 6 dòng thông tin (ngân hàng, số TK, tên TK, số tiền,
- *            nội dung CK, note hết hạn) lên map canvas, dưới ảnh QR.
- *            QR thu nhỏ về 84x84 để chừa chỗ cho text overlay.
- *   v5.0.0 (fix) — Thêm bước binarize() ép ảnh QR về thuần đen/trắng trước khi vẽ
- *            (Thứ 1: fix QR bị xám xịt do pixel anti-alias từ ảnh gốc bị MapPalette
- *            quy về màu xám/nâu gần nhất). Toàn bộ log đổi qua NotificationManager.
+ *   v7.0.0 (Part 182) — Ủy thác render canvas AWT 128x128 cho QRCanvasRenderer thực thi 100%
+ *            trên luồng Async, triệt tiêu hoàn toàn Paper Watchdog lag/freeze 12s.
  */
 public class QRMapManager implements Listener {
 
@@ -80,12 +77,7 @@ public class QRMapManager implements Listener {
     private static String safe(String s) { return s == null ? "" : s; }
 
     /**
-     * v5.0.0 — Ép ảnh QR thô về thuần đen/trắng tuyệt đối (binarize theo luminance
-     * threshold). Đây là root-cause fix cho QR bị "xám xịt" (xem giải thích ở deliverQRImage).
-     * Mọi pixel có luminance < 140 → đen (0xFF000000), ngược lại → trắng (0xFFFFFFFF).
-     * Ngưỡng 140 (trên thang 0-255) được chọn hơi cao hơn 128 vì hầu hết ảnh QR có nền
-     * trắng chiếm đa số diện tích — threshold cao giúp giữ module đen đủ đậm mà không
-     * làm mất nét viền mảnh.
+     * v5.0.0 — Ép ảnh QR thô về thuần đen/trắng tuyệt đối (binarize theo luminance threshold).
      */
     private static BufferedImage binarize(BufferedImage src) {
         int w = src.getWidth(), h = src.getHeight();
@@ -94,7 +86,7 @@ public class QRMapManager implements Listener {
             for (int x = 0; x < w; x++) {
                 int rgb = src.getRGB(x, y);
                 int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
-                int luminance = (r * 299 + g * 587 + b * 114) / 1000; // công thức luminance chuẩn
+                int luminance = (r * 299 + g * 587 + b * 114) / 1000;
                 out.setRGB(x, y, luminance < 140 ? 0xFF000000 : 0xFFFFFFFF);
             }
         }
@@ -113,9 +105,7 @@ public class QRMapManager implements Listener {
     }
 
     /**
-     * v5.0.0 — Overload đầy đủ: kèm thông tin ngân hàng để vẽ overlay 6 dòng
-     * lên map (ngân hàng, số TK, tên TK, số tiền, nội dung CK, note hết hạn).
-     * Nếu bankName == null → bỏ qua overlay, chỉ render ảnh QR như cũ.
+     * v7.0.0 Part 181/182: Kèm thông tin ngân hàng để gán vào Lore/Display Name của bản đồ.
      */
     public void giveQRMap(Player player, String imageUrl, String fallbackUrl, String invoiceId,
                            String bankName, String bankAccount, String accountName, int amount) {
@@ -211,123 +201,87 @@ public class QRMapManager implements Listener {
                 return;
             }
 
-            final BufferedImage finalImage = rawImage;
+            // [Rule 17] Render canvas AWT 128x128 hoàn toàn trên Async Thread qua QRCanvasRenderer
+            // triệt tiêu 100% lag/hang Watchdog server main thread do nạp AWT WToolkit/GDI
+            final BufferedImage renderedCanvas = QRCanvasRenderer.renderTo128Canvas(rawImage);
             final String        finalSource = usedSource;
             SchedulerUtils.runForPlayer(plugin, player, () ->
-                deliverQRImage(player, finalImage, invoiceId, finalSource,
+                deliverQRImage(player, renderedCanvas, invoiceId, finalSource,
                         bName, bAcct, aName, amount));
         });
     }
 
     /**
-     * Scale ảnh QR full 128x128 canvas, đồng bộ 100% với Fabric/Forge/NeoForge (Lore giữ toàn bộ thông tin CK)
-     * → tạo MapView → give ItemStack → set timer 30 phút. [Part 45] Gọi qua SchedulerUtils.runForPlayer —
-     * chạy trên entity-scheduler của player (Folia) hoặc main thread (Bukkit/Paper thường).
+     * Tạo MapView → give ItemStack bản đồ QR cho người chơi (Lore giữ toàn bộ thông tin CK).
+     * [Part 182] Chạy trên main/entity thread nhưng nhận canvas đã vẽ xong từ Async Thread qua QRCanvasRenderer (< 1ms).
      */
-    private void deliverQRImage(Player player, BufferedImage rawImage, String invoiceId, String sourceUrl,
+    private void deliverQRImage(Player player, BufferedImage finalImage, String invoiceId, String sourceUrl,
                                  String bankName, String bankAccount, String accountName, int amount) {
+        if (!player.isOnline()) {
+            plugin.getLogger().info("Player " + player.getName() + " đã offline, bỏ qua give QR map.");
+            return;
+        }
         try {
-            BufferedImage canvas = new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
-            Graphics2D g2d = canvas.createGraphics();
-            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-                    RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_OFF);
-            g2d.setColor(Color.WHITE);
-            g2d.fillRect(0, 0, 128, 128);
-
-            // Sử dụng trực tiếp rawImage để hiển thị màu sắc logo nguyên bản
-            BufferedImage qrImage = rawImage;
-
-            // Đồng bộ 100% với Fabric/Forge/NeoForge: Luôn vẽ full 128x128 căn giữa, không vẽ text overlay lên canvas
-            double ratio = (double) qrImage.getWidth() / qrImage.getHeight();
-            int drawW = 128;
-            int drawH = 128;
-            if (ratio > 1.0) {
-                drawH = (int) (128 / ratio);
-            } else {
-                drawW = (int) (128 * ratio);
+            MapView mapView = Bukkit.createMap(player.getWorld());
+            // Defensive: copy list trước khi remove để tránh ConcurrentModificationException
+            // nếu phiên bản Bukkit nào đó trả về live-list cho getRenderers().
+            for (MapRenderer r : new java.util.ArrayList<>(mapView.getRenderers())) {
+                mapView.removeRenderer(r);
             }
-            int xOffset = (128 - drawW) / 2;
-            int yOffset = (128 - drawH) / 2;
+            mapView.addRenderer(new QRMapRenderer(finalImage));
+            VersionCompat.setLockedSafe(mapView, true);
+            mapView.setScale(MapView.Scale.NORMAL);
 
-            g2d.drawImage(qrImage, xOffset, yOffset, drawW, drawH, null);
-            g2d.dispose();
-            final BufferedImage finalImage = canvas;
+            ItemStack mapItem = new ItemStack(VersionCompat.getMapMaterial());
+            MapMeta   meta    = (MapMeta) mapItem.getItemMeta();
+            if (meta == null) throw new Exception("MapMeta là null");
 
-            SchedulerUtils.runForPlayer(plugin, player, () -> {
-                if (!player.isOnline()) {
-                    plugin.getLogger().info("Player " + player.getName() + " đã offline, bỏ qua give QR map.");
-                    return;
+            if (amount > 0) {
+                meta.setDisplayName("§6✦ §aQR Nạp §e" + formatVnd(amount) + " VND §6✦");
+            } else {
+                meta.setDisplayName("§aQR Chuyển Khoản");
+            }
+
+            java.util.List<String> lore = new java.util.ArrayList<>();
+            if (bankName != null && !bankName.isEmpty()) {
+                lore.add("§7Ngân hàng  : §f" + bankName);
+                lore.add("§7Số TK      : §e" + (bankAccount != null && !bankAccount.isEmpty() ? bankAccount : "?"));
+                lore.add("§7Tên TK     : §f" + (accountName != null && !accountName.isEmpty() ? accountName : "?"));
+                lore.add("§7Số tiền    : §a" + formatVnd(amount) + " VND");
+                lore.add("§7Nội dung CK: §e§l" + invoiceId);
+                lore.add("§c§oQR tự xóa sau 30 phút.");
+            } else {
+                lore.add("§7Mã đơn: §f" + invoiceId);
+                lore.add("§7Quét bằng app ngân hàng để thanh toán");
+                lore.add("§eCầm map để xem QR");
+                lore.add("§c§oQR tự xóa sau 30 phút.");
+            }
+            meta.setLore(lore);
+
+            VersionCompat.storeInvoiceId(meta, mapView, invoiceId, invoiceKey);
+            mapItem = VersionCompat.applyMapToItem(mapItem, meta, mapView);
+
+            Map<Integer, ItemStack> leftover = player.getInventory().addItem(mapItem);
+            if (leftover != null && !leftover.isEmpty()) {
+                for (ItemStack dropItem : leftover.values()) {
+                    if (dropItem != null) {
+                        player.getWorld().dropItemNaturally(player.getLocation(), dropItem);
+                    }
                 }
-                try {
-                    MapView mapView = Bukkit.createMap(player.getWorld());
-                    // Defensive: copy list trước khi remove để tránh ConcurrentModificationException
-                    // nếu phiên bản Bukkit nào đó trả về live-list cho getRenderers().
-                    for (MapRenderer r : new java.util.ArrayList<>(mapView.getRenderers())) {
-                        mapView.removeRenderer(r);
-                    }
-                    mapView.addRenderer(new QRMapRenderer(finalImage));
-                    VersionCompat.setLockedSafe(mapView, true);
-                    mapView.setScale(MapView.Scale.NORMAL);
+                player.sendMessage(PayBotPlugin.f("§e[PayBot] §fTúi đồ của bạn đã đầy! Bản đồ QR thanh toán đã rơi xuống chân bạn 💳"));
+            } else {
+                player.sendMessage(PayBotPlugin.f("§a[PayBot] §fQR chuyển khoản đã vào balo! Vui lòng kiểm tra balo để nạp 💳"));
+            }
+            NotificationManager.log(plugin, "qr-created",
+                    "[PayBot] Đã tạo QR cho " + player.getName() + " (invoice=" + invoiceId + ")");
 
-                    ItemStack mapItem = new ItemStack(VersionCompat.getMapMaterial());
-                    MapMeta   meta    = (MapMeta) mapItem.getItemMeta();
-                    if (meta == null) throw new Exception("MapMeta là null");
-
-                    if (amount > 0) {
-                        meta.setDisplayName("§6✦ §aQR Nạp §e" + formatVnd(amount) + " VND §6✦");
-                    } else {
-                        meta.setDisplayName("§aQR Chuyển Khoản");
-                    }
-
-                    java.util.List<String> lore = new java.util.ArrayList<>();
-                    if (bankName != null && !bankName.isEmpty()) {
-                        lore.add("§7Ngân hàng  : §f" + bankName);
-                        lore.add("§7Số TK      : §e" + (bankAccount != null && !bankAccount.isEmpty() ? bankAccount : "?"));
-                        lore.add("§7Tên TK     : §f" + (accountName != null && !accountName.isEmpty() ? accountName : "?"));
-                        lore.add("§7Số tiền    : §a" + formatVnd(amount) + " VND");
-                        lore.add("§7Nội dung CK: §e§l" + invoiceId);
-                        lore.add("§c§oQR tự xóa sau 30 phút.");
-                    } else {
-                        lore.add("§7Mã đơn: §f" + invoiceId);
-                        lore.add("§7Quét bằng app ngân hàng để thanh toán");
-                        lore.add("§eCầm map để xem QR");
-                        lore.add("§c§oQR tự xóa sau 30 phút.");
-                    }
-                    meta.setLore(lore);
-
-                    VersionCompat.storeInvoiceId(meta, mapView, invoiceId, invoiceKey);
-                    mapItem = VersionCompat.applyMapToItem(mapItem, meta, mapView);
-
-                    Map<Integer, ItemStack> leftover = player.getInventory().addItem(mapItem);
-                    if (leftover != null && !leftover.isEmpty()) {
-                        for (ItemStack dropItem : leftover.values()) {
-                            if (dropItem != null) {
-                                player.getWorld().dropItemNaturally(player.getLocation(), dropItem);
-                            }
-                        }
-                        player.sendMessage(PayBotPlugin.f("§e[PayBot] §fTúi đồ của bạn đã đầy! Bản đồ QR thanh toán đã rơi xuống chân bạn 💳"));
-                    } else {
-                        player.sendMessage(PayBotPlugin.f("§a[PayBot] §fQR chuyển khoản đã vào balo! Vui lòng kiểm tra balo để nạp 💳"));
-                    }
-                    NotificationManager.log(plugin, "qr-created",
-                            "[PayBot] Đã tạo QR cho " + player.getName() + " (invoice=" + invoiceId + ")");
-
-                    final String fInvoiceId = invoiceId;
-                    // v5.5.5 Part 112: Chuyển giao quản lý vòng đời bộ đếm sang QRMapSessionTracker (Rule 17)
-                    // Hỗ trợ tạm dừng (pause) khi player offline và tiếp tục (resume) khi join lại.
-                    // Đếm ngược qua 1 task nhẹ tập trung, không gây lag trên server lớn (Folia/Canvas thread-safe).
-                    if (plugin.getQrMapSessionTracker() != null) {
-                        plugin.getQrMapSessionTracker().startSession(player, fInvoiceId, mapView.getId(), 1800L);
-                    }
-
-                } catch (Exception e) {
-                    NotificationManager.warn(plugin, "qr-create-fail", "[PayBot] Lỗi tạo QR map item: " + e.getMessage());
-                    if (player.isOnline())
-                        player.sendMessage(PayBotPlugin.f("§c[PayBot] §fLỗi tạo QR map! Vui lòng thử lại."));
-                }
-            });
+            final String fInvoiceId = invoiceId;
+            // v5.5.5 Part 112: Chuyển giao quản lý vòng đời bộ đếm sang QRMapSessionTracker (Rule 17)
+            // Hỗ trợ tạm dừng (pause) khi player offline và tiếp tục (resume) khi join lại.
+            // Đếm ngược qua 1 task nhẹ tập trung, không gây lag trên server lớn (Folia/Canvas thread-safe).
+            if (plugin.getQrMapSessionTracker() != null) {
+                plugin.getQrMapSessionTracker().startSession(player, fInvoiceId, mapView.getId(), 1800L);
+            }
 
         } catch (Exception e) {
             NotificationManager.warn(plugin, "qr-create-fail", "[PayBot] Lỗi tạo QR map item: " + e.getMessage());
