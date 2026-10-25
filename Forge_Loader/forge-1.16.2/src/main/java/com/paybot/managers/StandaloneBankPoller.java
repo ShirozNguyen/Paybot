@@ -84,7 +84,8 @@ public class StandaloneBankPoller {
      * Khi phát hiện giao dịch khớp đơn PENDING: auto-dispatch reward ngay (không cần /approve).
      */
     public void pollSePayApiTransactions() {
-        String token = mod.getConfig().getString("sepay-api.api-token", "").trim();
+        String token = mod.getConfig().getString("sepay.api-token", "").trim();
+        if (token.isEmpty()) token = mod.getConfig().getString("sepay-api.api-token", "").trim();
         if (token.isEmpty()) return;
 
         long lastId = mod.getConfig().getLong("sepay-api.last-transaction-id", 0L);

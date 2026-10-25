@@ -44,7 +44,9 @@ public class SePayApiClient {
     }
 
     private String token() {
-        return mod.getConfig().getString("sepay-api.api-token", "").trim();
+        String t = mod.getConfig().getString("sepay.api-token", "").trim();
+        if (t.isEmpty()) t = mod.getConfig().getString("sepay-api.api-token", "").trim();
+        return t;
     }
 
     // ─── Public DTO ──────────────────────────────────────────────────────────

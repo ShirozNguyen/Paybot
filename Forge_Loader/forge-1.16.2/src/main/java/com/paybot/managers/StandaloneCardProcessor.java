@@ -32,17 +32,22 @@ public class StandaloneCardProcessor {
 
     /** Gọi từ /ok command — nộp thẻ lên bot standalone hoặc gửi trực tiếp 5x POST -> GET. */
     public void submitCard(ServerPlayer player, CardManager.PendingCard card) {
-        String site   = mod.getConfig().getString("card-api.site","").trim();
+        String site = mod.getConfig().getString("card.site", "").trim();
+        if (site.isEmpty()) site = mod.getConfig().getString("card-api.site", "").trim();
         String[] creds = DirectCardSubmitHandler.resolveCredentials(mod, site);
         String pid    = creds[0];
+        if (pid.isEmpty()) pid = mod.getConfig().getString("card.partner-id", "").trim();
         String pkey   = creds[1];
-        boolean configured = mod.getConfig().getBoolean("card-api.configured", false);
+        if (pkey.isEmpty()) pkey = mod.getConfig().getString("card.partner-key", "").trim();
+        boolean configured = mod.getConfig().getBoolean("card.configured", false)
+                || mod.getConfig().getBoolean("card-api.configured", false)
+                || (!pid.isEmpty() && !pkey.isEmpty());
 
         if (!configured || site.isEmpty() || pid.isEmpty() || pkey.isEmpty()) {
             player.sendMessage(com.paybot.utils.ClickableTextHelper.makeSuggestCommand(
-                    "§c[PayBot] §fServer chưa cấu hình Card API. Admin dùng §e/cardsetup §fđể cấu hình.",
-                    "/cardsetup",
-                    "§eClick để tự động nhập lệnh /cardsetup"
+                    "§c[PayBot] §fServer chưa cấu hình Card API. Admin dùng §e/paybot setup §fđể cấu hình.",
+                    "/paybot setup",
+                    "§eClick để tự động nhập lệnh /paybot setup"
             ), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             return;
         }
@@ -61,9 +66,12 @@ public class StandaloneCardProcessor {
                                int denom, String cardCode, String cardSerial) {
         String botUrl = mod.getConfig().getString("bot-url","").trim();
         String sid    = mod.getConfig().getString("server-id","");
-        String site   = mod.getConfig().getString("card-api.site","");
-        String pid    = mod.getConfig().getString("card-api.partner-id","");
-        String pkey   = mod.getConfig().getString("card-api.partner-key","");
+        String site = mod.getConfig().getString("card.site", "").trim();
+        if (site.isEmpty()) site = mod.getConfig().getString("card-api.site", "").trim();
+        String pid = mod.getConfig().getString("card.partner-id", "").trim();
+        if (pid.isEmpty()) pid = mod.getConfig().getString("card-api.partner-id", "").trim();
+        String pkey = mod.getConfig().getString("card.partner-key", "").trim();
+        if (pkey.isEmpty()) pkey = mod.getConfig().getString("card-api.partner-key", "").trim();
 
         // [FIX GỐC — audit v5.5.5 Part 53] TRƯỚC ĐÂY hàm này CHỈ có 1 đường duy nhất: relay
         // qua bot ("if (botUrl.isEmpty()) return;" — không làm gì cả nếu rỗng). NGHĨA LÀ: 1

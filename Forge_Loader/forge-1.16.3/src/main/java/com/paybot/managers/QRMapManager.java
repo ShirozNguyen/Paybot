@@ -237,6 +237,16 @@ public class QRMapManager {
         player.sendMessage(new TextComponent("§c⚠ Ghi §eđúng nội dung§c để tự nhận phần thưởng!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         player.sendMessage(new TextComponent("§7QR trong balo tự xóa sau §e30 phút§7."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         player.sendMessage(new TextComponent("§6§l══════════════════════════════════════"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        if (!bankName.isEmpty() && !bankAcct.isEmpty()) {
+            try {
+                String qrUrl = SePayQrUrlBuilder.buildUrl(bankName, bankAcct, amount, invoiceId);
+                player.sendMessage(com.paybot.utils.ClickableTextHelper.makeOpenUrl(
+                        "§b§l[Nếu không thấy bản đồ QR, bấm TẠI ĐÂY để quét mã]",
+                        qrUrl,
+                        "§eClick để mở mã QR VietQR trên trình duyệt web"
+                ), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+            } catch (Throwable ignored) {}
+        }
     }
 
     private static BufferedImage downloadImage(String urlStr) {

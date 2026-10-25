@@ -59,7 +59,7 @@ public class TestPaymentGui {
                     .replace("{player}",    playerName)
                     .replace("[playername]", playerName)
                     .replace("[amount]",    String.valueOf(rewardAmt));
-            for (String c : finalCmd.split(";;")) {
+            for (String c : finalCmd.split(";;|§§|;|\n")) {
                 String cc = c.trim();
                 if (cc.isEmpty()) continue;
                 try { mod.getServer().getCommands().getDispatcher()
@@ -107,7 +107,7 @@ public class TestPaymentGui {
                     .replace("{player}",    playerName)
                     .replace("[playername]", playerName)
                     .replace("[amount]",    String.valueOf(rewardAmt));
-            for (String c : finalCmd.split(";;")) {
+            for (String c : finalCmd.split(";;|§§|;|\n")) {
                 String cc = c.trim();
                 if (cc.isEmpty()) continue;
                 try { mod.getServer().getCommands().getDispatcher()

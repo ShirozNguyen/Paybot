@@ -84,7 +84,7 @@ public class CommandRegistry {
     // ─── /napthe ──────────────────────────────────────────────────────────────
     private static void registerNapThe(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("napthe")
-            .requires(src -> src.isPlayer() && isAdmin(src))
+            .requires(src -> src.isPlayer())
             .executes(ctx -> { NapTheGui.openTelcoGui(ctx.getSource().getPlayer()); return 1; }));
     }
 
@@ -127,8 +127,12 @@ public class CommandRegistry {
                     send(ctx.getSource(), "§c[PayBot] §fKhông có thẻ nào đang chờ. Dùng §e/napthe §fđể bắt đầu.");
                     return 0;
                 }
-                if (!mod.getConfig().getBoolean("card-api.configured", false)) {
-                    send(ctx.getSource(), "§c[PayBot] §fServer chưa cấu hình Card API. Admin dùng §e/cardsetup§f.");
+                boolean cardConfigured = mod.getConfig().getBoolean("card.configured", false)
+                        || mod.getConfig().getBoolean("card-api.configured", false)
+                        || (!mod.getConfig().getString("card.partner-id", "").trim().isEmpty() && !mod.getConfig().getString("card.partner-key", "").trim().isEmpty())
+                        || (!mod.getConfig().getString("card-api.partner-id", "").trim().isEmpty() && !mod.getConfig().getString("card-api.partner-key", "").trim().isEmpty());
+                if (!cardConfigured) {
+                    send(ctx.getSource(), "§c[PayBot] §fServer chưa cấu hình Card API. Admin dùng §e/paybot setup§f.");
                     return 0;
                 }
                 send(ctx.getSource(), "§a[PayBot] §fĐang gửi thẻ lên hệ thống...");
@@ -240,8 +244,14 @@ public class CommandRegistry {
             .requires(src -> isAdmin(src))
             .executes(ctx -> {
                 PayBotMod mod = PayBotMod.getInstance();
-                boolean sepay = mod.getConfig().getBoolean("sepay.configured", false);
-                boolean card  = mod.getConfig().getBoolean("card-api.configured", false);
+                boolean sepay = mod.getConfig().getBoolean("sepay.configured", false)
+                        || mod.getConfig().getBoolean("sepay-api.configured", false)
+                        || !mod.getConfig().getString("sepay.api-token", "").trim().isEmpty()
+                        || !mod.getConfig().getString("sepay-api.api-token", "").trim().isEmpty();
+                boolean card  = mod.getConfig().getBoolean("card.configured", false)
+                        || mod.getConfig().getBoolean("card-api.configured", false)
+                        || (!mod.getConfig().getString("card.partner-id", "").trim().isEmpty() && !mod.getConfig().getString("card.partner-key", "").trim().isEmpty())
+                        || (!mod.getConfig().getString("card-api.partner-id", "").trim().isEmpty() && !mod.getConfig().getString("card-api.partner-key", "").trim().isEmpty());
                 String botUrl = mod.getConfig().getString("bot-url", "").trim();
                 boolean standalone = mod.isStandaloneMode();
                 // v5.0.5: fix default port sai (25565 TRÙNG port Minecraft mặc định —
@@ -267,8 +277,8 @@ public class CommandRegistry {
                 }
                 send(ctx.getSource(), "§7Auto-sync config §7: " + (mod.getConfig().getBoolean("auto-config-sync", true)
                         ? "§a✓ Bật §7(tự thêm/xoá key mỗi 10s)" : "§c✗ Tắt"));
-                send(ctx.getSource(), "§7SePay   : " + (sepay ? "§a✓ " + mod.getConfig().getString("sepay.bank-name","?") : "§c✗ Chưa — /sepaysetup"));
-                send(ctx.getSource(), "§7Card API: " + (card ? "§a✓ " + mod.getConfig().getString("card-api.site","?") : "§c✗ Chưa — /cardsetup"));
+                send(ctx.getSource(), "§7SePay   : " + (sepay ? "§a✓ " + mod.getConfig().getString("sepay.bank-name","?") : "§c✗ Chưa — dùng /paybot setup"));
+                send(ctx.getSource(), "§7Card API: " + (card ? "§a✓ " + mod.getConfig().getString("card-api.site","?") : "§c✗ Chưa — dùng /paybot setup"));
                 send(ctx.getSource(), "§7HTTP port (nhận lệnh từ bot) §7: §e" + port);
                 send(ctx.getSource(), "§8§m────────────────────────────────────");
                 return 1;

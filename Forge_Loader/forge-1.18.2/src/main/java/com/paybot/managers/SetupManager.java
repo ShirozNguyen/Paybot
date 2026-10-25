@@ -168,6 +168,7 @@ public class SetupManager {
                 // Lưu token tạm vào config, thử verify và lấy danh sách tài khoản
                 String token = input.trim();
                 mod.getConfig().set("sepay-api.api-token", token);
+                mod.getConfig().set("sepay.api-token", token);
                 mod.getConfig().save();
                 player.sendMessage(new TextComponent("§7[PayBot] Đang xác minh token và lấy danh sách ngân hàng..."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
                 mod.runAsync(() -> {
@@ -252,7 +253,9 @@ public class SetupManager {
             }
             case CARD_PARTNER_ID -> {
                 s.partnerId = input;
-                mod.getConfig().set("card-api.partner-id", input); mod.getConfig().save();
+                mod.getConfig().set("card-api.partner-id", input);
+                mod.getConfig().set("card.partner-id", input);
+                mod.getConfig().save();
                 s.step = Step.CARD_PARTNER_KEY;
                 player.sendMessage(new TextComponent("§a[PayBot] [3/4] §fNhập §bPartner Key§f: (cancel để huỷ)"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
             }
@@ -262,7 +265,9 @@ public class SetupManager {
                 mod.getConfig().set("card-api-sites." + site + ".partner-id",  s.partnerId);
                 mod.getConfig().set("card-api-sites." + site + ".partner-key", input);
                 mod.getConfig().set("card-api.site",        site);
+                mod.getConfig().set("card.site",            site);
                 mod.getConfig().set("card-api.configured",  !s.partnerId.isEmpty() && !input.isEmpty());
+                mod.getConfig().set("card.configured",      !s.partnerId.isEmpty() && !input.isEmpty());
                 mod.getConfig().save();
                 s.step = Step.CARD_CHANNEL_ID;
                 player.sendMessage(new TextComponent("§a[PayBot] §a✓ Đã lưu Partner Key!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
@@ -335,7 +340,7 @@ public class SetupManager {
         player.sendMessage(new TextComponent("§7Site       : §f" + site), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         player.sendMessage(new TextComponent("§7Partner ID : §f" + pid), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         player.sendMessage(new TextComponent("§7Channel ID : §f" + ("skip".equalsIgnoreCase(channel) ? "§8(bỏ qua)" : channel)), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
-        player.sendMessage(new TextComponent("§7Tiếp theo: /chinhsuamenhgianap để cấu hình lệnh thưởng."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
+        player.sendMessage(new TextComponent("§7Tiếp theo: /paybot setup để cấu hình lệnh thưởng."), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
         player.sendMessage(new TextComponent("§6§l═══════════════════════════════════════"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);
     }
 }

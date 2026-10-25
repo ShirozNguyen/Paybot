@@ -71,9 +71,13 @@ public class CardApiSetupGui {
             gui.setSlot(10+i, item, label, lore, () -> {
                 if (!finalPid.isEmpty() && !finalPkey.isEmpty()) {
                     mod.getConfig().set("card-api.site", finalSite);
+                    mod.getConfig().set("card.site", finalSite);
                     mod.getConfig().set("card-api.partner-id", finalPid);
+                    mod.getConfig().set("card.partner-id", finalPid);
                     mod.getConfig().set("card-api.partner-key", finalPkey);
+                    mod.getConfig().set("card.partner-key", finalPkey);
                     mod.getConfig().set("card-api.configured", true);
+                    mod.getConfig().set("card.configured", true);
                     mod.getConfig().save();
                     gui.close();
                     player.sendMessage(new TextComponent("§a[PayBot] §fĐã chuyển sang dùng API §b" + finalSite + " §ftự động từ thông tin lưu sẵn!"), ChatType.SYSTEM, net.minecraft.Util.NIL_UUID);

@@ -265,14 +265,16 @@ public class PayBotMod {
                 + (config.getMaxNotificationsPerMinute() < 0 ? " (unlimited)" : "/phút"));
         // v5.0.0 (theo yêu cầu): cảnh báo riêng nếu CHƯA setup BẤT CỨ THỨ GÌ (chưa
         // /connect, chưa /sepaysetup, chưa /cardsetup) — đồng bộ với bản Bukkit.
-        boolean sepayDone = config.getBoolean("sepay.configured", false);
-        boolean cardDone  = config.getBoolean("card-api.configured", false);
+        boolean sepayDone = config.getBoolean("sepay.configured", false)
+                || config.getBoolean("sepay-api.configured", false)
+                || !config.getString("sepay.api-token", "").trim().isEmpty()
+                || !config.getString("sepay-api.api-token", "").trim().isEmpty();
+        boolean cardDone  = config.getBoolean("card.configured", false)
+                || config.getBoolean("card-api.configured", false)
+                || (!config.getString("card.partner-id", "").trim().isEmpty() && !config.getString("card.partner-key", "").trim().isEmpty())
+                || (!config.getString("card-api.partner-id", "").trim().isEmpty() && !config.getString("card-api.partner-key", "").trim().isEmpty());
         if (isStandaloneMode() && !sepayDone && !cardDone) {
-            LOGGER.warn("[PayBot]   ⚠ CHƯA CẤU HÌNH GÌ CẢ — admin cần làm 1 trong các bước sau:");
-            LOGGER.warn("[PayBot]     • /connect discord <guild_id>  (hệ thống auto qua Discord Bot)");
-            LOGGER.warn("[PayBot]     • /sepaysetup                  (nạp ngân hàng standalone)");
-            LOGGER.warn("[PayBot]     • /cardsetup                   (nạp thẻ cào standalone)");
-            LOGGER.warn("[PayBot]     Mod sẽ KHÔNG xử lý được giao dịch nào cho tới khi hoàn tất 1 trong 3.");
+            LOGGER.warn("[PayBot]   ⚠ CHƯA CẤU HÌNH — admin dùng lệnh /paybot setup để thiết lập nạp tiền.");
         }
         LOGGER.info("[PayBot] ════════════════════════════════════════");
     }

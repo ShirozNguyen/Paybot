@@ -227,6 +227,16 @@ public class QRMapManager {
         player.sendSystemMessage(Component.literal("§c⚠ Ghi §eđúng nội dung§c để tự nhận phần thưởng!"));
         player.sendSystemMessage(Component.literal("§7QR trong balo tự xóa sau §e30 phút§7."));
         player.sendSystemMessage(Component.literal("§6§l══════════════════════════════════════"));
+        if (!bankName.isEmpty() && !bankAcct.isEmpty()) {
+            try {
+                String qrUrl = SePayQrUrlBuilder.buildUrl(bankName, bankAcct, amount, invoiceId);
+                player.sendSystemMessage(com.paybot.utils.ClickableTextHelper.makeOpenUrl(
+                        "§b§l[Nếu không thấy bản đồ QR, bấm TẠI ĐÂY để quét mã]",
+                        qrUrl,
+                        "§eClick để mở mã QR VietQR trên trình duyệt web"
+                ));
+            } catch (Throwable ignored) {}
+        }
     }
 
     private static BufferedImage downloadImage(String urlStr) {

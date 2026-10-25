@@ -166,6 +166,7 @@ public class SetupManager {
                 // Lưu token tạm vào config, thử verify và lấy danh sách tài khoản
                 String token = input.trim();
                 mod.getConfig().set("sepay-api.api-token", token);
+                mod.getConfig().set("sepay.api-token", token);
                 mod.getConfig().save();
                 player.sendSystemMessage(Component.literal("§7[PayBot] Đang xác minh token và lấy danh sách ngân hàng..."));
                 mod.runAsync(() -> {
@@ -250,7 +251,9 @@ public class SetupManager {
             }
             case CARD_PARTNER_ID -> {
                 s.partnerId = input;
-                mod.getConfig().set("card-api.partner-id", input); mod.getConfig().save();
+                mod.getConfig().set("card-api.partner-id", input);
+                mod.getConfig().set("card.partner-id", input);
+                mod.getConfig().save();
                 s.step = Step.CARD_PARTNER_KEY;
                 player.sendSystemMessage(Component.literal("§a[PayBot] [3/4] §fNhập §bPartner Key§f: (cancel để huỷ)"));
             }
@@ -260,7 +263,9 @@ public class SetupManager {
                 mod.getConfig().set("card-api-sites." + site + ".partner-id",  s.partnerId);
                 mod.getConfig().set("card-api-sites." + site + ".partner-key", input);
                 mod.getConfig().set("card-api.site",        site);
+                mod.getConfig().set("card.site",            site);
                 mod.getConfig().set("card-api.configured",  !s.partnerId.isEmpty() && !input.isEmpty());
+                mod.getConfig().set("card.configured",      !s.partnerId.isEmpty() && !input.isEmpty());
                 mod.getConfig().save();
                 s.step = Step.CARD_CHANNEL_ID;
                 player.sendSystemMessage(Component.literal("§a[PayBot] §a✓ Đã lưu Partner Key!"));
@@ -333,7 +338,7 @@ public class SetupManager {
         player.sendSystemMessage(Component.literal("§7Site       : §f" + site));
         player.sendSystemMessage(Component.literal("§7Partner ID : §f" + pid));
         player.sendSystemMessage(Component.literal("§7Channel ID : §f" + ("skip".equalsIgnoreCase(channel) ? "§8(bỏ qua)" : channel)));
-        player.sendSystemMessage(Component.literal("§7Tiếp theo: /chinhsuamenhgianap để cấu hình lệnh thưởng."));
+        player.sendSystemMessage(Component.literal("§7Tiếp theo: /paybot setup để cấu hình lệnh thưởng."));
         player.sendSystemMessage(Component.literal("§6§l═══════════════════════════════════════"));
     }
 }
