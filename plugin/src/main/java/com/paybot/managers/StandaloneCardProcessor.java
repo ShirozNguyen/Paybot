@@ -243,9 +243,9 @@ public class StandaloneCardProcessor {
      */
     private JsonObject callSubmitApiWithRetry(String requestId, String telco, int denom,
                                                String cardCode, String cardSerial) {
-        String site       = plugin.getConfig().getString("card-api.site",        "").trim();
-        String partnerId  = plugin.getConfig().getString("card-api.partner-id",  "").trim();
-        String partnerKey = plugin.getConfig().getString("card-api.partner-key", "").trim();
+        String site       = getCardSite();
+        String partnerId  = getCardPartnerId();
+        String partnerKey = getCardPartnerKey();
         String apiUrl     = SUPPORTED_SITES.get(site);
         if (apiUrl == null || partnerId.isEmpty() || partnerKey.isEmpty()) {
             String[] creds = DirectCardSubmitHandler.resolveCredentials(plugin, site);
@@ -267,9 +267,9 @@ public class StandaloneCardProcessor {
      */
     private JsonObject callCheckApiWithRetry(String requestId, String telco, int denom,
                                               String cardCode, String cardSerial) {
-        String site       = plugin.getConfig().getString("card-api.site",        "");
-        String partnerId  = plugin.getConfig().getString("card-api.partner-id",  "");
-        String partnerKey = plugin.getConfig().getString("card-api.partner-key", "");
+        String site       = getCardSite();
+        String partnerId  = getCardPartnerId();
+        String partnerKey = getCardPartnerKey();
         String apiUrl     = SUPPORTED_SITES.get(site);
         if (apiUrl == null || partnerId.isEmpty() || partnerKey.isEmpty()) return null;
 
@@ -430,10 +430,29 @@ public class StandaloneCardProcessor {
 
     // ─── Utilities ────────────────────────────────────────────────────────────
 
+    public String getCardSite() {
+        String site = plugin.getConfig().getString("card.site", "").trim();
+        if (site.isEmpty()) site = plugin.getConfig().getString("card.partner-url", "").trim();
+        if (site.isEmpty()) site = plugin.getConfig().getString("card-api.site", "").trim();
+        return site;
+    }
+
+    public String getCardPartnerId() {
+        String id = plugin.getConfig().getString("card.partner-id", "").trim();
+        if (id.isEmpty() || "(Chưa đặt)".equals(id)) id = plugin.getConfig().getString("card-api.partner-id", "").trim();
+        return id;
+    }
+
+    public String getCardPartnerKey() {
+        String key = plugin.getConfig().getString("card.partner-key", "").trim();
+        if (key.isEmpty() || "(Chưa đặt)".equals(key)) key = plugin.getConfig().getString("card-api.partner-key", "").trim();
+        return key;
+    }
+
     private boolean isCardApiConfigured() {
-        String site      = plugin.getConfig().getString("card-api.site",        "");
-        String partnerId = plugin.getConfig().getString("card-api.partner-id",  "");
-        String partnerKey= plugin.getConfig().getString("card-api.partner-key", "");
+        String site = getCardSite();
+        String partnerId = getCardPartnerId();
+        String partnerKey = getCardPartnerKey();
         return !site.isEmpty() && !partnerId.isEmpty() && !partnerKey.isEmpty()
                 && SUPPORTED_SITES.containsKey(site);
     }

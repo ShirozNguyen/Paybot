@@ -77,7 +77,7 @@ public final class NapBankCommand implements CommandExecutor {
         }
         if (!isSepayConfigured()) {
             player.sendMessage(PayBotPlugin.f("§c[PayBot] §fServer chưa được cấu hình SePay."));
-            player.sendMessage("§7Admin dùng §e/sepaysetup §7để cấu hình.");
+            player.sendMessage("§7Admin dùng §e/paybot setup §7để cấu hình.");
             return;
         }
 
@@ -89,18 +89,19 @@ public final class NapBankCommand implements CommandExecutor {
         // Nếu bot-connected → notify bot sau khi tạo đơn (fire-and-forget) để Discord thông báo.
         SchedulerUtils.runAsync(plugin, () -> {
             String invoiceId   = com.paybot.managers.TransferContentGenerator.generate(plugin);
-            String bankAccount = plugin.getConfig().getString("sepay-api.bank-account-number", "").trim();
-            if (bankAccount.isEmpty()) bankAccount = plugin.getConfig().getString("sepay.bank-account", "").trim();
+            String bankAccount = plugin.getConfig().getString("sepay.account-number", "").trim();
+            if (bankAccount.isEmpty() || "(Chưa đặt)".equals(bankAccount)) bankAccount = plugin.getConfig().getString("sepay.bank-account", "").trim();
+            if (bankAccount.isEmpty()) bankAccount = plugin.getConfig().getString("sepay-api.bank-account-number", "").trim();
 
-            String bankName = plugin.getConfig().getString("sepay-api.bank-short-name", "").trim();
-            if (bankName.isEmpty()) bankName = plugin.getConfig().getString("sepay.bank-name", "").trim();
+            String bankName = plugin.getConfig().getString("sepay.bank-name", "").trim();
+            if (bankName.isEmpty()) bankName = plugin.getConfig().getString("sepay-api.bank-short-name", "").trim();
 
-            String accountName = plugin.getConfig().getString("sepay-api.account-holder-name", "").trim();
-            if (accountName.isEmpty()) accountName = plugin.getConfig().getString("sepay.account-name", "").trim();
+            String accountName = plugin.getConfig().getString("sepay.account-name", "").trim();
+            if (accountName.isEmpty()) accountName = plugin.getConfig().getString("sepay-api.account-holder-name", "").trim();
 
             if (bankAccount.isEmpty() || bankName.isEmpty()) {
                 SchedulerUtils.runForPlayer(plugin, player, () ->
-                    player.sendMessage(PayBotPlugin.f("§c[PayBot] §fChưa cấu hình SePay! Admin dùng §e/sepaysetup§f.")));
+                    player.sendMessage(PayBotPlugin.f("§c[PayBot] §fChưa cấu hình SePay! Admin dùng §e/paybot setup§f.")));
                 return;
             }
 
@@ -124,6 +125,7 @@ public final class NapBankCommand implements CommandExecutor {
                 player.sendMessage("§7Số tiền: §f" + formatVnd(amount) + " VND");
                 player.sendMessage("§7Nội dung CK: §e" + invoiceId);
                 player.sendMessage("§7QR hết hạn sau §e30 phút§7.");
+                sendClickableQrLink(player, qrPrimary);
             });
         });
     }
@@ -239,9 +241,39 @@ public final class NapBankCommand implements CommandExecutor {
         return sb.toString();
     }
 
+    private void sendClickableQrLink(Player player, String qrUrl) {
+        if (qrUrl == null || qrUrl.isEmpty()) return;
+        try {
+            net.kyori.adventure.text.Component msg = net.kyori.adventure.text.Component.text("§a[PayBot] §fNếu không thấy bản đồ QR, bấm ")
+                    .append(net.kyori.adventure.text.Component.text("TẠI ĐÂY")
+                            .color(net.kyori.adventure.text.format.NamedTextColor.YELLOW)
+                            .decorate(net.kyori.adventure.text.format.TextDecoration.UNDERLINED)
+                            .decorate(net.kyori.adventure.text.format.TextDecoration.BOLD)
+                            .clickEvent(net.kyori.adventure.text.event.ClickEvent.openUrl(qrUrl))
+                            .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                                    net.kyori.adventure.text.Component.text("§eBấm để mở ảnh mã QR VietQR trên trình duyệt"))))
+                    .append(net.kyori.adventure.text.Component.text(" §fđể quét mã thanh toán."));
+            player.sendMessage(msg);
+        } catch (Throwable t) {
+            try {
+                net.md_5.bungee.api.chat.TextComponent base = new net.md_5.bungee.api.chat.TextComponent("§a[PayBot] §fNếu không thấy bản đồ QR, bấm ");
+                net.md_5.bungee.api.chat.TextComponent link = new net.md_5.bungee.api.chat.TextComponent("TẠI ĐÂY");
+                link.setColor(net.md_5.bungee.api.ChatColor.YELLOW);
+                link.setBold(true);
+                link.setUnderlined(true);
+                link.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(net.md_5.bungee.api.chat.ClickEvent.Action.OPEN_URL, qrUrl));
+                link.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT,
+                        new net.md_5.bungee.api.chat.ComponentBuilder("§eBấm để mở ảnh mã QR VietQR trên trình duyệt").create()));
+                base.addExtra(link);
+                base.addExtra(new net.md_5.bungee.api.chat.TextComponent(" §fđể quét mã thanh toán."));
+                player.spigot().sendMessage(base);
+            } catch (Throwable t2) {
+                player.sendMessage("§a[PayBot] §fLink quét mã QR VietQR: §b" + qrUrl);
+            }
+        }
+    }
+
     private boolean isSepayConfigured() {
-        // v5.1.0: luôn kiểm tra SePay config (không bypass khi bot-connected
-        // vì giờ cả 2 mode đều xử lý QR trực tiếp, không qua bot)
         return plugin.getSetupManager().isSePayConfigured();
     }
 }

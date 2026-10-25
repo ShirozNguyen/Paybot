@@ -438,7 +438,7 @@ public final class GuiListener implements Listener {
         List<String> cmds = RewardDispatcher.resolveRewardCmds(plugin, amount, "bank");
         if (cmds.isEmpty()) {
             player.sendMessage(PayBotPlugin.f("§c[TEST] §fChưa cấu hình lệnh thưởng cho mệnh giá §e"
-                    + formatVnd(amount) + " §f(bank). Dùng §e/chinhsuamenhgianap §fđể cấu hình trước."));
+                    + formatVnd(amount) + " §f(bank). Dùng §e/paybot setup §fđể cấu hình trước."));
             return;
         }
         String rewardAmt = RewardDispatcher.computeRewardAmt(plugin, amount, "bank");
@@ -454,7 +454,7 @@ public final class GuiListener implements Listener {
         List<String> cmds = RewardDispatcher.resolveRewardCmds(plugin, amount, "card");
         if (cmds.isEmpty()) {
             player.sendMessage(PayBotPlugin.f("§c[TEST] §fChưa cấu hình lệnh thưởng cho mệnh giá §e"
-                    + formatVnd(amount) + " §f(card). Dùng §e/chinhsuamenhgianap §fđể cấu hình trước."));
+                    + formatVnd(amount) + " §f(card). Dùng §e/paybot setup §fđể cấu hình trước."));
             return;
         }
         String rewardAmt = RewardDispatcher.computeRewardAmt(plugin, amount, "card");

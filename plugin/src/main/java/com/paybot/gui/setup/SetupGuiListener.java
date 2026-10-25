@@ -261,11 +261,30 @@ public class SetupGuiListener implements Listener {
         // ── 5. SetupRewardCommandGui ────────────────────────────────────────────
         if (holder instanceof SetupRewardCommandGui) {
             event.setCancelled(true);
+            SetupRewardCommandGui rGui = (SetupRewardCommandGui) holder;
+            boolean isCard = rGui.isCardTab();
             int slot = event.getRawSlot();
             switch (slot) {
-                case 11: promptManager.startSession(player, "REWARD_CMD_BANK", "Lệnh thưởng nạp Bank mặc định", SetupMenuType.REWARD_COMMAND); break;
-                case 13: promptManager.startSession(player, "REWARD_CMD_CARD", "Lệnh thưởng nạp Thẻ mặc định", SetupMenuType.REWARD_COMMAND); break;
-                case 15:
+                case 1:
+                    // Tab Bank
+                    if (isCard) {
+                        com.paybot.utils.SchedulerUtils.runSync(plugin, () -> new SetupRewardCommandGui(plugin, false).open(player));
+                    }
+                    break;
+                case 3:
+                    // Tab Thẻ Cào
+                    if (!isCard) {
+                        com.paybot.utils.SchedulerUtils.runSync(plugin, () -> new SetupRewardCommandGui(plugin, true).open(player));
+                    }
+                    break;
+                case 5:
+                    // Lệnh Dự Phòng Fallback
+                    String promptKey = isCard ? "REWARD_FALLBACK_CARD" : "REWARD_FALLBACK_BANK";
+                    String name = isCard ? "Lệnh thưởng dự phòng Thẻ Cào" : "Lệnh thưởng dự phòng Bank";
+                    promptManager.startSession(player, promptKey, name, SetupMenuType.REWARD_COMMAND);
+                    break;
+                case 7:
+                    // Hệ số nhân
                     double[] mults = {1.0, 1.5, 2.0, 3.0};
                     double curM = plugin.getConfig().getDouble("reward-multiplier", 1.0);
                     double nextM = 1.0;
@@ -278,23 +297,45 @@ public class SetupGuiListener implements Listener {
                     CommentPreservingConfigWriter.updateKey(cfg, "reward-multiplier", nextM);
                     plugin.getConfig().set("reward-multiplier", nextM);
                     player.sendMessage("§a[PayBot Setup] §f✓ Đã chuyển Hệ số nhân nạp sang: §e" + nextM + "x");
-                    guiManager.openMenu(player, SetupMenuType.REWARD_COMMAND);
+                    com.paybot.utils.SchedulerUtils.runSync(plugin, () -> new SetupRewardCommandGui(plugin, isCard).open(player));
                     break;
-                case 29:
+                case 10: case 11: case 12: case 13: case 14: case 15: case 16: case 19: case 20:
+                    // 9 Mệnh giá cấu hình riêng
+                    int[] denomValues = {10000, 20000, 30000, 50000, 100000, 200000, 300000, 500000, 1000000};
+                    int[] denomSlots = {10, 11, 12, 13, 14, 15, 16, 19, 20};
+                    int chosenVal = 10000;
+                    for (int i = 0; i < denomSlots.length; i++) {
+                        if (denomSlots[i] == slot) {
+                            chosenVal = denomValues[i];
+                            break;
+                        }
+                    }
+                    String pKey = (isCard ? "REWARD_DENOM_CARD_" : "REWARD_DENOM_BANK_") + chosenVal;
+                    String fName = "Lệnh thưởng mệnh giá " + String.format("%,d", chosenVal) + " VNĐ (" + (isCard ? "Thẻ Cào" : "Bank") + ")";
+                    promptManager.startSession(player, pKey, fName, SetupMenuType.REWARD_COMMAND);
+                    break;
+                case 38:
+                    // Pháo hoa
                     boolean fw = !plugin.getConfig().getBoolean("effects.firework", true);
                     CommentPreservingConfigWriter.updateKey(cfg, "effects.firework", fw);
                     plugin.getConfig().set("effects.firework", fw);
                     player.sendMessage("§a[PayBot Setup] §f✓ Đã " + (fw ? "§aBẬT" : "§cTẮT") + " §fhiệu ứng pháo hoa!");
-                    guiManager.openMenu(player, SetupMenuType.REWARD_COMMAND);
+                    com.paybot.utils.SchedulerUtils.runSync(plugin, () -> new SetupRewardCommandGui(plugin, isCard).open(player));
                     break;
-                case 31:
-                    boolean snd = !plugin.getConfig().getBoolean("effects.sound", true);
-                    CommentPreservingConfigWriter.updateKey(cfg, "effects.sound", snd);
-                    plugin.getConfig().set("effects.sound", snd);
-                    player.sendMessage("§a[PayBot Setup] §f✓ Đã " + (snd ? "§aBẬT" : "§cTẮT") + " §fâm thanh chúc mừng!");
-                    guiManager.openMenu(player, SetupMenuType.REWARD_COMMAND);
+                case 40:
+                    // Âm thanh
+                    if (event.isShiftClick()) {
+                        promptManager.startSession(player, "REWARD_SOUND_NAME", "Sound ID Vanilla (VD: ui.toast.challenge_complete)", SetupMenuType.REWARD_COMMAND);
+                    } else {
+                        boolean snd = !plugin.getConfig().getBoolean("effects.sound", true);
+                        CommentPreservingConfigWriter.updateKey(cfg, "effects.sound", snd);
+                        plugin.getConfig().set("effects.sound", snd);
+                        player.sendMessage("§a[PayBot Setup] §f✓ Đã " + (snd ? "§aBẬT" : "§cTẮT") + " §fâm thanh chúc mừng!");
+                        com.paybot.utils.SchedulerUtils.runSync(plugin, () -> new SetupRewardCommandGui(plugin, isCard).open(player));
+                    }
                     break;
-                case 33:
+                case 42:
+                    // Thông báo chat
                     if (event.isShiftClick()) {
                         promptManager.startSession(player, "REWARD_NOTIF_MSG", "Tin nhắn chúc mừng nạp thành công", SetupMenuType.REWARD_COMMAND);
                     } else {
@@ -302,11 +343,13 @@ public class SetupGuiListener implements Listener {
                         CommentPreservingConfigWriter.updateKey(cfg, "effects.notification", ntf);
                         plugin.getConfig().set("effects.notification", ntf);
                         player.sendMessage("§a[PayBot Setup] §f✓ Đã " + (ntf ? "§aBẬT" : "§cTẮT") + " §fthông báo nạp thưởng!");
-                        guiManager.openMenu(player, SetupMenuType.REWARD_COMMAND);
+                        com.paybot.utils.SchedulerUtils.runSync(plugin, () -> new SetupRewardCommandGui(plugin, isCard).open(player));
                     }
                     break;
                 case 49:
-                case 45: guiManager.openMenu(player, SetupMenuType.MAIN_HUB); break;
+                case 45:
+                    com.paybot.utils.SchedulerUtils.runSync(plugin, () -> guiManager.openMenu(player, SetupMenuType.MAIN_HUB));
+                    break;
                 default: break;
             }
             return;
@@ -333,15 +376,15 @@ public class SetupGuiListener implements Listener {
             if (slot >= 10 && slot <= 16) {
                 long[] denoms = {10000L, 20000L, 50000L, 100000L, 200000L, 500000L, 1000000L};
                 long amt = denoms[slot - 10];
-                player.sendMessage("§e§l[TEST] §fĐã giả lập nạp Bank §a" + String.format("%,d", amt) + " VNĐ §fthành công!");
-                player.sendMessage("§a[PayBot] §fLệnh thưởng đã được dispatch và pháo hoa đã bắn!");
+                player.closeInventory();
+                com.paybot.gui.GuiListener.simulateBankSuccess(plugin, player, (int) amt);
             } else if (slot >= 28 && slot <= 34) {
                 long[] denoms = {10000L, 20000L, 50000L, 100000L, 200000L, 500000L, 1000000L};
                 long amt = denoms[slot - 28];
-                player.sendMessage("§e§l[TEST] §fĐã giả lập gạch thẻ Viettel §a" + String.format("%,d", amt) + " VNĐ §fthành công!");
-                player.sendMessage("§a[PayBot] §fLệnh thưởng đã được dispatch và pháo hoa đã bắn!");
+                player.closeInventory();
+                com.paybot.gui.GuiListener.simulateCardSuccess(plugin, player, "VIETTEL", (int) amt);
             } else if (slot == 45 || slot == 49) {
-                guiManager.openMenu(player, SetupMenuType.MAIN_HUB);
+                com.paybot.utils.SchedulerUtils.runSync(plugin, () -> guiManager.openMenu(player, SetupMenuType.MAIN_HUB));
             }
             return;
         }

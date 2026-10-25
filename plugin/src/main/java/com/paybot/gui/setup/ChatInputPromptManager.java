@@ -99,7 +99,13 @@ public class ChatInputPromptManager {
         switch (session.promptKey) {
             case "SEPAY_TOKEN":
                 CommentPreservingConfigWriter.updateKey(configFile, "sepay.api-token", input);
+                CommentPreservingConfigWriter.updateKey(configFile, "sepay-api.api-token", input);
+                CommentPreservingConfigWriter.updateKey(configFile, "sepay-api.enabled", true);
+                CommentPreservingConfigWriter.updateKey(configFile, "sepay.configured", true);
                 plugin.getConfig().set("sepay.api-token", input);
+                plugin.getConfig().set("sepay-api.api-token", input);
+                plugin.getConfig().set("sepay-api.enabled", true);
+                plugin.getConfig().set("sepay.configured", true);
                 player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật API Token SePay thành công!");
                 break;
 
@@ -141,13 +147,19 @@ public class ChatInputPromptManager {
 
             case "SEPAY_STK":
                 CommentPreservingConfigWriter.updateKey(configFile, "sepay.account-number", input);
+                CommentPreservingConfigWriter.updateKey(configFile, "sepay.bank-account", input);
+                CommentPreservingConfigWriter.updateKey(configFile, "sepay-api.bank-account-number", input);
                 plugin.getConfig().set("sepay.account-number", input);
+                plugin.getConfig().set("sepay.bank-account", input);
+                plugin.getConfig().set("sepay-api.bank-account-number", input);
                 player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Số tài khoản SePay: §e" + input);
                 break;
 
             case "SEPAY_BANK":
                 CommentPreservingConfigWriter.updateKey(configFile, "sepay.bank-name", input);
+                CommentPreservingConfigWriter.updateKey(configFile, "sepay-api.bank-short-name", input);
                 plugin.getConfig().set("sepay.bank-name", input);
+                plugin.getConfig().set("sepay-api.bank-short-name", input);
                 player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Ngân hàng SePay: §e" + input);
                 break;
 
@@ -166,19 +178,31 @@ public class ChatInputPromptManager {
 
             case "CARD_SITE":
                 CommentPreservingConfigWriter.updateKey(configFile, "card.site", input);
+                CommentPreservingConfigWriter.updateKey(configFile, "card.partner-url", input);
+                CommentPreservingConfigWriter.updateKey(configFile, "card-api.site", input);
                 plugin.getConfig().set("card.site", input);
+                plugin.getConfig().set("card.partner-url", input);
+                plugin.getConfig().set("card-api.site", input);
                 player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Web gạch thẻ: §e" + input);
                 break;
 
             case "CARD_PARTNER_ID":
                 CommentPreservingConfigWriter.updateKey(configFile, "card.partner-id", input);
+                CommentPreservingConfigWriter.updateKey(configFile, "card-api.partner-id", input);
+                CommentPreservingConfigWriter.updateKey(configFile, "card-api.configured", true);
                 plugin.getConfig().set("card.partner-id", input);
+                plugin.getConfig().set("card-api.partner-id", input);
+                plugin.getConfig().set("card-api.configured", true);
                 player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Partner ID gạch thẻ thành công!");
                 break;
 
             case "CARD_PARTNER_KEY":
                 CommentPreservingConfigWriter.updateKey(configFile, "card.partner-key", input);
+                CommentPreservingConfigWriter.updateKey(configFile, "card-api.partner-key", input);
+                CommentPreservingConfigWriter.updateKey(configFile, "card-api.configured", true);
                 plugin.getConfig().set("card.partner-key", input);
+                plugin.getConfig().set("card-api.partner-key", input);
+                plugin.getConfig().set("card-api.configured", true);
                 player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Partner Key gạch thẻ thành công!");
                 break;
 
@@ -286,8 +310,22 @@ public class ChatInputPromptManager {
                 break;
         }
 
+        if (session.promptKey.startsWith("REWARD_DENOM_BANK_")) {
+            String denomStr = session.promptKey.substring("REWARD_DENOM_BANK_".length());
+            String key = "denom-rewards-bank." + denomStr + ".cmd";
+            CommentPreservingConfigWriter.updateKey(configFile, key, input);
+            plugin.getConfig().set(key, input);
+            player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Lệnh thưởng Bank cho mệnh giá §e" + denomStr + " VNĐ§f: §b" + input);
+        } else if (session.promptKey.startsWith("REWARD_DENOM_CARD_")) {
+            String denomStr = session.promptKey.substring("REWARD_DENOM_CARD_".length());
+            String key = "denom-rewards-card." + denomStr + ".cmd";
+            CommentPreservingConfigWriter.updateKey(configFile, key, input);
+            plugin.getConfig().set(key, input);
+            player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Lệnh thưởng Thẻ Cào cho mệnh giá §e" + denomStr + " VNĐ§f: §b" + input);
+        }
+
         // Tự động mở lại đúng GUI sau khi hoàn thành
-        guiManager.openMenu(player, session.returnMenu);
+        com.paybot.utils.SchedulerUtils.runSync(plugin, () -> guiManager.openMenu(player, session.returnMenu));
     }
 
     public static class PromptSession {

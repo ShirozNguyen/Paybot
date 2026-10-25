@@ -37,7 +37,7 @@ public final class NapTheCommand implements CommandExecutor {
         // Text-mode fallback: /napthe <telco> <denom> <code> <serial> — requires card API
         if (!isReady()) {
             player.sendMessage(PayBotPlugin.f("§c[PayBot] §fServer chưa được cấu hình API gạch thẻ."));
-            player.sendMessage("§7Admin dùng §e/cardsetup §7để cấu hình.");
+            player.sendMessage("§7Admin dùng §e/paybot setup §7để cấu hình.");
             return true;
         }
 

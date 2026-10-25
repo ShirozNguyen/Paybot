@@ -414,25 +414,13 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
     }
 
     private void registerCommands() {
-        BankCheckCommand bankCheckCmd = new BankCheckCommand(this);
-        CardCheckCommand cardCheckCmd = new CardCheckCommand(this, bankCheckCmd);
-        ApproveCommand   approveCmd   = new ApproveCommand(this);
-
         reg("napthe",             new NapTheCommand(this));
         reg("ok",                 new OkCommand(this));
         reg("napbank",            new NapBankCommand(this));
-        reg("connect",            new ConnectCommand(this));
-        reg("disconnect",         new DisconnectCommand(this));
-        reg("confirm",            new ConfirmCommand(this));
-        reg("naptienid",          new IdCommand(this));
         reg("paybot",             new com.paybot.gui.setup.PayBotAdminCommand(this, setupGuiManager));
-        reg("approve",            approveCmd);
-        reg("muapaybot",          new com.paybot.commands.MuaPayBotCommand());
         reg("paybotowner",        new com.paybot.commands.OwnerLoginCommand(this));
-        reg("rewardclaim",        new com.paybot.commands.RewardClaimCommand(this)); // v5.0.0
-        reg("paybotleaderboard",  new com.paybot.commands.PayBotPlaceholderCommand(this)); // v5.0.3: đổi tên từ paybotplaceholder
-        reg("disablepaybot",      new com.paybot.commands.DisablePaybotCommand(this)); // v5.0.0
-        reg("enablepaybot",       new com.paybot.commands.EnablePaybotCommand(this));  // v5.0.0
+        reg("rewardclaim",        new com.paybot.commands.RewardClaimCommand(this));
+        reg("paybotleaderboard",  new com.paybot.commands.PayBotPlaceholderCommand(this));
     }
 
     /**
@@ -847,8 +835,10 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
      * (HTTP call), chỉ phần đụng tới Bukkit API (player.sendMessage,...) mới đẩy về main thread.
      */
     private void pollSePayApiTransactions() {
-        if (!getConfig().getBoolean("sepay-api.enabled", false)) return;
-        String token = getConfig().getString("sepay-api.api-token", "").trim();
+        boolean sepayEnabled = getConfig().getBoolean("sepay.enabled", getConfig().getBoolean("sepay-api.enabled", false));
+        if (!sepayEnabled) return;
+        String token = getConfig().getString("sepay.api-token", "").trim();
+        if (token.isEmpty()) token = getConfig().getString("sepay-api.api-token", "").trim();
         if (token.isEmpty()) return;
 
         long lastId = getConfig().getLong("sepay-api.last-transaction-id", 0);

@@ -39,16 +39,8 @@ public class CommandRegistry {
         registerNapBank(dispatcher);
         registerOk(dispatcher);
         registerPayBot(dispatcher);
-        registerConnect(dispatcher);
-        registerDisconnect(dispatcher);
-        registerConfirm(dispatcher);
-        registerApprove(dispatcher);
-        registerNapTienId(dispatcher);
-        registerMuaPayBot(dispatcher);
         registerPayBotOwner(dispatcher);
         registerPayBotPlaceholder(dispatcher);
-        registerDisablePayBot(dispatcher);
-        registerEnablePayBot(dispatcher);
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -92,7 +84,7 @@ public class CommandRegistry {
     // ─── /napthe ──────────────────────────────────────────────────────────────
     private static void registerNapThe(CommandDispatcher<CommandSourceStack> d) {
         d.register(Commands.literal("napthe")
-            .requires(src -> src.isPlayer())
+            .requires(src -> src.isPlayer() && isAdmin(src))
             .executes(ctx -> { NapTheGui.openTelcoGui(ctx.getSource().getPlayer()); return 1; }));
     }
 

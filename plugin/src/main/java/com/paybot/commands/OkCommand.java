@@ -54,7 +54,7 @@ public class OkCommand implements CommandExecutor {
                         + pending.denom + " VND (standalone=" + plugin.isStandaloneMode() + ")");
 
         if (!plugin.getSetupManager().isCardApiConfigured()) {
-            player.sendMessage(PayBotPlugin.f("§c[PayBot] §fServer chưa cấu hình Card API. Admin dùng §e/cardsetup §ftrước!"));
+            player.sendMessage(PayBotPlugin.f("§c[PayBot] §fServer chưa cấu hình Card API. Admin dùng §e/paybot setup §ftrước!"));
             return true;
         }
         plugin.getStandaloneCardProcessor().submitCard(

@@ -43,36 +43,6 @@ commands:
     permission: naptien.admin
     aliases: ["paybotreload", "naptienreload"]
 
-  connect:
-    description: "Kết nối plugin với bot Discord"
-    usage: "/connect discord <guild_id>"
-    permission: naptien.admin
-
-  disconnect:
-    description: "Gửi yêu cầu ngắt kết nối hệ thống auto"
-    usage: "/disconnect [--force]"
-    permission: naptien.admin
-
-  confirm:
-    description: "Xác nhận ngắt kết nối hệ thống auto"
-    usage: "/confirm"
-    permission: naptien.admin
-
-  naptienid:
-    description: "Xem server-id, guild-id và trạng thái kết nối"
-    usage: "/naptienid"
-    permission: naptien.admin
-
-  approve:
-    description: "Duyệt và cấp thưởng đơn nạp thủ công"
-    usage: "/approve <invoice_id>"
-    permission: naptien.admin
-
-  muapaybot:
-    description: "Thông tin mua PayBot"
-    usage: "/muapaybot"
-    permission: naptien.op
-
   paybotowner:
     description: "Đăng nhập quyền owner bằng mã một lần từ Discord"
     usage: "/paybotowner <mã> | logout | status"
@@ -80,31 +50,21 @@ commands:
 
   rewardclaim:
     description: "Nhận phần thưởng đang chờ (đơn được duyệt lúc bạn offline)"
-    usage: "/RewardClaim [confirm]"
+    usage: "/rewardclaim [confirm]"
     permission: naptien.use
 
-  paybotleaderboard: # v5.0.3: đổi tên từ paybotplaceholder — dễ phân biệt hơn (không liên quan PlaceholderAPI)
-    description: "Xem thống kê nạp (tổng nạp, top nạp) - không cần PlaceholderAPI"
+  paybotleaderboard:
+    description: "[ADMIN ONLY] Xem thống kê nạp (tổng nạp, top nạp) - không cần PlaceholderAPI"
     usage: "/paybotleaderboard"
-    permission: naptien.use
-
-  disablepaybot:
-    description: "[OWNER ONLY] Chặn vĩnh viễn PayBot trên server này (theo IP máy)"
-    usage: "/disablepaybot"
-    permission: naptien.op
-
-  enablepaybot:
-    description: "[OWNER ONLY] Mở chặn PayBot trên server này"
-    usage: "/enablepaybot"
-    permission: naptien.op
+    permission: naptien.admin
 
 permissions:
   naptien.use:
-    description: "Cho phép dùng /napthe, /napbank, /paybotowner, /RewardClaim, /paybotleaderboard"
+    description: "Cho phép dùng /napthe, /napbank, /ok, /paybotowner, /rewardclaim"
     default: true
 
   naptien.admin:
-    description: "Quyền admin đầy đủ (cấu hình, duyệt đơn, kết nối bot)"
+    description: "Quyền admin đầy đủ (cấu hình /paybot, xem /paybotleaderboard)"
     default: op
 
   naptien.op:

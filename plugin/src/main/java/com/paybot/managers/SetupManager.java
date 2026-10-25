@@ -85,22 +85,40 @@ public class SetupManager implements Listener {
     // ─── Config helpers ───────────────────────────────────────────────────────
 
     public boolean isSePayConfigured() {
-        // v5.0.0 (Phase B): flow MỚI (chỉ cần api-token, không cần webhook) — ưu tiên check trước.
-        if (plugin.getConfig().getBoolean("sepay-api.enabled", false)
-                && !plugin.getConfig().getString("sepay-api.api-token", "").isEmpty()) {
-            return true;
-        }
-        // Flow CŨ (merchant-id/secret-key + webhook qua bot.py) — vẫn giữ tương thích ngược.
-        return plugin.getConfig().getBoolean("sepay.configured", false)
-            && !plugin.getConfig().getString("sepay.bank-account", "").isEmpty()
-            && !plugin.getConfig().getString("sepay.bank-name", "").isEmpty();
+        // v7.0.1: Hỗ trợ cả key mới v7.0 (sepay.*) và key v5/v6 (sepay-api.*, sepay.configured)
+        String token = plugin.getConfig().getString("sepay.api-token", "").trim();
+        if (token.isEmpty()) token = plugin.getConfig().getString("sepay-api.api-token", "").trim();
+
+        String stk = plugin.getConfig().getString("sepay.account-number", "").trim();
+        if (stk.isEmpty() || "(Chưa đặt)".equals(stk)) stk = plugin.getConfig().getString("sepay.bank-account", "").trim();
+        if (stk.isEmpty()) stk = plugin.getConfig().getString("sepay-api.bank-account-number", "").trim();
+
+        String bank = plugin.getConfig().getString("sepay.bank-name", "").trim();
+        if (bank.isEmpty()) bank = plugin.getConfig().getString("sepay-api.bank-short-name", "").trim();
+
+        boolean enabled = plugin.getConfig().getBoolean("sepay.enabled", plugin.getConfig().getBoolean("sepay-api.enabled", true));
+
+        // Đã cấu hình nếu có API token HOẶC có đầy đủ STK + Tên ngân hàng nhận tiền
+        if (!token.isEmpty() && enabled) return true;
+        return (!stk.isEmpty() && !bank.isEmpty() && enabled);
     }
 
     public boolean isCardApiConfigured() {
-        return plugin.getConfig().getBoolean("card-api.configured", false)
-            && !plugin.getConfig().getString("card-api.site", "").isEmpty()
-            && !plugin.getConfig().getString("card-api.partner-id", "").isEmpty()
-            && !plugin.getConfig().getString("card-api.partner-key", "").isEmpty();
+        // v7.0.1: Hỗ trợ cả key mới (card.*) và key cũ (card-api.*)
+        String site = plugin.getConfig().getString("card.site", "").trim();
+        if (site.isEmpty()) site = plugin.getConfig().getString("card.partner-url", "").trim();
+        if (site.isEmpty()) site = plugin.getConfig().getString("card-api.site", "").trim();
+
+        String partnerId = plugin.getConfig().getString("card.partner-id", "").trim();
+        if (partnerId.isEmpty() || "(Chưa đặt)".equals(partnerId)) partnerId = plugin.getConfig().getString("card-api.partner-id", "").trim();
+
+        String partnerKey = plugin.getConfig().getString("card.partner-key", "").trim();
+        if (partnerKey.isEmpty() || "(Chưa đặt)".equals(partnerKey)) partnerKey = plugin.getConfig().getString("card-api.partner-key", "").trim();
+
+        boolean enabled = plugin.getConfig().getBoolean("card.enabled", plugin.getConfig().getBoolean("card-api.configured", true));
+
+        return enabled && !site.isEmpty() && !partnerId.isEmpty() && !partnerKey.isEmpty()
+                && !"(Chưa đặt)".equals(partnerId) && !"(Chưa đặt)".equals(partnerKey);
     }
 
     // ─── Chat listener ────────────────────────────────────────────────────────

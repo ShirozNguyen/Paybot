@@ -137,7 +137,11 @@ public final class RewardDispatcher {
             }
         }
         if (list.isEmpty()) {
-            String fallback = plugin.getConfig().getString("reward-command", "").trim();
+            String fallbackKey = "bank".equalsIgnoreCase(type) ? "reward-command-bank" : "reward-command-card";
+            String fallback = plugin.getConfig().getString(fallbackKey, "").trim();
+            if (fallback.isEmpty()) {
+                fallback = plugin.getConfig().getString("reward-command", "").trim();
+            }
             if (!fallback.isEmpty()) {
                 for (String part : fallback.split("(?:;;|§§|;|\n)")) {
                     String t = part.trim();
