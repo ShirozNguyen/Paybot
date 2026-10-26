@@ -65,8 +65,8 @@ jobs:
           
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             echo "=== EXECUTING DRY-RUN MODE ==="
-            python tools/modrinth_uploader.py --dry-run
+            python .github/scripts/modrinth_uploader.py --dry-run
           else
             echo "=== EXECUTING OFFICIAL MODRINTH UPLOAD ==="
-            python tools/modrinth_uploader.py
+            python .github/scripts/modrinth_uploader.py
           fi
