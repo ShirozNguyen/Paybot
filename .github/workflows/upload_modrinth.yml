@@ -1,0 +1,72 @@
+name: Upload Modrinth Releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Run ID chứa artifact PayBot-Done (mặc định: 40184744366)'
+        required: true
+        default: '40184744366'
+      dry_run:
+        description: 'Chạy thử nghiệm kiểm tra metadata (Dry Run)'
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  upload-to-modrinth:
+    name: Upload 69 JARs to Modrinth
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --no-cache-dir requests
+
+      - name: Download PayBot-Done Artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== Downloading PayBot-Done from Run ID: ${{ github.event.inputs.run_id }} ==="
+          mkdir -p Done
+          gh run download "${{ github.event.inputs.run_id }}" --name "PayBot-Done" --dir Done
+          TOTAL_JARS=$(find Done -type f -name "*.jar" | wc -l)
+          echo ">>> Found $TOTAL_JARS production JARs in Done/"
+          find Done -type f -name "*.jar" | sort | while read -r f; do
+            echo "  - $(basename "$f") ($(wc -c < "$f") bytes)"
+          done
+          if [ "$TOTAL_JARS" -lt 68 ]; then
+            echo "❌ Expected >= 68 JARs, but found $TOTAL_JARS!"
+            exit 1
+          fi
+
+      - name: Execute Modrinth Uploader
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_VERSION_TYPE: release
+          PYTHONUNBUFFERED: "1"
+        run: |
+          if [ -z "$MODRINTH_TOKEN" ]; then
+            echo "❌ MODRINTH_TOKEN secret is not configured!"
+            exit 1
+          fi
+          
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            echo "=== EXECUTING DRY-RUN MODE ==="
+            python tools/modrinth_uploader.py --dry-run
+          else
+            echo "=== EXECUTING OFFICIAL MODRINTH UPLOAD ==="
+            python tools/modrinth_uploader.py
+          fi
