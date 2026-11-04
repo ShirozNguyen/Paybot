@@ -191,11 +191,12 @@ class ChangelogFormatter:
     """Class 6: Chuẩn bị nội dung changelog định dạng Markdown từ các file tài liệu phát hành."""
 
     @staticmethod
-    def get_changelog(version="7.0.1"):
+    def get_changelog(version="7.0.2"):
         candidate_paths = [
             Path(f".github/release_notes/MODRINTH_CHANGELOG_{version}.md"),
             Path(f"docs/logs/MODRINTH_CHANGELOG_{version}.md"),
             Path(f"docs/MODRINTH_CHANGELOG_{version}.md"),
+            Path(".github/release_notes/MODRINTH_CHANGELOG_7.0.2.md"),
             Path(".github/release_notes/MODRINTH_CHANGELOG_7.0.1.md")
         ]
         for p in candidate_paths:
@@ -210,7 +211,7 @@ class ModrinthApiClient:
     def __init__(self, token, api_url="https://api.modrinth.com/v2"):
         self.token = token
         self.api_url = api_url
-        self.user_agent = "ShirozNguyen/PayBot/7.0.1 (https://github.com/ShirozNguyen/PayBot)"
+        self.user_agent = "ShirozNguyen/PayBot/7.0.2 (https://github.com/ShirozNguyen/PayBot)"
         self.session = requests.Session()
         self.session.headers.update({
             "Authorization": self.token,

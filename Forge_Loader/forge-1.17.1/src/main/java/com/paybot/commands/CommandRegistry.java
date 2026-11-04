@@ -84,7 +84,13 @@ public class CommandRegistry {
         return cmd
                 .replace("{player}",    playerName)
                 .replace("[playername]", playerName)
-                .replace("[amount]",    String.valueOf(rewardAmt));
+                .replace("%player_name%",playerName)
+                .replace("%player%",    playerName)
+                .replace("{playername}",playerName)
+                .replace("[player]",    playerName)
+                .replace("[amount]",    String.valueOf(rewardAmt))
+                .replace("{amount}",    String.valueOf(rewardAmt))
+                .replace("%amount%",    String.valueOf(rewardAmt));
     }
 
     // ─── /napthe ──────────────────────────────────────────────────────────────

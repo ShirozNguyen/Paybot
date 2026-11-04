@@ -84,15 +84,38 @@ Dự án được xây dựng với kiến trúc **100% Server-Side Multi-Loader
 ### Dành Cho Quản Trị Viên (`naptien.admin` hoặc OP)
 | Lệnh | Mô tả |
 | :--- | :--- |
-| `/sepaysetup` | Hướng dẫn và cấu hình nhanh Token SePay tự động lấy số tài khoản |
-| `/cardsetup` | Trình hướng dẫn cài đặt API gạch thẻ cào (TheSieuRe, GachThePro...) |
-| `/cardapisetup` | GUI chuyển đổi nhanh giữa các cổng đổi thẻ cào |
-| `/chinhsuamenhgianap` | GUI tùy biến lệnh thưởng (reward commands) theo từng mệnh giá |
-| `/PayBotSetup` | Kiểm tra tổng quan trạng thái cấu hình và kết nối của PayBot |
-| `/topuplist all` | Xem danh sách và duyệt đơn hàng nạp tiền đang chờ |
+| `/paybot` hoặc `/paybot setup` | Mở **Master Setup Hub GUI** toàn diện: cấu hình SePay, Thẻ cào, Lệnh thưởng, Mốc nạp, CSDL, Discord, Quản lý đơn nạp & Giả lập test trực quan 100% |
+| `/paybot reload` | Nạp lại toàn bộ file `config.yml` và `milestones.yml` từ đĩa và áp dụng ngay lập tức tới tất cả subsystem |
+| `/topuplist all` | Xem danh sách và duyệt đơn hàng nạp tiền đang chờ (hoặc quản lý trực tiếp qua GUI `/paybot`) |
 | `/testnapbank [số_tiền]` | Giả lập nạp bank thành công để kiểm tra lệnh thưởng và hiệu ứng |
 | `/testnapthe [nhà_mạng] [mệnh_giá]` | Giả lập nạp thẻ cào thành công để test hệ thống |
-| `/paybot reload` | Nạp lại toàn bộ file `config.yml` và áp dụng ngay lập tức |
+| `/sepaysetup` | Trình hướng dẫn setup SePay qua chat (legacy fallback) |
+| `/cardsetup` | Trình hướng dẫn cài đặt API gạch thẻ qua chat (legacy fallback) |
+| `/chinhsuamenhgianap` | GUI tùy biến lệnh thưởng theo từng mệnh giá (legacy fallback) |
+
+---
+
+---
+
+## 🎁 Biến Thay Thế Trong Lệnh Thưởng (Supported Placeholders)
+
+Khi cấu hình lệnh thưởng (Reward Commands) cho từng mệnh giá nạp (Bank / Thẻ Cào) hoặc Mốc Nạp (Milestones), PayBot hỗ trợ đầy đủ các biến thay thế trên **TẤT CẢ** các nền tảng (Paper, Folia, Purpur, Fabric, Forge, NeoForge):
+
+| Biến Thay Thế | Ý Nghĩa / Ví Dụ Thay Thế | Hỗ Trợ |
+| :--- | :--- | :--- |
+| `%player_name%` | Tên người chơi nạp tiền (Chuẩn PlaceholderAPI) — VD: `TheRealShiroz` | ✅ Toàn bộ nền tảng |
+| `%player%` | Tên người chơi nạp tiền (Chuẩn phổ biến) | ✅ Toàn bộ nền tảng |
+| `[playername]` | Tên người chơi nạp tiền (Chuẩn PayBot gốc) | ✅ Toàn bộ nền tảng |
+| `{player}` | Tên người chơi nạp tiền (Chuẩn Bot Discord) | ✅ Toàn bộ nền tảng |
+| `{playername}`, `[player]` | Tên người chơi nạp tiền (Alias tương thích ngược) | ✅ Toàn bộ nền tảng |
+| `%amount%` | Số tiền / Mệnh giá nạp — VD: `100000` | ✅ Toàn bộ nền tảng |
+| `{amount}`, `[amount]` | Số tiền / Mệnh giá nạp (Chuẩn Bot / Plugin) | ✅ Toàn bộ nền tảng |
+
+> **Ví dụ cấu hình lệnh:**
+> `p give %player_name% 100`  
+> `eco give {player} [amount]`  
+> `broadcast &aNgười chơi &e%player% &ađã nạp &b%amount% VNĐ!`  
+> *(Hỗ trợ nối nhiều lệnh trên 1 dòng cách nhau bằng dấu chấm phẩy `;` hoặc `;;`)*
 
 ---
 
@@ -221,15 +244,13 @@ PayBot tích hợp giải pháp đo lường hiệu năng FastStats nhằm thu t
 #### Admin Commands (`naptien.admin` or OP)
 | Command | Description |
 | :--- | :--- |
-| `/sepaysetup` | Quick interactive setup wizard with SePay API Token |
-| `/cardsetup` | Interactive wizard to configure card exchange APIs (TheSieuRe, GachThePro...) |
-| `/cardapisetup` | Quick GUI to toggle between card payment gateways |
-| `/chinhsuamenhgianap` | Denomination reward command customization GUI |
-| `/PayBotSetup` | System diagnostic overview of PayBot configurations and connectivity |
-| `/topuplist all` | View and approve pending deposit orders |
-| `/testnapbank [amount]` | Simulate a successful bank deposit to verify reward commands |
+| `/paybot` or `/paybot setup` | Opens the **Master Setup Hub GUI**: configure SePay, Card gateways, Reward commands, Milestones, Database, Discord, Transaction manager & Simulation test |
+| `/paybot reload` | Instantly reloads `config.yml` and `milestones.yml` from disk and applies changes to all live subsystems |
+| `/topuplist all` | View and approve pending deposit orders (or use the visual Transaction Manager in `/paybot`) |
+| `/testnapbank [amount]` | Simulate a successful bank deposit to verify rewards and effects |
 | `/testnapthe [carrier] [denom]` | Simulate a successful card deposit to verify rewards and effects |
-| `/paybot reload` | Instantly reload configuration from `config.yml` |
+| `/sepaysetup` | Interactive SePay setup wizard (legacy fallback) |
+| `/cardsetup` | Interactive scratch card setup wizard (legacy fallback) |
 
 ---
 

@@ -222,12 +222,12 @@ public class SmartConfigMerger {
             String tplLine = tplBlock.lines.get(i);
             if (tplLine.trim().startsWith("#") && i + 1 < tplBlock.lines.size()) {
                 String nextTplLine = tplBlock.lines.get(i + 1);
-                if (nextTplLine.startsWith(" ") && nextTplLine.contains(":")) {
+                if (nextTplLine.startsWith(" ") && nextTplLine.contains(":") && !nextTplLine.trim().startsWith("#")) {
                     String subKey = extractKey(nextTplLine);
                     if (!subKey.isEmpty()) {
                         for (int j = 0; j < liveBlock.lines.size(); j++) {
                             String liveLine = liveBlock.lines.get(j);
-                            if (liveLine.startsWith(" ") && liveLine.contains(":") && extractKey(liveLine).equals(subKey)) {
+                            if (liveLine.startsWith(" ") && liveLine.contains(":") && !liveLine.trim().startsWith("#") && extractKey(liveLine).equals(subKey)) {
                                 boolean commentPresent = (j > 0 && liveBlock.lines.get(j - 1).trim().startsWith("#"));
                                 if (!commentPresent) {
                                     liveBlock.lines.add(j, tplLine);

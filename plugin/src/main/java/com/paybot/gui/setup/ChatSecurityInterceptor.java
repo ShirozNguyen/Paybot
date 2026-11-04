@@ -32,6 +32,15 @@ public class ChatSecurityInterceptor implements Listener {
         Player player = event.getPlayer();
         if (player == null) return;
 
+        if (MilestonePromptSessionHandler.isHandling(player.getUniqueId())) {
+            event.setCancelled(true);
+            String message = event.getMessage();
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                MilestonePromptSessionHandler.handleChatInput(plugin, player, message);
+            });
+            return;
+        }
+
         if (promptManager.isAwaitingInput(player.getUniqueId())) {
             // Hủy sự kiện phát tán chat toàn server
             event.setCancelled(true);

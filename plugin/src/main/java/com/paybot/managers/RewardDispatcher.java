@@ -162,8 +162,13 @@ public final class RewardDispatcher {
         String cmd = rawCmdTemplate.replaceAll("\"([^\"]*)\"", "$1").trim();
         cmd = cmd.replace("[playername]", safePlayer)   // placeholder chuẩn (plugin)
                  .replace("{player}",     safePlayer)    // placeholder chuẩn (bot Discord)
+                 .replace("%player_name%",safePlayer)    // PlaceholderAPI chuẩn
+                 .replace("%player%",     safePlayer)    // placeholder phổ biến
+                 .replace("{playername}", safePlayer)    // alias
+                 .replace("[player]",     safePlayer)    // alias
                  .replace("[amount]",     safeAmt)       // placeholder chuẩn
                  .replace("{amount}",     safeAmt)       // alias bot Discord
+                 .replace("%amount%",     safeAmt)       // placeholder phổ biến
                  .replace("[So luong]",   safeAmt)       // backward compat
                  .replace("[Số lượng]",   safeAmt)       // backward compat
                  .replace("playername",   safePlayer)    // backward compat (bare)

@@ -187,6 +187,31 @@ public final class MilestoneManager {
         return 0L;
     }
 
+    public void triggerManualReset() {
+        workerPool.submit(() -> {
+            try {
+                long now = System.currentTimeMillis();
+                dbService.incrementCycleId();
+                dbService.setLastResetTime(now);
+                int newCycle = dbService.getCurrentCycleId();
+                plugin.getLogger().info("[PayBot] [MANUAL-RESET] Admin đã kích hoạt reset toàn bộ mốc nạp server (Chu kỳ mới: #" + newCycle + ")!");
+                if (config.isBroadcastOnReset() && config.getResetBroadcastMessage() != null) {
+                    broadcastMessage(config.getResetBroadcastMessage());
+                }
+            } catch (Throwable t) {
+                plugin.getLogger().warning("[PayBot] Lỗi reset mốc thủ công: " + t.getMessage());
+            }
+        });
+    }
+
+    public MilestoneConfig getConfig() {
+        return config;
+    }
+
+    public MilestoneDatabaseService getDbService() {
+        return dbService;
+    }
+
     public synchronized void shutdown() {
         if (resetScheduler != null) resetScheduler.stop();
         if (workerPool != null && !workerPool.isShutdown()) workerPool.shutdownNow();

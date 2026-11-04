@@ -427,6 +427,7 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
      * v5.4.6 — Áp dụng (Apply) toàn bộ giá trị cấu hình vừa reload từ config.yml vào Runtime Managers ngay lập tức.
      */
     public void applyReloadedConfig() {
+        reloadConfig();
         com.paybot.utils.PayBotDebug.setEnabled(this, getConfig().getBoolean("debug-mode", false));
         if (sePayApiClient != null) {
             sePayApiClient.resetAuthFailures();
@@ -535,15 +536,13 @@ public class PayBotPlugin extends JavaPlugin implements Listener {
             configWatcherTask = SchedulerUtils.runAsyncTimer(this, () -> {
                 long mtime = cfgFile.lastModified();
                 if (mtime == configLastModified) return; // chưa đổi gì, khỏi làm gì cả
-                configLastModified = mtime;
                 int[] result = SmartConfigMerger.sync(this, cfgFile);
-                int added = result[0], removed = result[1];
-                if (added > 0 || removed > 0) {
-                    reloadConfig();
-                    getLogger().info("[PayBot] 🔄 Config đã thay đổi — tự reload xong. "
-                            + "(+" + added + " key mới, -" + removed + " key thừa) "
-                            + "[PayBot v" + getDescription().getVersion() + "]");
-                }
+                configLastModified = cfgFile.lastModified();
+                reloadConfig();
+                applyReloadedConfig();
+                getLogger().info("[PayBot] 🔄 Config trên đĩa đã thay đổi — tự động reload và áp dụng thành công. "
+                        + "(+" + result[0] + " key mới, -" + result[1] + " key thừa) "
+                        + "[PayBot v" + getDescription().getVersion() + "]");
             }, 200L, 200L); // 200 tick = 10 giây
         }
 

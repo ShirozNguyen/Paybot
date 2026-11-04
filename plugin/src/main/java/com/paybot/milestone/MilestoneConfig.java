@@ -205,4 +205,100 @@ global-milestones:
     public String getResetBroadcastMessage() { return resetBroadcastMessage; }
     public Map<Long, MilestoneModel> getSingleMilestones() { return singleMilestones; }
     public Map<Long, MilestoneModel> getGlobalMilestones() { return globalMilestones; }
+
+    public synchronized void setScheduledResetEnabled(boolean enabled) {
+        this.scheduledResetEnabled = enabled;
+        saveMilestonesToFile();
+    }
+
+    public synchronized void setResetUnit(MilestoneResetUnit unit) {
+        if (unit != null) {
+            this.resetUnit = unit;
+            saveMilestonesToFile();
+        }
+    }
+
+    public synchronized void setResetInterval(int interval) {
+        this.resetInterval = Math.max(1, interval);
+        saveMilestonesToFile();
+    }
+
+    public synchronized void setBroadcastOnReset(boolean broadcast) {
+        this.broadcastOnReset = broadcast;
+        saveMilestonesToFile();
+    }
+
+    public synchronized void setResetBroadcastMessage(String message) {
+        if (message != null && !message.isBlank()) {
+            this.resetBroadcastMessage = message;
+            saveMilestonesToFile();
+        }
+    }
+
+    public synchronized void addOrUpdateSingleMilestone(long oldAmount, long newAmount, List<String> cmds) {
+        if (oldAmount > 0 && oldAmount != newAmount) {
+            singleMilestones.remove(oldAmount);
+        }
+        if (newAmount > 0) {
+            singleMilestones.put(newAmount, new MilestoneModel(newAmount, cmds != null ? cmds : new ArrayList<>()));
+        }
+        saveMilestonesToFile();
+    }
+
+    public synchronized void deleteSingleMilestone(long amount) {
+        singleMilestones.remove(amount);
+        saveMilestonesToFile();
+    }
+
+    public synchronized void addOrUpdateGlobalMilestone(long oldAmount, long newAmount, List<String> cmds) {
+        if (oldAmount > 0 && oldAmount != newAmount) {
+            globalMilestones.remove(oldAmount);
+        }
+        if (newAmount > 0) {
+            globalMilestones.put(newAmount, new MilestoneModel(newAmount, cmds != null ? cmds : new ArrayList<>()));
+        }
+        saveMilestonesToFile();
+    }
+
+    public synchronized void deleteGlobalMilestone(long amount) {
+        globalMilestones.remove(amount);
+        saveMilestonesToFile();
+    }
+
+    public synchronized void saveMilestonesToFile() {
+        try {
+            StringBuilder sb = new StringBuilder();
+            sb.append("# ==============================================================================\n");
+            sb.append("#                      PAYBOT - HỆ THỐNG MỐC NẠP THƯỞNG\n");
+            sb.append("#                 (Tích hợp sẵn Mốc Nạp Cá Nhân & Toàn Server)\n");
+            sb.append("# ==============================================================================\n");
+            sb.append("enabled: ").append(enabled).append("\n\n");
+            sb.append("scheduled-reset:\n");
+            sb.append("  enabled: ").append(scheduledResetEnabled).append("\n");
+            sb.append("  unit: \"").append(resetUnit != null ? resetUnit.name().toLowerCase(java.util.Locale.ROOT) : "monthly").append("\"\n");
+            sb.append("  interval: ").append(resetInterval).append("\n");
+            sb.append("  broadcast-on-reset: ").append(broadcastOnReset).append("\n");
+            sb.append("  reset-broadcast-message: \"").append(resetBroadcastMessage != null ? resetBroadcastMessage.replace("\"", "\\\"") : "").append("\"\n\n");
+            sb.append("single-milestones:\n");
+            for (Map.Entry<Long, MilestoneModel> entry : singleMilestones.entrySet()) {
+                sb.append("  \"").append(entry.getKey()).append("\":\n");
+                sb.append("    cmds:\n");
+                for (String cmd : entry.getValue().getCommands()) {
+                    sb.append("      - \"").append(cmd.replace("\"", "\\\"")).append("\"\n");
+                }
+            }
+            sb.append("\nglobal-milestones:\n");
+            for (Map.Entry<Long, MilestoneModel> entry : globalMilestones.entrySet()) {
+                sb.append("  \"").append(entry.getKey()).append("\":\n");
+                sb.append("    cmds:\n");
+                for (String cmd : entry.getValue().getCommands()) {
+                    sb.append("      - \"").append(cmd.replace("\"", "\\\"")).append("\"\n");
+                }
+            }
+            Files.writeString(configFile.toPath(), sb.toString(), StandardCharsets.UTF_8);
+            logger.info("[PayBot] Đã lưu thành công cấu hình mốc nạp vào milestones.yml!");
+        } catch (IOException e) {
+            logger.warning("[PayBot] Lỗi lưu file milestones.yml: " + e.getMessage());
+        }
+    }
 }

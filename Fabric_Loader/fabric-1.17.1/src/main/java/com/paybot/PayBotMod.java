@@ -484,7 +484,13 @@ public class PayBotMod implements ModInitializer {
             String cmd = raw.trim()
                     .replace("{player}",     player.getName().getString())
                     .replace("[playername]", player.getName().getString())
-                    .replace("[amount]",     String.valueOf(amount));
+                    .replace("%player_name%",player.getName().getString())
+                    .replace("%player%",     player.getName().getString())
+                    .replace("{playername}", player.getName().getString())
+                    .replace("[player]",     player.getName().getString())
+                    .replace("[amount]",     String.valueOf(amount))
+                    .replace("{amount}",     String.valueOf(amount))
+                    .replace("%amount%",     String.valueOf(amount));
             if (cmd.isEmpty()) continue;
             try {
                 server.getCommands().getDispatcher().execute(cmd, server.createCommandSourceStack());

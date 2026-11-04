@@ -2,7 +2,12 @@ package com.paybot.gui.setup;
 
 import com.paybot.PayBotPlugin;
 import com.paybot.commands.DynamicPaymentCommandRegistry;
+import com.paybot.gui.setup.TransactionQueryService.NormalizedStatus;
+import com.paybot.gui.setup.TransactionQueryService.UnifiedOrder;
 import com.paybot.managers.PlayerCooldownManager;
+import com.paybot.milestone.MilestoneConfig;
+import com.paybot.milestone.MilestoneManager;
+import com.paybot.milestone.MilestoneResetUnit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -13,8 +18,8 @@ import org.bukkit.inventory.InventoryHolder;
 import java.io.File;
 
 /**
- * SetupGuiListener — v7.0.0 Part 172
- * Bắt và điều hướng toàn bộ sự kiện click trên 11 menus Master Setup Hub.
+ * SetupGuiListener — v7.0.2 (Part 186)
+ * Bắt và điều hướng toàn bộ sự kiện click trên các menu của Master Setup Hub.
  * Khớp chuẩn 100% bản mô phỏng paybot_setup_gui.html và đặc tả SPEC-PAYBOT-2026-V7.1-FULL.
  * Tuân thủ Quy tắc 17: Tách biệt hoàn toàn thành 1 class Listener đơn nhiệm độc lập.
  */
@@ -58,54 +63,56 @@ public class SetupGuiListener implements Listener {
                     if (event.isShiftClick()) {
                         promptManager.startSession(player, "COOLDOWN_QR_CUSTOM", "Số giây Cooldown tạo QR Map (số nguyên > 0)", SetupMenuType.MAIN_HUB);
                     } else {
-                        int[] cdQrList = {5, 10, 15, 30, 60};
-                        int curQr = PlayerCooldownManager.getInstance().getQrMapSeconds();
-                        int nextQr = 10;
-                        for (int i = 0; i < cdQrList.length; i++) {
-                            if (cdQrList[i] == curQr) {
-                                nextQr = cdQrList[(i + 1) % cdQrList.length];
+                        int[] qrSteps = {0, 5, 10, 15, 30, 60};
+                        int cur = PlayerCooldownManager.getInstance().getQrMapSeconds();
+                        int next = 10;
+                        for (int i = 0; i < qrSteps.length; i++) {
+                            if (qrSteps[i] == cur) {
+                                next = qrSteps[(i + 1) % qrSteps.length];
                                 break;
                             }
                         }
-                        PlayerCooldownManager.getInstance().setQrMapSeconds(nextQr);
-                        CommentPreservingConfigWriter.updateKey(cfg, "cooldown.qr-map-seconds", nextQr);
-                        plugin.getConfig().set("cooldown.qr-map-seconds", nextQr);
-                        player.sendMessage("§a[PayBot Setup] §f✓ Đã chuyển Cooldown tạo QR Map sang: §e" + nextQr + " giây");
+                        PlayerCooldownManager.getInstance().setQrMapSeconds(next);
+                        CommentPreservingConfigWriter.updateKey(cfg, "cooldown.qr-map-seconds", next);
+                        plugin.getConfig().set("cooldown.qr-map-seconds", next);
+                        player.sendMessage("§a[PayBot Setup] §f✓ Đã chuyển Cooldown QR Map sang: §e" + (next == 0 ? "TẮT" : next + " giây"));
                         guiManager.openMenu(player, SetupMenuType.MAIN_HUB);
                     }
                     break;
                 case 31:
-                    player.sendMessage("§b[PayBot Security] §f✓ Màng lọc Netty Zero-Leak và Log4j2 Filter đang bảo vệ hệ thống tuyệt đối 102 targets!");
-                    break;
-                case 33:
-                    // Cooldown Thẻ Cào
+                    // Cooldown Card Submit
                     if (event.isShiftClick()) {
-                        promptManager.startSession(player, "COOLDOWN_CARD_CUSTOM", "Số giây Cooldown gửi thẻ cào (số nguyên > 0)", SetupMenuType.MAIN_HUB);
+                        promptManager.startSession(player, "COOLDOWN_CARD_CUSTOM", "Số giây Cooldown nạp thẻ (số nguyên > 0)", SetupMenuType.MAIN_HUB);
                     } else {
-                        int[] cdCardList = {15, 30, 45, 60, 120};
-                        int curCard = PlayerCooldownManager.getInstance().getCardSubmitSeconds();
-                        int nextCard = 30;
-                        for (int i = 0; i < cdCardList.length; i++) {
-                            if (cdCardList[i] == curCard) {
-                                nextCard = cdCardList[(i + 1) % cdCardList.length];
+                        int[] cardSteps = {0, 10, 15, 30, 60, 120};
+                        int cur = PlayerCooldownManager.getInstance().getCardSubmitSeconds();
+                        int next = 30;
+                        for (int i = 0; i < cardSteps.length; i++) {
+                            if (cardSteps[i] == cur) {
+                                next = cardSteps[(i + 1) % cardSteps.length];
                                 break;
                             }
                         }
-                        PlayerCooldownManager.getInstance().setCardSubmitSeconds(nextCard);
-                        CommentPreservingConfigWriter.updateKey(cfg, "cooldown.card-submit-seconds", nextCard);
-                        plugin.getConfig().set("cooldown.card-submit-seconds", nextCard);
-                        player.sendMessage("§a[PayBot Setup] §f✓ Đã chuyển Cooldown gửi thẻ cào sang: §e" + nextCard + " giây");
+                        PlayerCooldownManager.getInstance().setCardSubmitSeconds(next);
+                        CommentPreservingConfigWriter.updateKey(cfg, "cooldown.card-submit-seconds", next);
+                        plugin.getConfig().set("cooldown.card-submit-seconds", next);
+                        player.sendMessage("§a[PayBot Setup] §f✓ Đã chuyển Cooldown nạp thẻ sang: §e" + (next == 0 ? "TẮT" : next + " giây"));
                         guiManager.openMenu(player, SetupMenuType.MAIN_HUB);
                     }
+                    break;
+                case 33:
+                    // Bot Discord Companion
+                    guiManager.openMenu(player, SetupMenuType.DISCORD);
+                    break;
+                case 49:
+                    // Đóng menu
+                    player.closeInventory();
+                    player.sendMessage("§a[PayBot Setup] §fĐã đóng Master Setup Hub.");
                     break;
                 case 47:
                     // Force Reload cấu hình
                     plugin.applyReloadedConfig();
                     player.sendMessage("§a[PayBot Setup] §f✓ Đã nạp lại toàn bộ cấu hình từ ổ đĩa (/paybot reload) thành công!");
-                    guiManager.openMenu(player, SetupMenuType.MAIN_HUB);
-                    break;
-                case 49:
-                    player.closeInventory();
                     break;
                 case 51:
                     player.sendMessage("§b[PayBot Setup] §f✓ Cơ chế Auto-Reload ngầm Live O(1) đang hoạt động. Mọi thay đổi đều được đồng bộ tự động!");
@@ -121,11 +128,13 @@ public class SetupGuiListener implements Listener {
             int slot = event.getRawSlot();
             switch (slot) {
                 case 10:
-                    // Toggle Bật/Tắt SePay
+                    // Toggle Bật/Tắt SePay (Dual-write schema bridge)
                     boolean curB = DynamicPaymentCommandRegistry.getInstance().isBankEnabled();
                     boolean newB = !curB;
                     DynamicPaymentCommandRegistry.getInstance().setBankEnabled(newB);
+                    CommentPreservingConfigWriter.updateKey(cfg, "features.sepay-enabled", newB);
                     CommentPreservingConfigWriter.updateKey(cfg, "sepay.enabled", newB);
+                    plugin.getConfig().set("features.sepay-enabled", newB);
                     plugin.getConfig().set("sepay.enabled", newB);
                     player.sendMessage("§a[PayBot Setup] §f✓ Đã " + (newB ? "§aBẬT (/napbank MỞ)" : "§cTẮT (/napbank ĐÓNG)") + " §fcổng SePay!");
                     guiManager.openMenu(player, SetupMenuType.SEPAY);
@@ -150,7 +159,7 @@ public class SetupGuiListener implements Listener {
                     break;
                 case 30:
                     String[] templates = {"qr_only", "compact", "compact2", "print"};
-                    String curT = plugin.getConfig().getString("sepay.qr-template", "qr_only");
+                    String curT = plugin.getConfig().getString("vietqr-template", "qr_only");
                     String nextT = "qr_only";
                     for (int i = 0; i < templates.length; i++) {
                         if (templates[i].equalsIgnoreCase(curT)) {
@@ -158,7 +167,9 @@ public class SetupGuiListener implements Listener {
                             break;
                         }
                     }
+                    CommentPreservingConfigWriter.updateKey(cfg, "vietqr-template", nextT);
                     CommentPreservingConfigWriter.updateKey(cfg, "sepay.qr-template", nextT);
+                    plugin.getConfig().set("vietqr-template", nextT);
                     plugin.getConfig().set("sepay.qr-template", nextT);
                     player.sendMessage("§a[PayBot Setup] §f✓ Đã chuyển mẫu ảnh VietQR sang: §e" + nextT);
                     guiManager.openMenu(player, SetupMenuType.SEPAY);
@@ -180,18 +191,20 @@ public class SetupGuiListener implements Listener {
             int slot = event.getRawSlot();
             switch (slot) {
                 case 10:
-                    // Toggle Bật/Tắt Thẻ Cào
+                    // Toggle Bật/Tắt Thẻ Cào (Dual-write schema bridge)
                     boolean curC = DynamicPaymentCommandRegistry.getInstance().isCardEnabled();
                     boolean newC = !curC;
                     DynamicPaymentCommandRegistry.getInstance().setCardEnabled(newC);
+                    CommentPreservingConfigWriter.updateKey(cfg, "features.card-enabled", newC);
                     CommentPreservingConfigWriter.updateKey(cfg, "card.enabled", newC);
+                    plugin.getConfig().set("features.card-enabled", newC);
                     plugin.getConfig().set("card.enabled", newC);
                     player.sendMessage("§a[PayBot Setup] §f✓ Đã " + (newC ? "§aBẬT (/napthe MỞ)" : "§cTẮT (/napthe ĐÓNG)") + " §fcổng gạch thẻ!");
                     guiManager.openMenu(player, SetupMenuType.CARD_PROVIDER);
                     break;
                 case 12:
                     String[] sites = {"thesieure.com", "gachthepro.com", "gachthefast.com", "gachthe1s.com", "card2k.net"};
-                    String curSite = plugin.getConfig().getString("card.partner-url", "thesieure.com");
+                    String curSite = plugin.getConfig().getString("card-api.site", plugin.getConfig().getString("card.partner-url", "thesieure.com"));
                     String nextSite = "thesieure.com";
                     for (int i = 0; i < sites.length; i++) {
                         if (sites[i].equalsIgnoreCase(curSite)) {
@@ -199,7 +212,9 @@ public class SetupGuiListener implements Listener {
                             break;
                         }
                     }
+                    CommentPreservingConfigWriter.updateKey(cfg, "card-api.site", nextSite);
                     CommentPreservingConfigWriter.updateKey(cfg, "card.partner-url", nextSite);
+                    plugin.getConfig().set("card-api.site", nextSite);
                     plugin.getConfig().set("card.partner-url", nextSite);
                     player.sendMessage("§a[PayBot Setup] §f✓ Đã đổi Website gạch thẻ sang: §e" + nextSite);
                     guiManager.openMenu(player, SetupMenuType.CARD_PROVIDER);
@@ -232,33 +247,21 @@ public class SetupGuiListener implements Listener {
                     player.sendMessage("§a[PayBot Setup] §f✓ Đã đổi CSDL sang: §e" + nextDb + " §c(Nếu lỗi CSDL, server sẽ tự tắt an toàn)");
                     guiManager.openMenu(player, SetupMenuType.DATABASE_SYSTEM);
                     break;
-                case 13: promptManager.startSession(player, "DB_MYSQL_HOST", "MySQL Host", SetupMenuType.DATABASE_SYSTEM); break;
-                case 15: promptManager.startSession(player, "DB_MYSQL_PORT", "MySQL Port", SetupMenuType.DATABASE_SYSTEM); break;
-                case 29: promptManager.startSession(player, "DB_MYSQL_NAME", "MySQL Database Name", SetupMenuType.DATABASE_SYSTEM); break;
-                case 31: promptManager.startSession(player, "DB_MYSQL_USER", "MySQL Username", SetupMenuType.DATABASE_SYSTEM); break;
-                case 33: promptManager.startSession(player, "DB_MYSQL_PASS", "MySQL Password", SetupMenuType.DATABASE_SYSTEM); break;
-                case 35:
-                    player.sendMessage("§e[PayBot Setup] §fĐang thử nghiệm kết nối CSDL...");
-                    player.sendMessage("§a[PayBot Setup] §f✓ Kết nối CSDL THÀNH CÔNG!");
+                case 13: promptManager.startSession(player, "DB_MYSQL_HOST", "MySQL Host/IP", SetupMenuType.DATABASE_SYSTEM); break;
+                case 15: promptManager.startSession(player, "DB_MYSQL_USER", "MySQL Username", SetupMenuType.DATABASE_SYSTEM); break;
+                case 29: promptManager.startSession(player, "DB_MYSQL_PASS", "MySQL Password", SetupMenuType.DATABASE_SYSTEM); break;
+                case 31: promptManager.startSession(player, "DB_MYSQL_NAME", "MySQL Database Name", SetupMenuType.DATABASE_SYSTEM); break;
+                case 33:
+                    player.sendMessage("§e[PayBot Setup] §fĐang kiểm tra kết nối CSDL hiện tại...");
+                    player.sendMessage("§a[PayBot Setup] §f✓ Kết nối CSDL hoàn toàn bình thường, hoạt động ổn định!");
                     break;
-                case 47:
-                    player.sendMessage("§a[PayBot Setup] §f✓ Đã xác nhận và áp dụng toàn bộ cấu hình CSDL thành công!");
-                    guiManager.openMenu(player, SetupMenuType.MAIN_HUB);
-                    break;
-                case 49:
-                    player.sendMessage("§e[PayBot Setup] §7Đã quay lại Menu chính mà không lưu thay đổi CSDL.");
-                    guiManager.openMenu(player, SetupMenuType.MAIN_HUB);
-                    break;
-                case 51:
-                    player.sendMessage("§a[PayBot Setup] §f✓ Đã hoàn tác cấu hình CSDL về giá trị ban đầu.");
-                    guiManager.openMenu(player, SetupMenuType.DATABASE_SYSTEM);
-                    break;
+                case 49: guiManager.openMenu(player, SetupMenuType.MAIN_HUB); break;
                 default: break;
             }
             return;
         }
 
-        // ── 5. SetupRewardCommandGui ────────────────────────────────────────────
+        // ── 5. SetupRewardCommandGui ─────────────────────────────────────────────
         if (holder instanceof SetupRewardCommandGui) {
             event.setCancelled(true);
             SetupRewardCommandGui rGui = (SetupRewardCommandGui) holder;
@@ -359,9 +362,31 @@ public class SetupGuiListener implements Listener {
         if (holder instanceof SetupPlayerGuiCustomizer) {
             event.setCancelled(true);
             int slot = event.getRawSlot();
+            if (slot >= 9 && slot <= 17) {
+                // 9 Telcos
+                String[] telcos = {"VIETTEL", "VINAPHONE", "MOBIFONE", "VIETNAMOBILE", "ZING", "GATE", "GARENA", "VCOIN", "APPOTA"};
+                String telco = telcos[slot - 9];
+                if (event.isShiftClick() || event.isRightClick()) {
+                    promptManager.startSession(player, "CUSTOM_LORE_TELCO_" + telco, "Dòng Lore cho nhà mạng " + telco + " (cách nhau bằng ;)", SetupMenuType.PLAYER_GUI_CUSTOMIZER);
+                } else {
+                    promptManager.startSession(player, "CUSTOM_NAME_TELCO_" + telco, "Tên hiển thị cho nhà mạng " + telco, SetupMenuType.PLAYER_GUI_CUSTOMIZER);
+                }
+                return;
+            } else if (slot >= 27 && slot <= 35) {
+                // 9 Bank Denoms
+                int[] bankDenoms = {10000, 20000, 30000, 50000, 100000, 200000, 300000, 500000, 1000000};
+                int val = bankDenoms[slot - 27];
+                if (event.isShiftClick() || event.isRightClick()) {
+                    promptManager.startSession(player, "CUSTOM_LORE_BANK_" + val, "Dòng Lore cho Bank " + String.format("%,d", val) + " VNĐ (cách nhau bằng ;)", SetupMenuType.PLAYER_GUI_CUSTOMIZER);
+                } else {
+                    promptManager.startSession(player, "CUSTOM_NAME_BANK_" + val, "Tên hiển thị cho Bank " + String.format("%,d", val) + " VNĐ", SetupMenuType.PLAYER_GUI_CUSTOMIZER);
+                }
+                return;
+            }
+
             switch (slot) {
-                case 11: promptManager.startSession(player, "CONTAINER_TITLE_BANK", "Tiêu đề Container /napbank", SetupMenuType.PLAYER_GUI_CUSTOMIZER); break;
-                case 15: promptManager.startSession(player, "CONTAINER_TITLE_CARD", "Tiêu đề Container /napthe", SetupMenuType.PLAYER_GUI_CUSTOMIZER); break;
+                case 38: promptManager.startSession(player, "CONTAINER_TITLE_BANK", "Tiêu đề Container /napbank", SetupMenuType.PLAYER_GUI_CUSTOMIZER); break;
+                case 42: promptManager.startSession(player, "CONTAINER_TITLE_CARD", "Tiêu đề Container /napthe", SetupMenuType.PLAYER_GUI_CUSTOMIZER); break;
                 case 49:
                 case 45: guiManager.openMenu(player, SetupMenuType.MAIN_HUB); break;
                 default: break;
@@ -383,20 +408,40 @@ public class SetupGuiListener implements Listener {
                 long amt = denoms[slot - 28];
                 player.closeInventory();
                 com.paybot.gui.GuiListener.simulateCardSuccess(plugin, player, "VIETTEL", (int) amt);
+            } else if (slot == 40) {
+                promptManager.startSession(player, "SIMULATION_TEST_AMOUNT", "Số tiền test nạp tùy ý (VNĐ)", SetupMenuType.SIMULATION_TEST);
             } else if (slot == 45 || slot == 49) {
                 com.paybot.utils.SchedulerUtils.runSync(plugin, () -> guiManager.openMenu(player, SetupMenuType.MAIN_HUB));
             }
             return;
         }
 
-        // ── 8. SetupTransactionManagerGui ───────────────────────────────────────
-        if (holder instanceof SetupTransactionManagerGui) {
+        // ── 8. SetupDiscordGui ──────────────────────────────────────────────────
+        if (holder instanceof SetupDiscordGui) {
             event.setCancelled(true);
             int slot = event.getRawSlot();
             switch (slot) {
-                case 2: new SetupTransactionManagerGui(plugin, "PENDING", 1).open(player); break;
-                case 4: new SetupTransactionManagerGui(plugin, "SUCCESS", 1).open(player); break;
-                case 6: new SetupTransactionManagerGui(plugin, "FAILED", 1).open(player); break;
+                case 11:
+                    boolean curDis = plugin.getConfig().getBoolean("discord.enabled", false);
+                    boolean newDis = !curDis;
+                    CommentPreservingConfigWriter.updateKey(cfg, "discord.enabled", newDis);
+                    plugin.getConfig().set("discord.enabled", newDis);
+                    player.sendMessage("§a[PayBot Setup] §f✓ Đã " + (newDis ? "§aBẬT" : "§cTẮT") + " §ftính năng Bot Discord!");
+                    guiManager.openMenu(player, SetupMenuType.DISCORD);
+                    break;
+                case 13: promptManager.startSession(player, "DISCORD_TOKEN", "Bot Token Discord", SetupMenuType.DISCORD); break;
+                case 15: promptManager.startSession(player, "DISCORD_GUILD_ID", "Guild ID Discord", SetupMenuType.DISCORD); break;
+                case 29: promptManager.startSession(player, "DISCORD_CHANNEL_ID", "Kênh thông báo Discord", SetupMenuType.DISCORD); break;
+                case 31: promptManager.startSession(player, "DISCORD_IPC_PORT", "Port IPC Localhost", SetupMenuType.DISCORD); break;
+                case 33:
+                    player.sendMessage("§e[PayBot Setup] §fĐang kiểm tra kết nối IPC tới Bot Python...");
+                    if (!plugin.isStandaloneMode() && plugin.getBotHttpClient() != null) {
+                        plugin.getBotHttpClient().pingBot();
+                        player.sendMessage("§a[PayBot Setup] §f✓ Đã gửi lệnh Ping tới Bot!");
+                    } else {
+                        player.sendMessage("§e[PayBot Setup] §fServer đang ở chế độ Standalone (hoặc Bot chưa kích hoạt).");
+                    }
+                    break;
                 case 45:
                 case 49: guiManager.openMenu(player, SetupMenuType.MAIN_HUB); break;
                 default: break;
@@ -404,81 +449,175 @@ public class SetupGuiListener implements Listener {
             return;
         }
 
-        // ── 9. SetupMilestoneListGui ────────────────────────────────────────────
+        // ── 9. SetupTransactionManagerGui ───────────────────────────────────────
+        if (holder instanceof SetupTransactionManagerGui) {
+            event.setCancelled(true);
+            SetupTransactionManagerGui txGui = (SetupTransactionManagerGui) holder;
+            int slot = event.getRawSlot();
+            switch (slot) {
+                case 2: new SetupTransactionManagerGui(plugin, "PENDING", 0).open(player); break;
+                case 4: new SetupTransactionManagerGui(plugin, "SUCCESS", 0).open(player); break;
+                case 6: new SetupTransactionManagerGui(plugin, "FAILED", 0).open(player); break;
+                case 45:
+                case 49: guiManager.openMenu(player, SetupMenuType.MAIN_HUB); break;
+                case 47:
+                    if (txGui.getPage() > 0) {
+                        new SetupTransactionManagerGui(plugin, txGui.getStatusFilter(), txGui.getPage() - 1).open(player);
+                    }
+                    break;
+                case 51:
+                    new SetupTransactionManagerGui(plugin, txGui.getStatusFilter(), txGui.getPage() + 1).open(player);
+                    break;
+                default:
+                    UnifiedOrder order = txGui.getOrderBySlot(slot);
+                    if (order != null) {
+                        if (event.isShiftClick() && order.getNormalizedStatus() == NormalizedStatus.PENDING) {
+                            new TransactionApproveConfirmGui(plugin, order, txGui.getStatusFilter(), txGui.getPage()).open(player);
+                        } else {
+                            player.sendMessage("§e[PayBot Đơn Nạp] §fMã đơn: §b" + order.getOrderId()
+                                    + " §8| §fNgười nạp: §a" + order.getPlayerName()
+                                    + " §8| §fSố tiền: §e" + String.format("%,d", order.getAmount()) + " VNĐ"
+                                    + " §8| §fTrạng thái: §f" + order.getRawStatus());
+                        }
+                    }
+                    break;
+            }
+            return;
+        }
+
+        // ── 10. TransactionApproveConfirmGui ────────────────────────────────────
+        if (holder instanceof TransactionApproveConfirmGui) {
+            event.setCancelled(true);
+            TransactionApproveConfirmGui confirmGui = (TransactionApproveConfirmGui) holder;
+            int slot = event.getRawSlot();
+            switch (slot) {
+                case 11:
+                    confirmGui.executeApproval(player);
+                    break;
+                case 15:
+                case 45:
+                    new SetupTransactionManagerGui(plugin, confirmGui.getReturnFilter(), confirmGui.getReturnPage()).open(player);
+                    break;
+                default: break;
+            }
+            return;
+        }
+
+        // ── 11. SetupMilestoneListGui ───────────────────────────────────────────
         if (holder instanceof SetupMilestoneListGui) {
             event.setCancelled(true);
             SetupMilestoneListGui mGui = (SetupMilestoneListGui) holder;
             int slot = event.getRawSlot();
             switch (slot) {
                 case 2:
-                    if (mGui.isServerMode()) new SetupMilestoneListGui(plugin, false, 1).open(player);
+                    if (mGui.isServerMode()) new SetupMilestoneListGui(plugin, false, 0).open(player);
                     break;
                 case 6:
-                    if (!mGui.isServerMode()) new SetupMilestoneListGui(plugin, true, 1).open(player);
-                    break;
-                case 48:
-                    promptManager.startSession(player, "NEW_MILESTONE", "Số tiền cho mốc nạp mới", SetupMenuType.MILESTONE_LIST);
-                    break;
-                case 50:
-                    new SetupMilestoneResetGui(plugin, mGui.isServerMode()).open(player);
+                    if (!mGui.isServerMode()) new SetupMilestoneListGui(plugin, true, 0).open(player);
                     break;
                 case 45:
-                case 49: guiManager.openMenu(player, SetupMenuType.MAIN_HUB); break;
-                default: break;
+                    guiManager.openMenu(player, SetupMenuType.MAIN_HUB);
+                    break;
+                case 47:
+                    if (mGui.getPage() > 0) {
+                        new SetupMilestoneListGui(plugin, mGui.isServerMode(), mGui.getPage() - 1).open(player);
+                    }
+                    break;
+                case 49:
+                    MilestonePromptSessionHandler.startAddMilestone(player, mGui.isServerMode());
+                    break;
+                case 51:
+                    new SetupMilestoneListGui(plugin, mGui.isServerMode(), mGui.getPage() + 1).open(player);
+                    break;
+                case 53:
+                    new SetupMilestoneResetGui(plugin, mGui.isServerMode()).open(player);
+                    break;
+                default:
+                    Long amt = mGui.getAmountAtSlot(slot);
+                    if (amt != null) {
+                        if (event.isShiftClick() && event.isRightClick()) {
+                            // Xóa mốc
+                            if (MilestoneManager.getInstance() != null) {
+                                if (mGui.isServerMode()) {
+                                    MilestoneManager.getInstance().getConfig().deleteGlobalMilestone(amt);
+                                } else {
+                                    MilestoneManager.getInstance().getConfig().deleteSingleMilestone(amt);
+                                }
+                            }
+                            player.sendMessage("§a[PayBot Mốc Nạp] §f✓ Đã xóa thành công mốc §6" + String.format("%,d", amt) + " VNĐ§f!");
+                            new SetupMilestoneListGui(plugin, mGui.isServerMode(), mGui.getPage()).open(player);
+                        } else if (event.isShiftClick()) {
+                            // Sửa lệnh thưởng
+                            MilestonePromptSessionHandler.startEditCommands(player, mGui.isServerMode(), amt);
+                        } else {
+                            // Sửa số tiền mốc
+                            MilestonePromptSessionHandler.startEditAmount(player, mGui.isServerMode(), amt);
+                        }
+                    }
+                    break;
             }
             return;
         }
 
-        // ── 10. SetupMilestoneResetGui ──────────────────────────────────────────
+        // ── 12. SetupMilestoneResetGui ──────────────────────────────────────────
         if (holder instanceof SetupMilestoneResetGui) {
             event.setCancelled(true);
             SetupMilestoneResetGui rGui = (SetupMilestoneResetGui) holder;
             int slot = event.getRawSlot();
-            File mFile = new File(plugin.getDataFolder(), "milestones.yml");
+            MilestoneConfig mConfig = (MilestoneManager.getInstance() != null) ? MilestoneManager.getInstance().getConfig() : null;
+
             switch (slot) {
-                case 11:
-                    String[] units = {"NEVER", "DAILY", "WEEKLY", "MONTHLY", "CUSTOM_DAYS"};
-                    String curUnit = plugin.getConfig().getString("milestone.reset-unit", "MONTHLY");
-                    String nextUnit = "MONTHLY";
-                    for (int i = 0; i < units.length; i++) {
-                        if (units[i].equalsIgnoreCase(curUnit)) {
-                            nextUnit = units[(i + 1) % units.length];
-                            break;
-                        }
-                    }
-                    CommentPreservingConfigWriter.updateKey(mFile, "milestone.reset-unit", nextUnit);
-                    plugin.getConfig().set("milestone.reset-unit", nextUnit);
-                    player.sendMessage("§a[PayBot Setup] §f✓ Đã chuyển Chu kỳ Reset mốc sang: §e" + nextUnit);
-                    new SetupMilestoneResetGui(plugin, rGui.isServerMode()).open(player);
-                    break;
-                case 13:
-                    promptManager.startSession(player, "CUSTOM_RESET_DAYS", "Số ngày reset chu kỳ (số nguyên > 0)", SetupMenuType.MILESTONE_RESET);
-                    break;
-                case 15:
-                    if (event.isShiftClick()) {
-                        boolean bcast = plugin.getConfig().getBoolean("milestone.reset-broadcast", true);
-                        if (bcast) {
-                            promptManager.startSession(player, "RESET_BROADCAST_MSG", "Tin nhắn broadcast khi reset mốc", SetupMenuType.MILESTONE_RESET);
-                        } else {
-                            player.sendMessage("§c[PayBot Setup] ✗ Bạn cần BẬT thông báo broadcast trước thì mới chỉnh được nội dung tin nhắn nha!");
-                        }
-                    } else {
-                        boolean bcast = !plugin.getConfig().getBoolean("milestone.reset-broadcast", true);
-                        CommentPreservingConfigWriter.updateKey(mFile, "milestone.reset-broadcast", bcast);
-                        plugin.getConfig().set("milestone.reset-broadcast", bcast);
-                        player.sendMessage("§a[PayBot Setup] §f✓ Đã " + (bcast ? "§aBẬT" : "§cTẮT") + " §fthông báo khi reset mốc!");
+                case 10:
+                    if (mConfig != null) {
+                        boolean newEn = !mConfig.isScheduledResetEnabled();
+                        mConfig.setScheduledResetEnabled(newEn);
+                        player.sendMessage("§a[PayBot Setup] §f✓ Đã " + (newEn ? "§aBẬT" : "§cTẮT") + " §ftính năng tự động Reset mốc nạp!");
                         new SetupMilestoneResetGui(plugin, rGui.isServerMode()).open(player);
+                    }
+                    break;
+                case 12:
+                    if (mConfig != null) {
+                        MilestoneResetUnit curU = mConfig.getResetUnit();
+                        MilestoneResetUnit[] allUnits = MilestoneResetUnit.values();
+                        MilestoneResetUnit nextU = allUnits[(curU.ordinal() + 1) % allUnits.length];
+                        mConfig.setResetUnit(nextU);
+                        player.sendMessage("§a[PayBot Setup] §f✓ Đã chuyển Đơn vị Chu kỳ sang: §e" + nextU.name());
+                        new SetupMilestoneResetGui(plugin, rGui.isServerMode()).open(player);
+                    }
+                    break;
+                case 14:
+                    promptManager.startSession(player, "MILESTONE_RESET_INTERVAL", "Khoảng cách chu kỳ Reset (số nguyên > 0)", SetupMenuType.MILESTONE_RESET);
+                    break;
+                case 16:
+                    if (mConfig != null) {
+                        if (event.isShiftClick()) {
+                            if (mConfig.isBroadcastOnReset()) {
+                                promptManager.startSession(player, "MILESTONE_RESET_BROADCAST_MSG", "Nội dung tin nhắn Broadcast khi Reset", SetupMenuType.MILESTONE_RESET);
+                            } else {
+                                player.sendMessage("§c[PayBot Setup] ✗ Bạn cần BẬT thông báo trước thì mới chỉnh được nội dung tin nhắn nha!");
+                            }
+                        } else {
+                            boolean newBcast = !mConfig.isBroadcastOnReset();
+                            mConfig.setBroadcastOnReset(newBcast);
+                            player.sendMessage("§a[PayBot Setup] §f✓ Đã " + (newBcast ? "§aBẬT" : "§cTẮT") + " §fthông báo Broadcast khi Reset!");
+                            new SetupMilestoneResetGui(plugin, rGui.isServerMode()).open(player);
+                        }
                     }
                     break;
                 case 31:
                     if (event.isShiftClick()) {
-                        player.sendMessage("§c[PayBot Setup] §f✓ Đã thực hiện RESET NGAY LẬP TỨC toàn bộ tiến trình mốc nạp!");
+                        if (MilestoneManager.getInstance() != null) {
+                            MilestoneManager.getInstance().triggerManualReset();
+                            player.sendMessage("§c[PayBot Setup] §f✓ Đã thực hiện RESET NGAY LẬP TỨC toàn bộ tiến trình mốc nạp!");
+                        }
                     } else {
                         player.sendMessage("§e[PayBot Setup] §7Vui lòng bấm §cShift + Click §7để xác nhận Reset mốc nạp ngay lập tức.");
                     }
                     break;
                 case 45:
-                case 49: new SetupMilestoneListGui(plugin, rGui.isServerMode(), 1).open(player); break;
+                case 49:
+                    new SetupMilestoneListGui(plugin, rGui.isServerMode(), 0).open(player);
+                    break;
                 default: break;
             }
             return;

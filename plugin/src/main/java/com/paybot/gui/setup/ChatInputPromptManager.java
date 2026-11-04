@@ -305,6 +305,61 @@ public class ChatInputPromptManager {
                 }
                 break;
 
+            case "REWARD_FALLBACK_BANK":
+                CommentPreservingConfigWriter.updateKey(configFile, "reward-command-bank", input);
+                plugin.getConfig().set("reward-command-bank", input);
+                player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Lệnh thưởng Bank dự phòng: §e" + input);
+                break;
+
+            case "REWARD_FALLBACK_CARD":
+                CommentPreservingConfigWriter.updateKey(configFile, "reward-command-card", input);
+                plugin.getConfig().set("reward-command-card", input);
+                player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Lệnh thưởng Thẻ Cào dự phòng: §e" + input);
+                break;
+
+            case "SIMULATION_TEST_AMOUNT":
+                try {
+                    String clean = input.replace(".", "").replace(",", "").replace("_", "").trim();
+                    int amt = Integer.parseInt(clean);
+                    if (amt <= 0) {
+                        player.sendMessage("§c[PayBot Setup] ✗ Số tiền test phải là số nguyên dương > 0!");
+                        activeSessions.put(player.getUniqueId(), session);
+                        return;
+                    }
+                    com.paybot.gui.GuiListener.simulateBankSuccess(plugin, player, amt);
+                } catch (NumberFormatException e) {
+                    player.sendMessage("§c[PayBot Setup] ✗ Vui lòng chỉ nhập số (ví dụ: 50000)!");
+                    activeSessions.put(player.getUniqueId(), session);
+                    return;
+                }
+                return;
+
+            case "MILESTONE_RESET_INTERVAL":
+                try {
+                    int interval = Integer.parseInt(input);
+                    if (interval <= 0) {
+                        player.sendMessage("§c[PayBot Setup] ✗ Khoảng cách chu kỳ phải là số nguyên dương > 0!");
+                        activeSessions.put(player.getUniqueId(), session);
+                        return;
+                    }
+                    if (com.paybot.milestone.MilestoneManager.getInstance() != null) {
+                        com.paybot.milestone.MilestoneManager.getInstance().getConfig().setResetInterval(interval);
+                    }
+                    player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Khoảng cách Reset: §e" + interval);
+                } catch (NumberFormatException e) {
+                    player.sendMessage("§c[PayBot Setup] ✗ Bạn vui lòng chỉ nhập số nguyên dương nha!");
+                    activeSessions.put(player.getUniqueId(), session);
+                    return;
+                }
+                break;
+
+            case "MILESTONE_RESET_BROADCAST_MSG":
+                if (com.paybot.milestone.MilestoneManager.getInstance() != null) {
+                    com.paybot.milestone.MilestoneManager.getInstance().getConfig().setResetBroadcastMessage(input);
+                }
+                player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Tin nhắn Broadcast Reset mốc nạp!");
+                break;
+
             default:
                 player.sendMessage("§e[PayBot Setup] §fĐã ghi nhận giá trị: §a" + input);
                 break;
@@ -322,6 +377,34 @@ public class ChatInputPromptManager {
             CommentPreservingConfigWriter.updateKey(configFile, key, input);
             plugin.getConfig().set(key, input);
             player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Lệnh thưởng Thẻ Cào cho mệnh giá §e" + denomStr + " VNĐ§f: §b" + input);
+        } else if (session.promptKey.startsWith("CUSTOM_NAME_TELCO_")) {
+            String telco = session.promptKey.substring("CUSTOM_NAME_TELCO_".length());
+            CommentPreservingConfigWriter.updateKey(configFile, "custom-name.enabled", true);
+            CommentPreservingConfigWriter.updateKey(configFile, "custom-name.telco." + telco, input);
+            plugin.getConfig().set("custom-name.enabled", true);
+            plugin.getConfig().set("custom-name.telco." + telco, input);
+            player.sendMessage("§a[PayBot Setup] §f✓ Đã đổi Tên hiển thị len §e" + telco + " §fsang: " + input);
+        } else if (session.promptKey.startsWith("CUSTOM_LORE_TELCO_")) {
+            String telco = session.promptKey.substring("CUSTOM_LORE_TELCO_".length());
+            java.util.List<String> loreLines = java.util.Arrays.asList(input.split("(?:;;|§§|;)"));
+            CommentPreservingConfigWriter.updateKey(configFile, "custom-lore.enabled", true);
+            plugin.getConfig().set("custom-lore.enabled", true);
+            plugin.getConfig().set("custom-lore.telco." + telco, loreLines);
+            player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Lore len §e" + telco + " §fvới §a" + loreLines.size() + " dòng§f!");
+        } else if (session.promptKey.startsWith("CUSTOM_NAME_BANK_")) {
+            String denom = session.promptKey.substring("CUSTOM_NAME_BANK_".length());
+            CommentPreservingConfigWriter.updateKey(configFile, "custom-name.enabled", true);
+            CommentPreservingConfigWriter.updateKey(configFile, "custom-name.bank." + denom, input);
+            plugin.getConfig().set("custom-name.enabled", true);
+            plugin.getConfig().set("custom-name.bank." + denom, input);
+            player.sendMessage("§a[PayBot Setup] §f✓ Đã đổi Tên hiển thị mệnh giá Bank §e" + denom + " §fsang: " + input);
+        } else if (session.promptKey.startsWith("CUSTOM_LORE_BANK_")) {
+            String denom = session.promptKey.substring("CUSTOM_LORE_BANK_".length());
+            java.util.List<String> loreLines = java.util.Arrays.asList(input.split("(?:;;|§§|;)"));
+            CommentPreservingConfigWriter.updateKey(configFile, "custom-lore.enabled", true);
+            plugin.getConfig().set("custom-lore.enabled", true);
+            plugin.getConfig().set("custom-lore.bank." + denom, loreLines);
+            player.sendMessage("§a[PayBot Setup] §f✓ Đã cập nhật Lore mệnh giá Bank §e" + denom + " §fvới §a" + loreLines.size() + " dòng§f!");
         }
 
         // Tự động mở lại đúng GUI sau khi hoàn thành
